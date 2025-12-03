@@ -276,6 +276,9 @@
         const Dices = (props) => <Icon {...props}><path d="m21 16-5.87-4.4a1 1 0 0 0-1.12-.08L9 15"/><path d="M11.5 11 9 15l-2.43 1.82a1 1 0 0 0 .09 1.63L12 21l4.58-2.32a1 1 0 0 0 .5-1.12z"/><path d="M15 9l-3.07-2.3a1 1 0 0 0-1.21-.08L6 10l-1.38 3a1 1 0 0 0 .09 1.07l2.25 3L9 15l2.5-4"/><path d="M2 12h5"/><path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6z"/></Icon>;
         // NEW: History/Log Icon
         const ScrollText = (props) => <Icon {...props}><path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/></Icon>;
+        // NEW: Database Icon for Homebrew Bank
+        const Database = (props) => <Icon {...props}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></Icon>;
+
 
         const CONDITIONS = [
             { name: 'Blinded', color: 'bg-gray-600' },
@@ -502,7 +505,7 @@
             const acts = combatant.actions ? combatant.actions.split(',').map(a=>a.trim()).filter(a=>a) : [];
             return (
                 <div className="mt-3 space-y-2">
-                    <div className="space-y-1">{chips.map(d => <div key={d.l} className="flex items-center gap-2 text-xs font-medium bg-slate-900/50 p-1.5 rounded border border-slate-700">{d.i}<span className={d.c}>{d.l}:</span><span className="text-white flex-1 truncate" title={d.v}>{d.v||'None'}</span></div>)}</div>
+                    <div className="space-y-1">{chips.map(d => <div key={d.l} className="flex items-center gap-2 text-xs font-medium bg-slate-900/50 p-1.5 rounded border border-slate-700">{d.i}<span className={d.c}>{d.l}:</span><span className="text-white flex-1 truncate" title={d.v||'None'}>{d.v||'None'}</span></div>)}</div>
                     {acts.length > 0 && <div className="pt-2 border-t border-slate-700/50"><h5 className="text-xs font-bold text-yellow-400 mb-1 flex items-center gap-1"><Bolt size={12}/> Actions:</h5><ul className="space-y-0.5 pl-3 text-white text-xs list-disc list-inside">{acts.map((a,i)=><li key={i} className="pl-1 leading-tight">{a}</li>)}</ul></div>}
                 </div>
             );
@@ -718,14 +721,14 @@
                     <div className="bg-gray-900 w-full max-w-md rounded-xl border border-slate-700 p-6 shadow-2xl">
                         <h2 className="text-xl font-bold text-white mb-4">File Options</h2>
                         <div className="mb-4">
-                            <label className="block text-xs font-bold text-slate-400 mb-1 uppercase">Export Filename</label>
+                            <label className="block text-xs font-bold text-slate-400 mb-1 uppercase">Export Filename Base</label>
                             <input className={INPUT_CLASS} 
                                     value={fileName} 
                                     onChange={(e) => setFileName(e.target.value)} 
                                     onBlur={handleInputBlur}
                                     placeholder="encounter_name" 
                             />
-                            <p className="text-xs text-slate-500 mt-1">Downloads to your device's default Downloads folder.</p>
+                            <p className="text-xs text-slate-500 mt-1">Used for encounter export (e.g., `<span className="text-amber-500">{fileName}</span>.json`) and Homebrew Backup (e.g., `<span className="text-amber-500">{fileName}</span>_HB-Backup.json`).</p>
                         </div>
                         <div className="flex justify-end gap-2">
                             <button onClick={onClose} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-bold">Done</button>
@@ -750,6 +753,36 @@
         const FloatingNextTurnButton = ({ handleNextTurn, combatants, turnIndex, viewMode }) => {
             if (viewMode !== 'battlefield' || combatants.length === 0) return null;
             return <button onClick={handleNextTurn} className="floating-turn-button px-4 py-2 bg-green-600 text-white rounded-full font-bold shadow-lg active:scale-95 flex items-center gap-2">Next Turn <ArrowRight size={16}/></button>;
+        };
+
+        const HomebrewImportModal = ({ file, onConfirm, onClose }) => {
+            if (!file) return null;
+            return (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div className="bg-gray-900 w-full max-w-md rounded-xl border border-slate-700 p-6 shadow-2xl">
+                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Upload className="text-amber-500"/> Restore Homebrew Bank</h2>
+                        <p className="text-slate-300 mb-6 text-sm">You are restoring data from: <span className="font-mono text-amber-300">{file.name}</span></p>
+
+                        <div className="space-y-4">
+                            <div className="p-3 border border-slate-700 rounded bg-slate-800">
+                                <p className="font-bold text-white flex items-center gap-2 mb-1"><RotateCw size={16} className="text-amber-500"/> Merge Data</p>
+                                <p className="text-xs text-slate-400">Adds all imported monsters to your current Homebrew Bank. Existing monsters are kept.</p>
+                                <button onClick={() => onConfirm('merge')} className="mt-3 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded text-sm">Confirm Merge</button>
+                            </div>
+
+                            <div className="p-3 border border-slate-700 rounded bg-slate-800">
+                                <p className="font-bold text-white flex items-center gap-2 mb-1"><Trash2 size={16} className="text-red-500"/> Overwrite Bank</p>
+                                <p className="text-xs text-slate-400">Replaces your current Homebrew Bank with the imported data. **This action cannot be undone.**</p>
+                                <button onClick={() => onConfirm('overwrite')} className="mt-3 w-full bg-red-700 hover:bg-red-600 text-white font-bold py-2 rounded text-sm">Confirm Overwrite</button>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end mt-4">
+                            <button onClick={onClose} className="px-4 py-2 text-slate-400 hover:text-white rounded text-sm">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            );
         };
 
 
@@ -795,7 +828,11 @@
             const [selectedRule, setSelectedRule] = useState(null);
             const [expandedCategories, setExpandedCategories] = useState({});
 
-            const fileInputRef = useRef(null);
+            // NEW STATE/REFS FOR HOMEBREW BACKUP
+            const [showHomebrewImportModal, setShowHomebrewImportModal] = useState(null); // stores file object or null
+            const encounterFileInputRef = useRef(null);
+            const homebrewFileInputRef = useRef(null); // Dedicated input for Homebrew backup
+
             const currentCombatant = combatants[combatState.turnIndex];
 
             // Effects
@@ -834,6 +871,7 @@
             // FIX: Simplified openStatBlock to just set the view variable
             const openStatBlock = (monster) => { setViewStatBlockMonster(monster); };
             
+            // --- ENCOUNTER EXPORT/IMPORT ---
             const handleExportData = () => {
                 const data = { timestamp: new Date().toISOString(), combatants, homebrew, combatState, battleLogs };
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -849,9 +887,8 @@
             };
 
             const handleImportClick = () => {
-                // Ensure we trigger the click on the input
-                if (fileInputRef.current) {
-                    fileInputRef.current.click();
+                if (encounterFileInputRef.current) {
+                    encounterFileInputRef.current.click();
                 }
             };
             
@@ -880,19 +917,84 @@
                             throw new Error("Invalid file format.");
                         }
 
-                        if (confirm("Overwrite current combat list?")) {
+                        if (confirm("Overwrite current encounter state (Combatants, Logs, State)?")) {
                             setCombatants(newCombatants);
-                            if (newHomebrew.length > 0) setHomebrew(newHomebrew);
+                            // Only overwrite homebrew if it was part of the encounter file
+                            if (newHomebrew.length > 0) setHomebrew(newHomebrew); 
                             if (newCombatState) setCombatState(newCombatState);
                             if (newLogs.length > 0) setBattleLogs(newLogs);
                             showNotification("Encounter loaded!", "success");
                         }
-                    } catch (err) { showNotification("Failed: " + err.message, "error"); }
-                    e.target.value = null;
+                    } catch (err) { showNotification("Failed to load encounter: " + err.message, "error"); }
+                    e.target.value = null; // Clear input
                 };
                 reader.readAsText(file);
             };
 
+            // --- HOMEBREW BACKUP/RESTORE ---
+            const handleExportHomebrew = () => {
+                const data = homebrew; // Only export homebrew data
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                const href = URL.createObjectURL(blob);
+                const baseName = exportFileName.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') || `homebrew_bank`;
+                const fileName = `${baseName}_HB-Backup.json`; // Specific filename requested
+                const link = document.createElement('a');
+                link.href = href;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showNotification(`Homebrew Bank saved as ${fileName}`, "success");
+            };
+
+            const handleHomebrewImportClick = () => {
+                if (homebrewFileInputRef.current) {
+                    homebrewFileInputRef.current.click();
+                }
+            };
+
+            const handleHomebrewFileChange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const importedData = JSON.parse(event.target.result);
+                        if (!Array.isArray(importedData)) throw new Error("File content is not a list of monsters.");
+                        
+                        // Store the parsed data and file info to show the modal
+                        setShowHomebrewImportModal({ data: importedData, name: file.name });
+                    } catch (err) {
+                        showNotification("Failed to parse Homebrew file: " + err.message, "error");
+                    }
+                    e.target.value = null; // Clear input
+                };
+                reader.readAsText(file);
+            };
+
+            const handleHomebrewConfirm = (strategy) => {
+                const { data: importedMonsters } = showHomebrewImportModal;
+                const uniqueImported = importedMonsters.filter(m => m.name && m.hp); // Basic validation
+
+                if (strategy === 'overwrite') {
+                    setHomebrew(uniqueImported);
+                    showNotification(`Overwrote Homebrew Bank with ${uniqueImported.length} entries.`, 'success');
+                } else if (strategy === 'merge') {
+                    // Create a map of existing monster names for easy lookup
+                    const existingNames = new Set(homebrew.map(m => m.name.toLowerCase()));
+                    
+                    // Filter out any imported monsters whose name already exists in the current bank
+                    const newMonsters = uniqueImported.filter(m => !existingNames.has(m.name.toLowerCase()));
+
+                    setHomebrew(prev => [...prev, ...newMonsters]);
+                    showNotification(`Merged: Added ${newMonsters.length} new entries to Homebrew Bank.`, 'success');
+                }
+                
+                setShowHomebrewImportModal(null);
+            };
+
+            // --- COMBAT STATE & GAME LOGIC ---
             const handleNextTurn = () => {
                 if (combatants.length === 0) return;
                 let nextIndex = combatState.turnIndex;
@@ -1103,10 +1205,31 @@
             const saveHomebrewMonster = (e) => {
                 e.preventDefault();
                 if (!homebrewForm.name || !homebrewForm.hp) { showNotification("Name/HP required", "error"); return; }
-                setHomebrew(prev => [...prev, { id: generateId(), name: homebrewForm.name, hp: parseInt(homebrewForm.hp), ac: parseInt(homebrewForm.ac)||10, initMod: parseInt(homebrewForm.initMod)||0, ...monsterDetails }]);
+
+                // Check for existing monster with the same name (case-insensitive)
+                const existingIndex = homebrew.findIndex(h => h.name.toLowerCase() === homebrewForm.name.toLowerCase());
+                
+                const newMonster = { 
+                    id: generateId(), // New ID every time, even on update, just in case
+                    name: homebrewForm.name, 
+                    hp: parseInt(homebrewForm.hp), 
+                    ac: parseInt(homebrewForm.ac)||10, 
+                    initMod: parseInt(homebrewForm.initMod)||0, 
+                    ...monsterDetails 
+                };
+
+                if (existingIndex !== -1) {
+                    // Update existing entry
+                    setHomebrew(prev => prev.map((h, index) => index === existingIndex ? { ...h, ...newMonster } : h));
+                    showNotification(`Updated existing monster: ${homebrewForm.name}`, "info");
+                } else {
+                    // Add new entry
+                    setHomebrew(prev => [...prev, newMonster]);
+                    showNotification("Saved to Bank", "success");
+                }
+
                 setHomebrewForm({ name: '', hp: '', ac: '', initMod: '' });
                 setMonsterDetails(INITIAL_MONSTER_DETAILS); 
-                showNotification("Saved to Bank", "success");
             };
 
             // NEW: Toggle category expansion
@@ -1125,6 +1248,8 @@
                     {showFilenameModal && <FilenameModal fileName={exportFileName} setFileName={setExportFileName} onClose={() => setShowFilenameModal(false)} />}
                     {showDiceModal && <DiceRollerModal onClose={() => setShowDiceModal(false)} addToLog={addToLog} />}
                     {showLogModal && <BattleLogModal logs={battleLogs} onClose={() => setShowLogModal(false)} onClear={() => setBattleLogs([])} />}
+                    {showHomebrewImportModal && <HomebrewImportModal file={showHomebrewImportModal} onConfirm={handleHomebrewConfirm} onClose={() => setShowHomebrewImportModal(null)} />}
+
                     
                     <FloatingNextTurnButton handleNextTurn={handleNextTurn} combatants={combatants} turnIndex={combatState.turnIndex} viewMode={viewMode} />
                     <FloatingSettingsButton apiKey={userApiKey} setModalVisible={setShowSettingsModal} />
@@ -1134,12 +1259,12 @@
                             <div className="max-w-6xl mx-auto">
                                 <div className="flex justify-between items-center mb-3">
                                     <div className="flex items-center gap-3"><Shield className="text-red-800 w-6 h-6 sm:w-8 sm:h-8" /><h1 className="text-lg sm:text-2xl font-bold tracking-tight text-white">The Akashic Tome</h1></div>
-                                    <div className="flex items-center gap-3"><div className="flex items-center bg-slate-900 rounded px-3 py-1 border border-slate-700"><span className="text-xs font-bold text-slate-500 mr-2">ROUND</span><span className="text-white font-mono text-lg">{combatState.round}</span></div><button onClick={() => setShowHelpModal(true)} className="text-slate-400 hover:text-indigo-400"><CircleHelp size={20}/></button></div>
+                                    <div className="flex items-center bg-slate-900 rounded px-3 py-1 border border-slate-700"><span className="text-xs font-bold text-slate-500 mr-2">ROUND</span><span className="text-white font-mono text-lg">{combatState.round}</span></div>
                                 </div>
                                 <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
                                     <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700 w-full sm:w-auto overflow-x-auto no-scrollbar">
                                         {['setup', 'battlefield', 'homebrew', 'screen'].map(mode => (
-                                            <button key={mode} onClick={() => setViewMode(mode)} className={`flex-1 px-3 py-1.5 text-xs sm:text-sm font-bold rounded capitalize transition-colors whitespace-nowrap ${viewMode === mode ? (mode==='battlefield'?'bg-red-700 text-white':'bg-indigo-600 text-white') : 'text-slate-400 hover:text-white'}`}>
+                                            <button key={mode} onClick={() => setViewMode(mode)} className={`flex-1 px-3 py-1.5 text-xs sm:text-sm font-bold rounded capitalize transition-colors whitespace-nowrap ${viewMode === mode ? (mode==='battlefield'?'bg-red-700 text-white':(mode==='homebrew'?'bg-amber-700 text-white':'bg-indigo-600 text-white')) : 'text-slate-400 hover:text-white'}`}>
                                                 {mode} {mode==='battlefield' && combatants.length>0 && <span className="ml-1 bg-black/30 px-1.5 rounded-full text-[10px]">{combatants.length}</span>}
                                             </button>
                                         ))}
@@ -1153,17 +1278,18 @@
                                             <div className="w-px bg-slate-700 mx-1"></div>
                                             <button onClick={() => setShowFilenameModal(true)} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="Set File Name"><GripVertical size={18}/></button>
                                             
-                                            <button onClick={handleImportClick} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="Import JSON"><Upload size={18}/></button> 
+                                            <button onClick={handleImportClick} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="Import Encounter (Includes Homebrew if present)"><Upload size={18}/></button> 
                                             <input 
                                                 type="file" 
-                                                ref={fileInputRef} 
+                                                ref={encounterFileInputRef} 
                                                 onChange={handleFileChange} 
                                                 className="hidden" 
                                                 accept=".json" 
                                             />
 
-                                            <button onClick={handleExportData} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="Export JSON"><Download size={18}/></button>
+                                            <button onClick={handleExportData} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="Export Full Encounter Data"><Download size={18}/></button>
                                         </div>
+                                        <button onClick={() => setShowHelpModal(true)} className="p-2 bg-slate-900 hover:bg-slate-700 rounded text-slate-400 hover:text-white border border-slate-700" title="Help/Guide"><CircleHelp size={20}/></button>
                                         <button onClick={handleClearAll} className={`px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider border transition-colors ${clearConfirm ? 'bg-red-600 text-white border-red-500' : 'bg-slate-900 text-red-400 border-slate-700 hover:bg-slate-800'}`}>{clearConfirm ? "Sure?" : "Clear"}</button>
                                     </div>
                                 </div>
@@ -1244,15 +1370,33 @@
                                     </div>
 
                                     <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                                        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Book className="text-amber-500"/> Homebrew Bank</h2>
-                                        <form onSubmit={saveHomebrewMonster} className="mb-6 grid grid-cols-2 md:grid-cols-12 gap-3 items-end">
+                                        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Database className="text-amber-500"/> Homebrew Bank</h2>
+                                        
+                                        {/* NEW: Backup/Restore Buttons */}
+                                        <div className="flex gap-2 mb-6">
+                                            <button onClick={handleHomebrewImportClick} className="flex-1 flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-700 text-slate-400 hover:text-white font-bold py-2 px-3 rounded text-sm border border-slate-700">
+                                                <Upload size={18}/> Restore
+                                            </button>
+                                            <input 
+                                                type="file" 
+                                                ref={homebrewFileInputRef} 
+                                                onChange={handleHomebrewFileChange} 
+                                                className="hidden" 
+                                                accept=".json" 
+                                            />
+                                            <button onClick={handleExportHomebrew} className="flex-1 flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-700 text-slate-400 hover:text-white font-bold py-2 px-3 rounded text-sm border border-slate-700">
+                                                <Download size={18}/> Backup
+                                            </button>
+                                        </div>
+
+                                        <form onSubmit={saveHomebrewMonster} className="mb-6 grid grid-cols-2 md:grid-cols-12 gap-3 items-end p-3 bg-slate-700/50 rounded-lg border border-slate-600">
                                             <div className="col-span-2 md:col-span-4"><label className="text-xs text-slate-400 block mb-1">Name</label><input className={INPUT_CLASS} value={homebrewForm.name} onChange={e=>setHomebrewForm({...homebrewForm,name:e.target.value})} onBlur={handleInputBlur} /></div>
                                             <div className="col-span-1 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">HP</label><input type="number" className={INPUT_CLASS} value={homebrewForm.hp} onChange={e=>setHomebrewForm({...homebrewForm,hp:e.target.value})} onBlur={handleInputBlur} /></div>
                                             <div className="col-span-1 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">AC</label><input type="number" className={INPUT_CLASS} value={homebrewForm.ac} onChange={e=>setHomebrewForm({...homebrewForm,ac:e.target.value})} onBlur={handleInputBlur} /></div>
                                             <div className="col-span-1 md:col-span-3"><label className="text-xs text-slate-400 block mb-1">Init Mod</label><input type="number" className={INPUT_CLASS} value={homebrewForm.initMod} onChange={e=>setHomebrewForm({...homebrewForm,initMod:e.target.value})} onBlur={handleInputBlur} /></div>
                                             <div className="col-span-1 md:col-span-1 flex gap-1">
-                                                <button type="button" onClick={clearHomebrewForm} className="bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white p-1.5 rounded flex justify-center items-center transition-colors" title="Clear Form"><RotateCcw size={18}/></button>
-                                                <button className="flex-1 bg-amber-700 hover:bg-amber-600 text-white py-1.5 rounded flex justify-center"><Save size={18}/></button>
+                                                <button type="button" onClick={clearHomebrewForm} className="bg-slate-800 hover:bg-slate-600 text-slate-400 hover:text-white p-1.5 rounded flex justify-center items-center transition-colors" title="Clear Form"><RotateCcw size={18}/></button>
+                                                <button className="flex-1 bg-amber-700 hover:bg-amber-600 text-white py-1.5 rounded flex justify-center" title="Save Monster or Update Existing"><Save size={18}/></button>
                                             </div>
                                         </form>
                                         <div className="space-y-2">
@@ -1398,7 +1542,7 @@
 
                                     <div>
                                         <h3 className="text-white font-bold mb-1 flex items-center gap-2"><FlaskConical size={14}/> Homebrew Lab</h3>
-                                        <p>Describe a concept and let AI brew a full monster stat block for you. Save it to your local bank for future encounters.</p>
+                                        <p>Describe a concept and let AI brew a full monster stat block for you. Save it to your local bank for future encounters. Use the dedicated **Backup/Restore** buttons to save your bank locally.</p>
                                     </div>
 
                                     <div>
@@ -1411,7 +1555,7 @@
                                         <ul className="list-disc list-inside space-y-1 ml-1 text-slate-400">
                                             <li><strong>Dice Roller:</strong> Quick rolls with modifiers and history.</li>
                                             <li><strong>Battle Log:</strong> A chronicle of turns, damage, and events.</li>
-                                            <li><strong>Import/Export:</strong> Save your encounter state to a JSON file.</li>
+                                            <li><strong>Import/Export:</strong> Save your encounter state (combatants, logs, state) to a JSON file.</li>
                                         </ul>
                                     </div>
 
