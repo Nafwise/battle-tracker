@@ -161,10 +161,27 @@
         ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
         
-        /* Floating Buttons */
-        .floating-button, .floating-turn-button {
+        /* Floating Buttons & Mobile Fix */
+        .floating-button {
             z-index: 90;
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            /* Fixed position for the settings/API key button (top right) */
+            position: fixed;
+            top: 20px;
+            right: 20px;
+        }
+
+        .floating-turn-button {
+            z-index: 90;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            /* Fixed position for the Next Turn button (bottom center) */
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            /* Ensure it is visible on mobile over the scrollable area */
+            padding-top: 1rem;
+            padding-bottom: 1rem;
         }
         
         /* Animation Utility */
@@ -606,6 +623,7 @@
                                             d{d}
                                         </button>
                                     ))}
+                                }
                                 </div>
                             </div>
 
@@ -752,7 +770,9 @@
         
         const FloatingNextTurnButton = ({ handleNextTurn, combatants, turnIndex, viewMode }) => {
             if (viewMode !== 'battlefield' || combatants.length === 0) return null;
-            return <button onClick={handleNextTurn} className="floating-turn-button px-4 py-2 bg-green-600 text-white rounded-full font-bold shadow-lg active:scale-95 flex items-center gap-2">Next Turn <ArrowRight size={16}/></button>;
+            
+            // Adjusting button classes for mobile responsiveness
+            return <button onClick={handleNextTurn} className="floating-turn-button px-6 py-3 sm:px-4 sm:py-2 bg-green-600 text-white rounded-full font-bold shadow-lg active:scale-95 flex items-center gap-2 text-base sm:text-sm">Next Turn <ArrowRight size={16}/></button>;
         };
 
         const HomebrewImportModal = ({ file, onConfirm, onClose }) => {
