@@ -259,7 +259,7 @@
         const Users = (props) => <Icon {...props}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></Icon>;
         const Download = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></Icon>;
         const Upload = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></Icon>;
-        const Settings = (props) => <Icon {...props}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l-.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></Icon>;
+        const Settings = (props) => <Icon {...props}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></Icon>;
         const Key = (props) => <Icon {...props}><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" /></Icon>;
         const CircleHelp = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></Icon>;
         const ArrowRight = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></Icon>;
@@ -331,6 +331,35 @@
             "Aberration", "Beast", "Celestial", "Construct", "Dragon", "Elemental", 
             "Fey", "Fiend", "Giant", "Humanoid", "Monstrosity", "Ooze", "Plant", "Undead", "Unknown"
         ];
+        
+        // UTILITY FUNCTION to infer type from stat block (Deep Scan Import feature)
+        const inferTypeFromStatBlock = (summary) => {
+            if (!summary) return 'Unknown';
+            const lowerSummary = summary.toLowerCase();
+            
+            // Look for the standard format, e.g., "Medium humanoid (elf), chaotic good"
+            const match = lowerSummary.match(/\((.*?)\)/);
+            let candidateType = 'Unknown';
+            
+            if (match && match[1]) {
+                // Check within the first parenthesis for a known type
+                const potentialTypes = match[1].split(',').map(s => s.trim());
+                for (const potential of potentialTypes) {
+                    const typeMatch = MONSTER_TYPES.find(type => potential.startsWith(type.toLowerCase()));
+                    if (typeMatch) return typeMatch;
+                }
+            }
+            
+            // Fallback: Check the entire summary for an exact type match
+            for (const type of MONSTER_TYPES) {
+                if (type !== 'Unknown' && lowerSummary.includes(type.toLowerCase())) {
+                    candidateType = type; // Use the first match as best effort
+                }
+            }
+            
+            return candidateType;
+        };
+
 
         // DM SCREEN CONTENT - COMPREHENSIVE
         const RULES_DATA = [
@@ -490,11 +519,20 @@
         ];
 
         // --- VERSION CONTROL ---
-        const CURRENT_VERSION = "1.1.50";
+        const CURRENT_VERSION = "1.1.75";
         const CHANGELOG_DATA = [
             {
-                version: "1.1.50",
+                version: "1.1.75",
                 date: "Current",
+                changes: [
+                    "General Bug Fixes & Stability Improvements.",
+                    "Enhanced Homebrew Import: Now automatically detects monster types from descriptions.",
+                    "Removed redundant code and optimized performance."
+                ]
+            },
+            {
+                version: "1.1.50",
+                date: "Previous",
                 changes: [
                     "Removed persistent auto-sort button from header.",
                     "Deep Scan Import: Smartly detects monster types from the stat block text if missing.",
@@ -1202,7 +1240,16 @@
 
             const handleHomebrewConfirm = (strategy) => {
                 const { data: importedMonsters } = showHomebrewImportModal;
-                const uniqueImported = importedMonsters.filter(m => m.name && m.hp);
+                
+                // DEEP SCAN FIX: Apply type inference to imported data
+                const processedImports = importedMonsters.map(m => {
+                    if ((!m.type || m.type === 'Unknown') && m.statBlockSummary) {
+                        return { ...m, type: inferTypeFromStatBlock(m.statBlockSummary) };
+                    }
+                    return m;
+                });
+
+                const uniqueImported = processedImports.filter(m => m.name && m.hp);
 
                 if (strategy === 'overwrite') {
                     setHomebrew(uniqueImported);
@@ -1355,7 +1402,13 @@
                 if (hb) {
                     const mod = parseInt(hb.initMod) || 0;
                     setFormData(prev => ({ ...prev, hp: hb.hp, ac: hb.ac, initMod: mod, initiative: '' }));
-                    setMonsterDetails({ resistances: hb.resistances||'', vulnerabilities: hb.vulnerabilities||'', actions: hb.actions||'', statBlockSummary: hb.statBlockSummary||'Not saved.', type: hb.type || 'Unknown' });
+                    setMonsterDetails({ 
+                        resistances: hb.resistances||'', 
+                        vulnerabilities: hb.vulnerabilities||'', 
+                        actions: hb.actions||'', 
+                        statBlockSummary: hb.statBlockSummary||'Not saved.', 
+                        type: hb.type || 'Unknown' 
+                    });
                     setLastSource('homebrew');
                     showNotification("Stats loaded from Homebrew.", 'info');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1369,8 +1422,20 @@
                 if (txt) {
                     try {
                         const json = JSON.parse(txt.replace(/```json|```/g, '').trim());
+                        let monsterType = json.type || 'Unknown';
+                        // Deep Scan: Check summary if type is missing or generic
+                        if (monsterType === 'Unknown' && json.statBlockSummary) {
+                            monsterType = inferTypeFromStatBlock(json.statBlockSummary);
+                        }
+                        
                         setFormData(prev => ({ ...prev, hp: json.hp, ac: json.ac, initMod: parseInt(json.initMod)||0, initiative: '' }));
-                        setMonsterDetails({ resistances: json.resistances||'', vulnerabilities: json.vulnerabilities||'', actions: json.actions||'', statBlockSummary: json.statBlockSummary||'', type: json.type || 'Unknown' });
+                        setMonsterDetails({ 
+                            resistances: json.resistances||'', 
+                            vulnerabilities: json.vulnerabilities||'', 
+                            actions: json.actions||'', 
+                            statBlockSummary: json.statBlockSummary||'', 
+                            type: monsterType 
+                        });
                         setLastSource('ai');
                         showNotification("Stats generated by AI.", 'info');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1388,8 +1453,14 @@
                 if (txt) {
                      try {
                         const json = JSON.parse(txt.replace(/```json|```/g, '').trim());
-                        setHomebrewForm({ name: json.name || "Unknown Beast", hp: json.hp || 10, ac: json.ac || 10, initMod: parseInt(json.initMod) || 0, type: json.type || 'Unknown' });
-                        setMonsterDetails({ resistances: json.resistances || '', vulnerabilities: json.vulnerabilities || '', actions: json.actions || '', statBlockSummary: json.statBlockSummary || '', type: json.type || 'Unknown' });
+                        let monsterType = json.type || 'Unknown';
+                        // Deep Scan: Check summary if type is missing or generic
+                        if (monsterType === 'Unknown' && json.statBlockSummary) {
+                            monsterType = inferTypeFromStatBlock(json.statBlockSummary);
+                        }
+
+                        setHomebrewForm({ name: json.name || "Unknown Beast", hp: json.hp || 10, ac: json.ac || 10, initMod: parseInt(json.initMod) || 0, type: monsterType });
+                        setMonsterDetails({ resistances: json.resistances || '', vulnerabilities: json.vulnerabilities || '', actions: json.actions || '', statBlockSummary: json.statBlockSummary || '', type: monsterType });
                         showNotification("Monster brewed! Review and Save below.", "success");
                      } catch (e) { console.error(e); showNotification("Failed to brew monster. Try again.", "error"); }
                 }
@@ -1491,7 +1562,7 @@
                     {viewStatBlockMonster && <MonsterStatBlockModal combatant={viewStatBlockMonster} onClose={() => setViewStatBlockMonster(null)} />}
                     {showFilenameModal && <FilenameModal fileName={exportFileName} setFileName={setExportFileName} onClose={() => setShowFilenameModal(false)} />}
                     {showDiceModal && <DiceRollerModal onClose={() => setShowDiceModal(false)} addToLog={addToLog} />}
-                    {showLogModal && <BattleLogModal logs={battleLogs} onClose={() => setShowLogModal(false)} onClear={() => setBattleLogs([])} />}
+                    {showLogModal && <BattleLogModal logs={battleLogs} onClose={() => setBattleLogs(false)} onClear={() => setBattleLogs([])} />}
                     {showHomebrewImportModal && <HomebrewImportModal file={showHomebrewImportModal} onConfirm={handleHomebrewConfirm} onClose={() => setShowHomebrewImportModal(null)} />}
                     {showChangelogModal && <ChangelogModal onClose={() => setShowChangelogModal(false)} />}
 
