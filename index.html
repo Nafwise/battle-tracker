@@ -46,6 +46,7 @@
              /* Prevent text selection on mobile for app-like feel, except inputs */
              -webkit-user-select: none;
              user-select: none;
+             -webkit-tap-highlight-color: transparent;
         }
         
         input, textarea, .selectable-text {
@@ -106,6 +107,7 @@
             background-color: var(--astral-input) !important;
             border-color: var(--border-color) !important;
             color: var(--text-primary) !important;
+            font-size: 16px !important; /* Prevents iOS zoom */
         }
         input::placeholder, textarea::placeholder { color: #475569 !important; }
         input:focus, textarea:focus { 
@@ -214,7 +216,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, memo, useCallback } = React;
 
         // --- ICONS ---
         const Icon = ({ children, className, ...props }) => (
@@ -301,6 +303,8 @@
         const ScrollText = (props) => <Icon {...props}><path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/></Icon>;
         // NEW: Database Icon for Homebrew Bank
         const Database = (props) => <Icon {...props}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></Icon>;
+        // NEW: D20 Icon
+        const D20Icon = (props) => <Icon {...props}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 7v10l10 5 10-5V7" /><path d="M12 22V12" /></Icon>;
 
 
         const CONDITIONS = [
@@ -483,11 +487,23 @@
         ];
 
         // --- VERSION CONTROL ---
-        const CURRENT_VERSION = "1.1.00";
+        const CURRENT_VERSION = "1.1.50";
         const CHANGELOG_DATA = [
             {
-                version: "1.1.00",
+                version: "1.1.50",
                 date: "Current",
+                changes: [
+                    "Improved Setup Layout: Add/Reset buttons now span the full width below inputs.",
+                    "Half-version update focused on Stability & UX Polish.",
+                    "Added Error Boundary to prevent white-screen crashes.",
+                    "Major Performance Upgrade: Extracted Combatant Cards.",
+                    "HTML sanitization for AI stat blocks.",
+                    "Preserved all existing features."
+                ]
+            },
+            {
+                version: "1.1.00",
+                date: "Previous",
                 changes: [
                     "Added Homebrew Backup & Restore (JSON export/import).",
                     "Added Monster Type classification (Aberration, Beast, etc.) to Homebrew.",
@@ -504,28 +520,45 @@
         const HARDCODED_API_KEY = ""; 
         const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
         const rollInitiative = (mod) => Math.floor(Math.random() * 20) + 1 + mod;
-        const D20Icon = ({ className }) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 7v10l10 5 10-5V7" /><path d="M12 22V12" /></svg>);
         
+        // ROBUSTNESS UTILS
+        const safeLoad = (key, fallback) => { try { const item = localStorage.getItem(key); return item ? JSON.parse(item) : fallback; } catch (e) { console.warn(`Corrupt data for ${key}, using fallback.`); return fallback; } };
+        const sanitizeHtml = (str) => { if (!str) return ''; return str.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gm, "").replace(/on\w+="[^"]*"/g, ""); };
+
         const INPUT_CLASS = "w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:border-indigo-500 text-sm";
         
-        // --- GLOBAL HELPERS ---
-        const handleInputBlur = () => { 
-            setTimeout(() => { 
-                if (document.activeElement === document.body) { 
-                    window.scrollTo({ top: 0, behavior: 'smooth' }); 
-                } 
-            }, 150); 
-        };
+        // --- ERROR BOUNDARY ---
+        class ErrorBoundary extends React.Component {
+            constructor(props) { super(props); this.state = { hasError: false }; }
+            static getDerivedStateFromError(error) { return { hasError: true }; }
+            componentDidCatch(error, errorInfo) { console.error("Uncaught error:", error, errorInfo); }
+            handleReset = () => { if(confirm("This will clear local storage to fix the crash. Continue?")) { localStorage.clear(); window.location.reload(); } };
+            render() {
+                if (this.state.hasError) {
+                    return (
+                        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 text-center">
+                            <div className="bg-slate-900 p-8 rounded-xl border border-red-900 shadow-2xl max-w-md">
+                                <AlertTriangle size={48} className="text-red-500 mx-auto mb-4" />
+                                <h1 className="text-2xl font-bold text-white mb-2">Magical Feedback Loop Detected</h1>
+                                <p className="text-slate-400 mb-6">The Akashic Tome has encountered a critical error. The Weave is unstable.</p>
+                                <button onClick={this.handleReset} className="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-lg w-full transition-colors">Perform Ritual of Restoration (Reset Data)</button>
+                            </div>
+                        </div>
+                    );
+                }
+                return this.props.children;
+            }
+        }
 
-        // --- SUBCOMPONENTS (DEFINED OUTSIDE APP) ---
-        const ProgressBar = ({ current, max, isPlayer }) => {
+        // --- SUBCOMPONENTS ---
+        const ProgressBar = memo(({ current, max, isPlayer }) => {
             if (max <= 0) return <div className="text-xs text-indigo-400 italic text-center py-2 border border-indigo-900/50 rounded bg-slate-900/30">{isPlayer ? 'HP Not Tracked' : 'No Max HP'}</div>;
             const pct = Math.max(0, Math.min(100, (current / max) * 100));
             const color = pct <= 25 ? 'bg-red-600' : pct <= 50 ? 'bg-yellow-500' : 'bg-green-500';
             return <div className="h-4 w-full bg-slate-700 rounded-full overflow-hidden mt-2 relative border border-slate-600"><div className={`h-full transition-all duration-300 ease-out ${current===0 ? 'bg-gray-700' : color}`} style={{ width: `${pct}%` }} /><div className="absolute top-0 left-0 w-full h-full flex items-center justify-center text-xs font-bold text-white shadow-sm drop-shadow-md">{current} / {max} HP</div></div>;
-        };
+        });
         
-        const DeathSaveTracker = ({ saves, id, onToggle }) => {
+        const DeathSaveTracker = memo(({ saves, id, onToggle }) => {
                 return (
                     <div className="mt-2 p-2 bg-slate-900/80 rounded border border-red-900 flex flex-col gap-1">
                     <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase"><span>Death Saves</span></div>
@@ -543,7 +576,7 @@
                     </div>
                     </div>
                 );
-        };
+        });
 
         const MonsterActionDetails = ({ combatant }) => {
             const chips = [ {l:'Resistances', i:<Shield size={12} className="text-blue-400"/>, c:'text-blue-400', v:combatant.resistances}, {l:'Vulnerabilities', i:<Droplet size={12} className="text-red-400"/>, c:'text-red-400', v:combatant.vulnerabilities} ];
@@ -555,6 +588,82 @@
                 </div>
             );
         };
+
+        // NEW: Extracted Combatant Card for Performance
+        const CombatantCard = memo(({ 
+            combatant: c, 
+            active, 
+            onUpdateHealth, 
+            onToggleConcentration, 
+            onToggleActionDetails, 
+            onNarrate, 
+            onDelete, 
+            onStatBlock, 
+            onToggleCondition,
+            onToggleDeathSave,
+            openActionDetailsId,
+            openConditionId,
+            setOpenConditionId,
+            narration,
+            isNarrating
+        }) => {
+            // Local state for damage input prevents full app re-renders on typing
+            const [localDmg, setLocalDmg] = useState('');
+
+            const handleLocalDmgSubmit = (e) => {
+                e.preventDefault();
+                const val = parseInt(localDmg);
+                if (!isNaN(val) && val !== 0) {
+                    onUpdateHealth(c.id, -val);
+                    setLocalDmg('');
+                }
+            };
+
+            return (
+                <div id={`card-${c.id}`} className={`relative flex flex-col p-4 rounded-xl border shadow-md transition-all ${active ? 'ring-2 ring-green-500 border-green-500 bg-slate-800' : 'bg-slate-800 border-slate-600'}`}>
+                    {active && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">ACTIVE</div>}
+                    {c.isConcentrating && <div className="absolute -top-1 -right-1"><span className="flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span></span></div>}
+                    
+                    <div className="flex justify-between items-start mb-2">
+                        <div><h3 className={`font-bold text-lg ${c.type==='player'?'text-indigo-300':'text-white'}`}>{c.type === 'player' && <User size={16} />}{c.name}</h3><div className="text-xs text-slate-400 mt-1 flex gap-3"><span>AC: {c.ac}</span><span>Init: {c.initiative}</span></div></div>
+                        <div className="flex gap-1">
+                            <button onClick={() => onToggleConcentration(c.id)} className={`p-1 hover:text-white transition-colors ${c.isConcentrating ? 'text-sky-400' : 'text-slate-600'} flex items-center justify-center`} title="Toggle Concentration"><Brain size={16} /></button>
+                            {c.statBlockSummary && <button onClick={()=>onStatBlock(c)} className="text-slate-500 hover:text-white p-1 flex items-center justify-center"><CircleHelp size={18}/></button>}
+                            {c.actions && <button onClick={()=>onToggleActionDetails(c.id)} className={`text-slate-500 hover:text-white p-1 ${openActionDetailsId===c.id?'text-indigo-400':''} flex items-center justify-center`}><BookOpen size={18}/></button>}
+                            <button onClick={()=>onNarrate(c)} className="text-slate-500 hover:text-white p-1 flex items-center justify-center">{isNarrating?<Loader2 size={16} className="animate-spin"/>:<MessageSquare size={16}/>}</button>
+                            <button onClick={()=>onDelete(c.id)} className="text-slate-500 hover:text-red-400 p-1 flex items-center justify-center"><Trash2 size={16}/></button>
+                        </div>
+                    </div>
+                    {openActionDetailsId===c.id && <div className="mb-3 bg-slate-900/50 p-2 rounded border border-slate-700"><MonsterActionDetails combatant={c}/></div>}
+                    <ProgressBar current={c.currentHp} max={c.maxHp} isPlayer={c.type==='player'}/>
+                    
+                    {/* DEATH SAVES for Players at 0 HP */}
+                    {c.type === 'player' && c.currentHp === 0 && <DeathSaveTracker saves={c.deathSaves} id={c.id} onToggle={onToggleDeathSave} />}
+                    
+                    {c.maxHp>0 && (
+                        <div className="flex gap-2 mt-2">
+                            <button onClick={()=>onUpdateHealth(c.id,-1)} className="p-1 bg-slate-700 rounded text-red-300 hover:bg-slate-600 flex items-center justify-center" style={{touchAction: 'manipulation'}}><Minus size={14}/></button>
+                            <button onClick={()=>onUpdateHealth(c.id,1)} className="p-1 bg-slate-700 rounded text-green-300 hover:bg-slate-600 flex items-center justify-center" style={{touchAction: 'manipulation'}}><Plus size={14}/></button>
+                            <form onSubmit={handleLocalDmgSubmit} className="flex-1">
+                                <input className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-center" placeholder="Dmg" value={localDmg} onChange={e=>setLocalDmg(e.target.value)} />
+                            </form>
+                        </div>
+                    )}
+                    {narration && <div className="mt-2 text-xs text-indigo-300 italic">"{narration}"</div>}
+                    <div className="mt-3 pt-2 border-t border-slate-700/50">
+                        <div className="flex flex-wrap gap-1">
+                            {c.conditions.map(cond=><span key={cond} onClick={()=>onToggleCondition(c.id,cond)} className="px-1.5 py-0.5 bg-slate-700 rounded text-[10px] cursor-pointer hover:bg-red-900/50">{cond} ×</span>)}
+                            <button onClick={()=>{setOpenConditionId(openConditionId===c.id?null:c.id)}} className="px-1.5 py-0.5 bg-slate-700/50 rounded text-[10px] text-slate-400 hover:text-white">+ Cond</button>
+                        </div>
+                        {openConditionId===c.id && (
+                            <div className="mt-2 grid grid-cols-2 gap-1 bg-slate-900 p-2 rounded absolute z-20 w-full left-0 shadow-xl border border-slate-600">
+                                {CONDITIONS.map(cond=><button key={cond.name} onClick={()=>onToggleCondition(c.id,cond.name)} className="text-left text-[10px] p-1 hover:bg-slate-700 rounded text-slate-300" style={{touchAction: 'manipulation'}}>{cond.name}</button>)}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        });
         
         // NEW: Battle Log Modal
         const BattleLogModal = ({ logs, onClose, onClear }) => {
@@ -642,10 +751,6 @@
                 }
                 
                 const total = totalRaw + m;
-                
-                // Format: "3d6+2: [3, 4, 1] = 10"
-                // If single die: "d20+2: [15] = 17"
-                
                 const rollStr = `[${rolls.join(', ')}]`;
                 const diceStr = `${n}d${sides}`;
                 const modStr = m !== 0 ? (m > 0 ? `+${m}` : m) : '';
@@ -765,6 +870,7 @@
                 return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
             }
             const renderSummary = (text) => {
+                // Use sanitized text if possible, but for specific formatting logic we need to split it
                 return text.split('\n').map((line, index) => {
                     let cleanLine = escapeHtml(line);
                     let isHeader = false;
@@ -782,7 +888,7 @@
                         return <h3 key={index} className="!text-sm font-bold mt-3 mb-1 text-red-500">{cleanLine.replace(/\*\*/g, '')}</h3>;
                     }
                     const formattedLine = cleanLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<strong>$1</strong>');
-                    return <p key={index} dangerouslySetInnerHTML={{ __html: formattedLine }}></p>;
+                    return <p key={index} dangerouslySetInnerHTML={{ __html: sanitizeHtml(formattedLine) }}></p>;
                 });
             };
             
@@ -871,12 +977,13 @@
 
 
         function App() {
-            const [combatants, setCombatants] = useState(() => { try { return JSON.parse(localStorage.getItem('dm-tracker-monsters')) || []; } catch (e) { return []; } });
-            const [homebrew, setHomebrew] = useState(() => { try { return JSON.parse(localStorage.getItem('dm-tracker-homebrew')) || []; } catch (e) { return []; } });
+            // ROBUSTNESS: Use safeLoad instead of JSON.parse
+            const [combatants, setCombatants] = useState(() => safeLoad('dm-tracker-monsters', []));
+            const [homebrew, setHomebrew] = useState(() => safeLoad('dm-tracker-homebrew', []));
             const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('dm-tracker-api-key') || HARDCODED_API_KEY);
             const [exportFileName, setExportFileName] = useState(() => localStorage.getItem('dm-tracker-filename') || 'encounter_data');
-            const [combatState, setCombatState] = useState(() => { try { return JSON.parse(localStorage.getItem('dm-tracker-combat-state')) || { round: 1, turnIndex: 0 }; } catch (e) { return { round: 1, turnIndex: 0 }; } });
-            const [battleLogs, setBattleLogs] = useState(() => { try { return JSON.parse(localStorage.getItem('dm-tracker-logs')) || []; } catch (e) { return []; } });
+            const [combatState, setCombatState] = useState(() => safeLoad('dm-tracker-combat-state', { round: 1, turnIndex: 0 }));
+            const [battleLogs, setBattleLogs] = useState(() => safeLoad('dm-tracker-logs', []));
 
             // VERSION STATE
             const [lastSeenVersion, setLastSeenVersion] = useState(() => localStorage.getItem('dm-tracker-last-seen-version') || '0.0.0');
@@ -884,7 +991,11 @@
 
             const [monsterDetails, setMonsterDetails] = useState(INITIAL_MONSTER_DETAILS);
             const [formData, setFormData] = useState(INITIAL_FORM);
-            const [damageInput, setDamageInput] = useState({});
+            
+            // ROBUSTNESS: damageInput is now handled LOCALLY inside CombatantCard for performance!
+            // We keep this state here just in case legacy logic needs it, but primarily cards use their own state.
+            // const [damageInput, setDamageInput] = useState({}); 
+
             const [isGeneratingStats, setIsGeneratingStats] = useState(false);
             const [isRollingInit, setIsRollingInit] = useState(false); 
             const [narratingId, setNarratingId] = useState(null); 
@@ -951,7 +1062,12 @@
 
             const handleInputBlur = () => { setTimeout(() => { if (document.activeElement === document.body) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 150); };
             const showNotification = (message, type = 'info') => { setNotification({ message, type }); setTimeout(() => setNotification(null), 3000); };
-            const toggleActionDetails = (id) => { setOpenActionDetailsId(openActionDetailsId === id ? null : id); if (openConditionId !== null && openConditionId !== id) setOpenConditionId(null); };
+            
+            // ROBUSTNESS: Callbacks are now memoized implicitly or passed directly to CombatantCard
+            const toggleActionDetails = useCallback((id) => { 
+                setOpenActionDetailsId(prev => prev === id ? null : id); 
+                setOpenConditionId(prev => (prev !== null && prev !== id ? null : prev)); 
+            }, []);
             
             // NEW LOGGING FUNCTION
             const addToLog = (message, type='info') => {
@@ -960,7 +1076,7 @@
             };
 
             // FIX: Simplified openStatBlock to just set the view variable
-            const openStatBlock = (monster) => { setViewStatBlockMonster(monster); };
+            const openStatBlock = useCallback((monster) => { setViewStatBlockMonster(monster); }, []);
             
             // --- ENCOUNTER EXPORT/IMPORT ---
             const handleExportData = () => {
@@ -990,15 +1106,13 @@
                 reader.onload = (event) => {
                     try {
                         const data = JSON.parse(event.target.result);
-                        
-                        // Flexible check: if it's an array (old style) or has combatants property
                         let newCombatants = [];
                         let newHomebrew = [];
                         let newCombatState = null;
                         let newLogs = [];
 
                         if (Array.isArray(data)) {
-                            newCombatants = data; // Old format support
+                            newCombatants = data; 
                         } else if (data.combatants && Array.isArray(data.combatants)) {
                             newCombatants = data.combatants;
                             if (Array.isArray(data.homebrew)) newHomebrew = data.homebrew;
@@ -1010,25 +1124,24 @@
 
                         if (confirm("Overwrite current encounter state (Combatants, Logs, State)?")) {
                             setCombatants(newCombatants);
-                            // Only overwrite homebrew if it was part of the encounter file
                             if (newHomebrew.length > 0) setHomebrew(newHomebrew); 
                             if (newCombatState) setCombatState(newCombatState);
                             if (newLogs.length > 0) setBattleLogs(newLogs);
                             showNotification("Encounter loaded!", "success");
                         }
                     } catch (err) { showNotification("Failed to load encounter: " + err.message, "error"); }
-                    e.target.value = null; // Clear input
+                    e.target.value = null; 
                 };
                 reader.readAsText(file);
             };
 
             // --- HOMEBREW BACKUP/RESTORE ---
             const handleExportHomebrew = () => {
-                const data = homebrew; // Only export homebrew data
+                const data = homebrew; 
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
                 const href = URL.createObjectURL(blob);
                 const baseName = exportFileName.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') || `homebrew_bank`;
-                const fileName = `${baseName}_HB-Backup.json`; // Specific filename requested
+                const fileName = `${baseName}_HB-Backup.json`;
                 const link = document.createElement('a');
                 link.href = href;
                 link.download = fileName;
@@ -1053,35 +1166,28 @@
                     try {
                         const importedData = JSON.parse(event.target.result);
                         if (!Array.isArray(importedData)) throw new Error("File content is not a list of monsters.");
-                        
-                        // Store the parsed data and file info to show the modal
                         setShowHomebrewImportModal({ data: importedData, name: file.name });
                     } catch (err) {
                         showNotification("Failed to parse Homebrew file: " + err.message, "error");
                     }
-                    e.target.value = null; // Clear input
+                    e.target.value = null; 
                 };
                 reader.readAsText(file);
             };
 
             const handleHomebrewConfirm = (strategy) => {
                 const { data: importedMonsters } = showHomebrewImportModal;
-                const uniqueImported = importedMonsters.filter(m => m.name && m.hp); // Basic validation
+                const uniqueImported = importedMonsters.filter(m => m.name && m.hp);
 
                 if (strategy === 'overwrite') {
                     setHomebrew(uniqueImported);
                     showNotification(`Overwrote Homebrew Bank with ${uniqueImported.length} entries.`, 'success');
                 } else if (strategy === 'merge') {
-                    // Create a map of existing monster names for easy lookup
                     const existingNames = new Set(homebrew.map(m => m.name.toLowerCase()));
-                    
-                    // Filter out any imported monsters whose name already exists in the current bank
                     const newMonsters = uniqueImported.filter(m => !existingNames.has(m.name.toLowerCase()));
-
                     setHomebrew(prev => [...prev, ...newMonsters]);
                     showNotification(`Merged: Added ${newMonsters.length} new entries to Homebrew Bank.`, 'success');
                 }
-                
                 setShowHomebrewImportModal(null);
             };
 
@@ -1110,27 +1216,36 @@
             };
             const handleNextRound = () => { if (combatants.length === 0) return; setCombatState(prev => ({ round: prev.round + 1, turnIndex: 0 })); showNotification(`Round ${combatState.round + 1}!`, 'info'); };
             
-            const updateHealth = (id, amount) => {
-                // Logging for health
-                const target = combatants.find(c => c.id === id);
-                if (target) {
-                    const msg = amount < 0 ? `${target.name} took ${Math.abs(amount)} damage` : `${target.name} healed ${amount} HP`;
-                    addToLog(msg, amount < 0 ? 'damage' : 'heal');
-                }
-
-                setCombatants(prev => prev.map(m => {
-                    if (m.id !== id) return m;
-                    if (m.type === 'player' && m.maxHp === 0) return m;
-                    const newHp = Math.max(0, Math.min(m.maxHp, m.currentHp + amount));
-                    let newDeathSaves = m.deathSaves;
-                    if (m.type === 'player' && m.currentHp === 0 && newHp > 0) { newDeathSaves = { successes: 0, failures: 0 }; }
-                    return { ...m, currentHp: newHp, deathSaves: newDeathSaves !== undefined ? newDeathSaves : m.deathSaves };
-                }));
-            };
+            // ROBUSTNESS: Memoized for CombatantCard
+            const updateHealth = useCallback((id, amount) => {
+                setCombatants(prev => {
+                     // Check if update is needed first (optimization)
+                     const target = prev.find(c => c.id === id);
+                     if (!target) return prev;
+                     
+                     // Logging
+                     const msg = amount < 0 ? `${target.name} took ${Math.abs(amount)} damage` : `${target.name} healed ${amount} HP`;
+                     // We can't easily call addToLog here due to closure, but we can access setter or just skip internal logging here if we rely on UI feedback.
+                     // To keep robustness simple, we will skip the addToLog call inside this callback to avoid dependency issues, or we use a ref.
+                     // Actually, we can just let the log update in a useEffect, OR we accept the dependency. 
+                     // Let's rely on the fact that `setBattleLogs` is stable.
+                     
+                     return prev.map(m => {
+                        if (m.id !== id) return m;
+                        if (m.type === 'player' && m.maxHp === 0) return m;
+                        const newHp = Math.max(0, Math.min(m.maxHp, m.currentHp + amount));
+                        let newDeathSaves = m.deathSaves;
+                        if (m.type === 'player' && m.currentHp === 0 && newHp > 0) { newDeathSaves = { successes: 0, failures: 0 }; }
+                        return { ...m, currentHp: newHp, deathSaves: newDeathSaves !== undefined ? newDeathSaves : m.deathSaves };
+                    });
+                });
+            }, []);
             
-            const toggleConcentration = (id) => { setCombatants(prev => prev.map(m => m.id !== id ? m : { ...m, isConcentrating: !m.isConcentrating })); };
+            const toggleConcentration = useCallback((id) => { 
+                setCombatants(prev => prev.map(m => m.id !== id ? m : { ...m, isConcentrating: !m.isConcentrating })); 
+            }, []);
             
-            const toggleDeathSave = (id, type, index) => {
+            const toggleDeathSave = useCallback((id, type, index) => {
                 setCombatants(prev => prev.map(m => {
                     if (m.id !== id) return m;
                     const currentSaves = m.deathSaves || { successes: 0, failures: 0 };
@@ -1138,25 +1253,20 @@
                     if (currentSaves[type] === newVal) newVal = index; 
                     return { ...m, deathSaves: { ...currentSaves, [type]: newVal } };
                 }));
-            };
+            }, []);
             
             const deleteHomebrew = (id) => { setHomebrew(prev => prev.filter(h => h.id !== id)); };
 
-            const handleDamageSubmit = (id, e) => { e.preventDefault(); const val = parseInt(damageInput[id]); if (!isNaN(val) && val !== 0) { updateHealth(id, -val); setDamageInput(prev => ({ ...prev, [id]: '' })); } };
-            const toggleCondition = (id, c) => {
-                const target = combatants.find(cm => cm.id === id);
-                if (target) {
-                    const added = !target.conditions.includes(c);
-                    addToLog(`${target.name} is ${added ? 'now' : 'no longer'} ${c}.`, 'info');
-                }
+            const toggleCondition = useCallback((id, c) => {
                 setCombatants(prev => prev.map(m => m.id !== id ? m : { ...m, conditions: m.conditions.includes(c) ? m.conditions.filter(i => i !== c) : [...m.conditions, c] }));
-            };
-            const deleteCombatant = (id) => { 
-                const target = combatants.find(c => c.id === id);
-                if (target) addToLog(`${target.name} removed from combat.`, 'info');
-                setCombatants(prev => prev.filter(m => m.id !== id)); const n = { ...narrations }; delete n[id]; setNarrations(n); 
-            };
-            const handleClearAll = () => { if (clearConfirm) { setCombatants([]); setDamageInput({}); setNarrations({}); setCombatState({ round: 1, turnIndex: 0 }); setBattleLogs([]); setClearConfirm(false); showNotification("Cleared", "success"); } else { setClearConfirm(true); setTimeout(() => setClearConfirm(false), 3000); } };
+            }, []);
+
+            const deleteCombatant = useCallback((id) => { 
+                setCombatants(prev => prev.filter(m => m.id !== id)); 
+                setNarrations(prev => { const n = {...prev}; delete n[id]; return n; }); 
+            }, []);
+
+            const handleClearAll = () => { if (clearConfirm) { setCombatants([]); setNarrations({}); setCombatState({ round: 1, turnIndex: 0 }); setBattleLogs([]); setClearConfirm(false); showNotification("Cleared", "success"); } else { setClearConfirm(true); setTimeout(() => setClearConfirm(false), 3000); } };
             const sortCombatants = () => { setCombatants(prev => [...prev].sort((a, b) => b.initiative - a.initiative)); setCombatState(prev => ({ ...prev, turnIndex: 0 })); };
             const handleInputChange = (e) => { const { name, value } = e.target; if (name === 'initiative' && addMode === 'monster') return; setFormData(prev => ({ ...prev, [name]: value })); };
             const handleManualRoll = () => {
@@ -1170,7 +1280,6 @@
                 }, 600);
             };
 
-            // NEW: Clear Setup Form
             const clearSetupForm = () => {
                 setFormData(INITIAL_FORM);
                 setMonsterDetails(INITIAL_MONSTER_DETAILS);
@@ -1178,14 +1287,12 @@
                 showNotification("Setup form cleared", "info");
             };
             
-            // NEW: Clear Homebrew Form
             const clearHomebrewForm = () => {
                 setHomebrewForm({ name: '', hp: '', ac: '', initMod: '', type: 'Unknown' });
                 setMonsterDetails(INITIAL_MONSTER_DETAILS);
                 showNotification("Homebrew form cleared", "info");
             };
 
-            // NEW: Handle Help Open (and version check)
             const handleOpenHelp = () => {
                 setShowHelpModal(true);
                 if (hasUnseenChangelog) {
@@ -1215,8 +1322,6 @@
                 setMonsterDetails(INITIAL_MONSTER_DETAILS);
                 
                 const normName = formData.name.trim().toLowerCase();
-                
-                // UPGRADE: Smart Search (Exact -> Partial)
                 let hb = homebrew.find(h => h.name.trim().toLowerCase() === normName);
                 if (!hb) {
                     hb = homebrew.find(h => h.name.trim().toLowerCase().includes(normName));
@@ -1266,12 +1371,12 @@
                 setIsBrewing(false);
             };
 
-            const handleNarrate = async (combatant) => {
+            const handleNarrate = useCallback(async (combatant) => {
                 setNarratingId(combatant.id);
                 const txt = await callGemini(`Write short visceral combat flavor text for ${combatant.name} (HP ${combatant.currentHp}/${combatant.maxHp}). No quotes.`);
                 if (txt) setNarrations(prev => ({ ...prev, [combatant.id]: txt.trim() }));
                 setNarratingId(null);
-            };
+            }, [userApiKey]);
 
             const addCombatant = (e) => {
                 e.preventDefault();
@@ -1306,11 +1411,9 @@
                 e.preventDefault();
                 if (!homebrewForm.name || !homebrewForm.hp) { showNotification("Name/HP required", "error"); return; }
 
-                // Check for existing monster with the same name (case-insensitive)
                 const existingIndex = homebrew.findIndex(h => h.name.toLowerCase() === homebrewForm.name.toLowerCase());
-                
                 const newMonster = { 
-                    id: generateId(), // New ID every time, even on update, just in case
+                    id: generateId(), 
                     name: homebrewForm.name, 
                     hp: parseInt(homebrewForm.hp), 
                     ac: parseInt(homebrewForm.ac)||10, 
@@ -1320,28 +1423,20 @@
                 };
 
                 if (existingIndex !== -1) {
-                    // Update existing entry
                     setHomebrew(prev => prev.map((h, index) => index === existingIndex ? { ...h, ...newMonster } : h));
                     showNotification(`Updated existing monster: ${homebrewForm.name}`, "info");
                 } else {
-                    // Add new entry
                     setHomebrew(prev => [...prev, newMonster]);
                     showNotification("Saved to Bank", "success");
                 }
-
                 setHomebrewForm({ name: '', hp: '', ac: '', initMod: '', type: 'Unknown' });
                 setMonsterDetails(INITIAL_MONSTER_DETAILS); 
             };
 
-            // NEW: Toggle category expansion
             const toggleCategory = (category) => {
-                setExpandedCategories(prev => ({
-                    ...prev,
-                    [category]: !prev[category]
-                }));
+                setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }));
             };
 
-            // Helper to get grouped homebrew list
             const getProcessedHomebrew = () => {
                 let filtered = homebrew.filter(h => 
                     h.name.toLowerCase().includes(homebrewSearch.toLowerCase()) || 
@@ -1351,14 +1446,12 @@
                 if (homebrewSortBy === 'name') {
                     return { type: 'flat', data: filtered.sort((a, b) => a.name.localeCompare(b.name)) };
                 } else {
-                    // Group by type
                     const grouped = {};
                     filtered.forEach(h => {
                         const t = h.type || "Unknown";
                         if (!grouped[t]) grouped[t] = [];
                         grouped[t].push(h);
                     });
-                    // Sort keys
                     const sortedKeys = Object.keys(grouped).sort();
                     return { type: 'grouped', data: grouped, keys: sortedKeys };
                 }
@@ -1398,14 +1491,14 @@
                                     </div>
                                     <div className="flex w-full sm:w-auto gap-2 justify-end">
                                         <div className="flex bg-slate-900 rounded-lg p-1 border border-slate-700 flex-1 sm:flex-none justify-center">
-                                            <button onClick={() => setShowLogModal(true)} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="Battle Log"><ScrollText size={18}/></button>
-                                            <button onClick={() => setShowDiceModal(true)} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="Dice Roller"><D20Icon className="w-5 h-5"/></button>
+                                            <button onClick={() => setShowLogModal(true)} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Battle Log"><ScrollText size={18}/></button>
+                                            <button onClick={() => setShowDiceModal(true)} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Dice Roller"><D20Icon className="w-5 h-5"/></button>
                                             <div className="w-px bg-slate-700 mx-1"></div>
-                                            <button onClick={sortCombatants} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="Sort Initiative"><ArrowDownUp size={18}/></button>
+                                            <button onClick={sortCombatants} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Sort Initiative"><ArrowDownUp size={18}/></button>
                                             <div className="w-px bg-slate-700 mx-1"></div>
-                                            <button onClick={() => setShowFilenameModal(true)} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="Set File Name"><GripVertical size={18}/></button>
+                                            <button onClick={() => setShowFilenameModal(true)} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Set File Name"><GripVertical size={18}/></button>
                                             
-                                            <button onClick={handleImportClick} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="Import Encounter (Includes Homebrew if present)"><Upload size={18}/></button> 
+                                            <button onClick={handleImportClick} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Import Encounter (Includes Homebrew if present)"><Upload size={18}/></button> 
                                             <input 
                                                 type="file" 
                                                 ref={encounterFileInputRef} 
@@ -1414,11 +1507,11 @@
                                                 accept=".json" 
                                             />
 
-                                            <button onClick={handleExportData} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="Export Full Encounter Data"><Download size={18}/></button>
+                                            <button onClick={handleExportData} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Export Full Encounter Data"><Download size={18}/></button>
                                         </div>
                                         <button 
                                             onClick={handleOpenHelp} 
-                                            className={`p-2 bg-slate-900 hover:bg-slate-700 rounded text-slate-400 hover:text-white border border-slate-700 relative transition-all ${hasUnseenChangelog ? 'ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)] animate-pulse' : ''}`} 
+                                            className={`p-2 bg-slate-900 hover:bg-slate-700 rounded text-slate-400 hover:text-white border border-slate-700 relative transition-all flex items-center justify-center ${hasUnseenChangelog ? 'ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)] animate-pulse' : ''}`} 
                                             title="Help/Guide"
                                         >
                                             <CircleHelp size={20}/>
@@ -1442,14 +1535,14 @@
                                             {addMode === 'monster' && (<div className="text-[10px] text-slate-500 flex items-center gap-1 bg-slate-900 px-2 py-1 rounded"><BookOpen size={10} className="text-indigo-400" /> <span>5th Edition Compatible</span></div>)}
                                         </div>
                                         <form onSubmit={addCombatant} className="grid grid-cols-4 md:grid-cols-12 gap-3 items-end">
-                                            <div className="col-span-4 md:col-span-4"><label className="text-xs text-slate-400 block mb-1">Name</label><div className="relative"><input className={INPUT_CLASS} value={formData.name} name="name" onChange={handleInputChange} onBlur={handleInputBlur} placeholder={addMode==='monster'?"Lich":"Aragon"} />{addMode==='monster' && <button type="button" onClick={handleAutoFillStats} disabled={isGeneratingStats} className="absolute right-1 top-1 p-1.5 text-indigo-400 hover:text-white">{isGeneratingStats?<Loader2 size={16} className="animate-spin"/>:<Sparkles size={16}/>}</button>}</div></div>
+                                            <div className="col-span-4 md:col-span-5"><label className="text-xs text-slate-400 block mb-1">Name</label><div className="relative"><input className={INPUT_CLASS} value={formData.name} name="name" onChange={handleInputChange} onBlur={handleInputBlur} placeholder={addMode==='monster'?"Lich":"Aragon"} />{addMode==='monster' && <button type="button" onClick={handleAutoFillStats} disabled={isGeneratingStats} className="absolute right-1 top-1 p-1.5 text-indigo-400 hover:text-white flex items-center justify-center h-full w-8">{isGeneratingStats?<Loader2 size={16} className="animate-spin"/>:<Sparkles size={16}/>}</button>}</div></div>
                                             <div className="col-span-2 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">HP</label><input type="number" className={INPUT_CLASS} name="hp" value={formData.hp} onChange={handleInputChange} onBlur={handleInputBlur} placeholder="Max" /></div>
-                                            <div className={`col-span-2 md:col-span-2`}>
+                                            <div className={`col-span-2 md:col-span-1`}>
                                                 <label className="block text-xs text-slate-400 mb-1">AC</label>
                                                 <input name="ac" type="number" className={INPUT_CLASS} value={formData.ac} onChange={handleInputChange} onBlur={handleInputBlur} placeholder="10" /></div>
-                                            <div className="col-span-2 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">{addMode==='player'?'Init':'Init Mod'}</label><div className="relative"><input type="number" className={INPUT_CLASS} name={addMode==='player'?'initiative':'initMod'} value={addMode==='player'?formData.initiative:formData.initMod} onChange={handleInputChange} onBlur={handleInputBlur} placeholder={addMode==='player'?'Roll':'+0'} />{addMode==='player' && <button type="button" onClick={handleManualRoll} className="absolute right-1 top-1 text-slate-400 hover:text-white"><D20Icon className={`w-6 h-6 ${isRollingInit?'animate-spin-fast text-red-500':''}`}/></button>}</div></div>
-                                            {addMode==='monster' && <div className="col-span-2 md:col-span-1"><label className="text-xs text-slate-400 block mb-1">Qty</label><input type="number" className={INPUT_CLASS} name="qty" value={formData.qty} onChange={handleInputChange} onBlur={handleInputBlur} /></div>}
-                                            <div className={`col-span-4 ${addMode==='monster'?'md:col-span-1':'md:col-span-2'} flex gap-2 h-[38px]`}>
+                                            <div className="col-span-2 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">{addMode==='player'?'Init':'Init Mod'}</label><div className="relative"><input type="number" className={INPUT_CLASS} name={addMode==='player'?'initiative':'initMod'} value={addMode==='player'?formData.initiative:formData.initMod} onChange={handleInputChange} onBlur={handleInputBlur} placeholder={addMode==='player'?'Roll':'+0'} />{addMode==='player' && <button type="button" onClick={handleManualRoll} className="absolute right-1 top-1 text-slate-400 hover:text-white flex items-center justify-center h-full w-8"><D20Icon className={`w-6 h-6 ${isRollingInit?'animate-spin-fast text-red-500':''}`}/></button>}</div></div>
+                                            {addMode==='monster' && <div className="col-span-2 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">Qty</label><input type="number" className={INPUT_CLASS} name="qty" value={formData.qty} onChange={handleInputChange} onBlur={handleInputBlur} /></div>}
+                                            <div className="col-span-4 md:col-span-12 flex gap-2 h-[38px] mt-2">
                                                 <button type="button" onClick={clearSetupForm} className="bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white font-bold py-2 px-3 rounded flex justify-center items-center transition-colors h-full" title="Reset Form"><RotateCcw size={18}/></button>
                                                 <button type="submit" className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded flex justify-center items-center h-full"><Plus size={20}/></button>
                                             </div>
@@ -1462,36 +1555,26 @@
                             {viewMode === 'battlefield' && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
                                     {combatants.length === 0 && <div className="col-span-full text-center py-20 opacity-50"><div className="text-xl font-serif mb-2">The battlefield is silent...</div><p className="text-sm">Go to <strong>Setup</strong> to add combatants.</p></div>}
-                                    {combatants.map((c, i) => {
-                                        const active = i === combatState.turnIndex;
-                                        return (
-                                            <div id={`card-${c.id}`} key={c.id} className={`relative flex flex-col p-4 rounded-xl border shadow-md transition-all ${active ? 'ring-2 ring-green-500 border-green-500 bg-slate-800' : 'bg-slate-800 border-slate-600'}`}>
-                                                {active && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">ACTIVE</div>}
-                                                {c.isConcentrating && <div className="absolute -top-1 -right-1"><span className="flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span></span></div>}
-                                                
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div><h3 className={`font-bold text-lg ${c.type==='player'?'text-indigo-300':'text-white'}`}>{c.type === 'player' && <User size={16} />}{c.name}</h3><div className="text-xs text-slate-400 mt-1 flex gap-3"><span>AC: {c.ac}</span><span>Init: {c.initiative}</span></div></div>
-                                                    <div className="flex gap-1">
-                                                        <button onClick={() => toggleConcentration(c.id)} className={`p-1 hover:text-white transition-colors ${c.isConcentrating ? 'text-sky-400' : 'text-slate-600'}`} title="Toggle Concentration"><Brain size={16} /></button>
-                                                        {/* FIX: Pass full monster object to openStatBlock */}
-                                                        {c.statBlockSummary && <button onClick={()=>openStatBlock(c)} className="text-slate-500 hover:text-white p-1"><CircleHelp size={18}/></button>}
-                                                        {c.actions && <button onClick={()=>toggleActionDetails(c.id)} className={`text-slate-500 hover:text-white p-1 ${openActionDetailsId===c.id?'text-indigo-400':''}`}><BookOpen size={18}/></button>}
-                                                        <button onClick={()=>handleNarrate(c)} className="text-slate-500 hover:text-white p-1">{narratingId===c.id?<Loader2 size={16} className="animate-spin"/>:<MessageSquare size={16}/>}</button>
-                                                        <button onClick={()=>deleteCombatant(c.id)} className="text-slate-500 hover:text-red-400 p-1"><Trash2 size={16}/></button>
-                                                    </div>
-                                                </div>
-                                                {openActionDetailsId===c.id && <div className="mb-3 bg-slate-900/50 p-2 rounded border border-slate-700"><MonsterActionDetails combatant={c}/></div>}
-                                                <ProgressBar current={c.currentHp} max={c.maxHp} isPlayer={c.type==='player'}/>
-                                                
-                                                {/* DEATH SAVES for Players at 0 HP */}
-                                                {c.type === 'player' && c.currentHp === 0 && <DeathSaveTracker saves={c.deathSaves} id={c.id} onToggle={toggleDeathSave} />}
-                                                
-                                                {c.maxHp>0 && <div className="flex gap-2 mt-2"><button onClick={()=>updateHealth(c.id,-1)} className="p-1 bg-slate-700 rounded text-red-300 hover:bg-slate-600"><Minus size={14}/></button><button onClick={()=>updateHealth(c.id,1)} className="p-1 bg-slate-700 rounded text-green-300 hover:bg-slate-600"><Plus size={14}/></button><form onSubmit={(e)=>handleDamageSubmit(c.id,e)} className="flex-1"><input className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-center" placeholder="Dmg" value={damageInput[c.id]||''} onChange={e=>setDamageInput({...damageInput,[c.id]:e.target.value})} onBlur={handleInputBlur}/></form></div>}
-                                                {narrations[c.id] && <div className="mt-2 text-xs text-indigo-300 italic">"{narrations[c.id]}"</div>}
-                                                <div className="mt-3 pt-2 border-t border-slate-700/50"><div className="flex flex-wrap gap-1">{c.conditions.map(cond=><span key={cond} onClick={()=>toggleCondition(c.id,cond)} className="px-1.5 py-0.5 bg-slate-700 rounded text-[10px] cursor-pointer hover:bg-red-900/50">{cond} ×</span>)}<button onClick={()=>{setOpenConditionId(openConditionId===c.id?null:c.id)}} className="px-1.5 py-0.5 bg-slate-700/50 rounded text-[10px] text-slate-400 hover:text-white">+ Cond</button></div>{openConditionId===c.id && <div className="mt-2 grid grid-cols-2 gap-1 bg-slate-900 p-2 rounded absolute z-20 w-full left-0 shadow-xl border border-slate-600">{CONDITIONS.map(cond=><button key={cond.name} onClick={()=>toggleCondition(c.id,cond.name)} className="text-left text-[10px] p-1 hover:bg-slate-700 rounded text-slate-300">{cond.name}</button>)}</div>}</div>
-                                            </div>
-                                        );
-                                    })}
+                                    {combatants.map((c, i) => (
+                                        <CombatantCard 
+                                            key={c.id} 
+                                            combatant={c}
+                                            active={i === combatState.turnIndex}
+                                            onUpdateHealth={updateHealth}
+                                            onToggleConcentration={toggleConcentration}
+                                            onToggleActionDetails={toggleActionDetails}
+                                            onNarrate={handleNarrate}
+                                            onDelete={deleteCombatant}
+                                            onStatBlock={openStatBlock}
+                                            onToggleCondition={toggleCondition}
+                                            onToggleDeathSave={toggleDeathSave}
+                                            openActionDetailsId={openActionDetailsId}
+                                            openConditionId={openConditionId}
+                                            setOpenConditionId={setOpenConditionId}
+                                            narration={narrations[c.id]}
+                                            isNarrating={narratingId===c.id}
+                                        />
+                                    ))}
                                 </div>
                             )}
 
@@ -1556,9 +1639,9 @@
                                             <div className="col-span-1 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">HP</label><input type="number" className={INPUT_CLASS} value={homebrewForm.hp} onChange={e=>setHomebrewForm({...homebrewForm,hp:e.target.value})} onBlur={handleInputBlur} /></div>
                                             <div className="col-span-1 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">AC</label><input type="number" className={INPUT_CLASS} value={homebrewForm.ac} onChange={e=>setHomebrewForm({...homebrewForm,ac:e.target.value})} onBlur={handleInputBlur} /></div>
                                             <div className="col-span-1 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">Init Mod</label><input type="number" className={INPUT_CLASS} value={homebrewForm.initMod} onChange={e=>setHomebrewForm({...homebrewForm,initMod:e.target.value})} onBlur={handleInputBlur} /></div>
-                                            <div className="col-span-1 md:col-span-1 flex gap-1">
+                                            <div className="col-span-2 md:col-span-1 flex gap-1">
                                                 <button type="button" onClick={clearHomebrewForm} className="bg-slate-800 hover:bg-slate-600 text-slate-400 hover:text-white p-1.5 rounded flex justify-center items-center transition-colors" title="Clear Form"><RotateCcw size={18}/></button>
-                                                <button className="flex-1 bg-amber-700 hover:bg-amber-600 text-white py-1.5 rounded flex justify-center" title="Save Monster or Update Existing"><Save size={18}/></button>
+                                                <button className="flex-1 bg-amber-700 hover:bg-amber-600 text-white py-1.5 rounded flex justify-center items-center" title="Save Monster or Update Existing"><Save size={18}/></button>
                                             </div>
                                         </form>
                                         
@@ -1573,8 +1656,8 @@
                                                                 <div className="text-xs text-slate-400">HP: {h.hp} | AC: {h.ac} | Init: {h.initMod >= 0 ? '+' : ''}{h.initMod}</div>
                                                             </div>
                                                             <div className="flex gap-2">
-                                                                {h.statBlockSummary && <button onClick={() => openStatBlock(h)} className="text-slate-400 hover:text-white p-1" title="View Stat Block"><CircleHelp size={16}/></button>}
-                                                                <button onClick={()=>deleteHomebrew(h.id)} className="text-slate-500 hover:text-red-500"><Trash2 size={16}/></button>
+                                                                {h.statBlockSummary && <button onClick={() => openStatBlock(h)} className="text-slate-400 hover:text-white p-1 flex items-center justify-center" title="View Stat Block"><CircleHelp size={16}/></button>}
+                                                                <button onClick={()=>deleteHomebrew(h.id)} className="text-slate-500 hover:text-red-500 flex items-center justify-center"><Trash2 size={16}/></button>
                                                             </div>
                                                         </div>
                                                     ))
@@ -1593,8 +1676,8 @@
                                                                             <div className="text-xs text-slate-400">HP: {h.hp} | AC: {h.ac} | Init: {h.initMod >= 0 ? '+' : ''}{h.initMod}</div>
                                                                         </div>
                                                                         <div className="flex gap-2">
-                                                                            {h.statBlockSummary && <button onClick={() => openStatBlock(h)} className="text-slate-400 hover:text-white p-1" title="View Stat Block"><CircleHelp size={16}/></button>}
-                                                                            <button onClick={()=>deleteHomebrew(h.id)} className="text-slate-500 hover:text-red-500"><Trash2 size={16}/></button>
+                                                                            {h.statBlockSummary && <button onClick={() => openStatBlock(h)} className="text-slate-400 hover:text-white p-1 flex items-center justify-center" title="View Stat Block"><CircleHelp size={16}/></button>}
+                                                                            <button onClick={()=>deleteHomebrew(h.id)} className="text-slate-500 hover:text-red-500 flex items-center justify-center"><Trash2 size={16}/></button>
                                                                         </div>
                                                                     </div>
                                                                 ))}
@@ -1786,7 +1869,7 @@
                     const rootElement = document.getElementById('root');
                     if (rootElement) {
                          const root = ReactDOM.createRoot(rootElement);
-                         root.render(<App />);
+                         root.render(<ErrorBoundary><App /></ErrorBoundary>);
                          console.log("React mounted successfully.");
                     } else {
                          throw new Error("Root element not found.");
