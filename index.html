@@ -165,9 +165,9 @@
         .floating-button {
             z-index: 90;
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            /* Fixed position for the settings/API key button (top right) */
+            /* Fixed position for the settings/API key button (BOTTOM RIGHT now to avoid header) */
             position: fixed;
-            top: 20px;
+            bottom: 20px;
             right: 20px;
         }
 
@@ -273,6 +273,12 @@
         const ChevronDown = (props) => <Icon {...props}><path d="m6 9 6 6 6-6"/></Icon>;
         const ChevronRight = (props) => <Icon {...props}><path d="m9 18 6-6-6-6"/></Icon>;
         const ChevronLeft = (props) => <Icon {...props}><path d="m15 18-6-6 6-6"/></Icon>;
+        // NEW: Search Icon
+        const Search = (props) => <Icon {...props}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></Icon>;
+        // NEW: Filter Icon
+        const Filter = (props) => <Icon {...props}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></Icon>;
+        // NEW: Info Icon for Changelog
+        const Info = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></Icon>;
 
         // NEW: Custom Dragon Head Icon for "Brew Monster" button
         const DragonHead = (props) => (
@@ -312,6 +318,11 @@
             { name: 'Restrained', color: 'bg-orange-800' },
             { name: 'Stunned', color: 'bg-yellow-500' },
             { name: 'Unconscious', color: 'bg-black' },
+        ];
+
+        const MONSTER_TYPES = [
+            "Aberration", "Beast", "Celestial", "Construct", "Dragon", "Elemental", 
+            "Fey", "Fiend", "Giant", "Humanoid", "Monstrosity", "Ooze", "Plant", "Undead", "Unknown"
         ];
 
         // DM SCREEN CONTENT - COMPREHENSIVE
@@ -471,8 +482,25 @@
             }
         ];
 
+        // --- VERSION CONTROL ---
+        const CURRENT_VERSION = "1.1.00";
+        const CHANGELOG_DATA = [
+            {
+                version: "1.1.00",
+                date: "Current",
+                changes: [
+                    "Added Homebrew Backup & Restore (JSON export/import).",
+                    "Added Monster Type classification (Aberration, Beast, etc.) to Homebrew.",
+                    "Enhanced Homebrew Search (Filter by Name or Type).",
+                    "Added Sorting & Grouping by Monster Type in Homebrew Bank.",
+                    "Improved mobile responsiveness for Setup form and floating buttons.",
+                    "Added this Changelog system!"
+                ]
+            }
+        ];
+
         const INITIAL_FORM = { name: '', hp: '', ac: '', initiative: '', initMod: 0, qty: 1 };
-        const INITIAL_MONSTER_DETAILS = { resistances: '', vulnerabilities: '', actions: '', statBlockSummary: '' };
+        const INITIAL_MONSTER_DETAILS = { resistances: '', vulnerabilities: '', actions: '', statBlockSummary: '', type: '' };
         const HARDCODED_API_KEY = ""; 
         const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
         const rollInitiative = (mod) => Math.floor(Math.random() * 20) + 1 + mod;
@@ -555,6 +583,43 @@
             );
         };
 
+        // NEW: Changelog Modal
+        const ChangelogModal = ({ onClose }) => {
+            return (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div className="bg-gray-900 w-full max-w-lg rounded-xl shadow-2xl border border-gray-700 flex flex-col max-h-[80vh]">
+                        <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <Info className="text-amber-400" /> Changelog
+                            </h2>
+                            <button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button>
+                        </div>
+                        <div className="p-6 overflow-y-auto">
+                            {CHANGELOG_DATA.map((log, index) => (
+                                <div key={index} className="mb-6 last:mb-0">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h3 className="text-lg font-bold text-amber-400">Version {log.version}</h3>
+                                        <span className="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded">{log.date}</span>
+                                    </div>
+                                    <ul className="space-y-2">
+                                        {log.changes.map((change, i) => (
+                                            <li key={i} className="text-sm text-slate-300 flex items-start gap-2">
+                                                <span className="text-amber-500 mt-1">•</span>
+                                                {change}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="p-4 border-t border-gray-700 bg-gray-800 rounded-b-xl flex justify-end">
+                            <button onClick={onClose} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-bold">Close</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // NEW: Dice Roller Modal
         const DiceRollerModal = ({ onClose, addToLog }) => {
             const [history, setHistory] = useState([]);
@@ -623,7 +688,6 @@
                                             d{d}
                                         </button>
                                     ))}
-                                }
                                 </div>
                             </div>
 
@@ -726,7 +790,7 @@
                 <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
                     <div className="bg-gray-900 text-gray-50 w-full max-w-2xl rounded-xl shadow-2xl border border-gray-700 flex flex-col max-h-[90vh]">
                         <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl"><h2 className="text-xl font-bold text-red-400 flex items-center gap-2"><BookOpen className="text-red-400"/> {combatant.name} - Full Stat Block</h2><button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button></div>
-                        <div className="p-6 overflow-y-auto flex-1 stat-block"><h3 className="!text-2xl text-white border-b-2 border-red-500 pb-2 mb-3">{combatant.name.toUpperCase()}</h3><p className="text-sm font-mono text-gray-400">AC: {combatant.ac} | HP: {combatant.maxHp} | Init Mod: {combatant.initMod}</p><div className="mt-4 text-sm text-gray-200">{combatant.statBlockSummary.length > 0 ? renderSummary(combatant.statBlockSummary.replace(/\\n/g, '\n')) : <span className="flex items-center text-red-400"><AlertTriangle className="inline w-4 h-4 text-yellow-500 mr-2" /> Stat block details were not successfully retrieved by the AI.</span>}</div></div>
+                        <div className="p-6 overflow-y-auto flex-1 stat-block"><h3 className="!text-2xl text-white border-b-2 border-red-500 pb-2 mb-3">{combatant.name.toUpperCase()} <span className="text-xs font-normal text-slate-400 ml-2">({combatant.type || 'Unknown'})</span></h3><p className="text-sm font-mono text-gray-400">AC: {combatant.ac} | HP: {combatant.maxHp} | Init Mod: {combatant.initMod}</p><div className="mt-4 text-sm text-gray-200">{combatant.statBlockSummary.length > 0 ? renderSummary(combatant.statBlockSummary.replace(/\\n/g, '\n')) : <span className="flex items-center text-red-400"><AlertTriangle className="inline w-4 h-4 text-yellow-500 mr-2" /> Stat block details were not successfully retrieved by the AI.</span>}</div></div>
                         <div className="p-4 border-t border-gray-700 bg-gray-800 rounded-b-xl flex justify-end"><button onClick={onClose} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-medium">Close Stat Block</button></div>
                     </div>
                 </div>
@@ -814,6 +878,10 @@
             const [combatState, setCombatState] = useState(() => { try { return JSON.parse(localStorage.getItem('dm-tracker-combat-state')) || { round: 1, turnIndex: 0 }; } catch (e) { return { round: 1, turnIndex: 0 }; } });
             const [battleLogs, setBattleLogs] = useState(() => { try { return JSON.parse(localStorage.getItem('dm-tracker-logs')) || []; } catch (e) { return []; } });
 
+            // VERSION STATE
+            const [lastSeenVersion, setLastSeenVersion] = useState(() => localStorage.getItem('dm-tracker-last-seen-version') || '0.0.0');
+            const hasUnseenChangelog = lastSeenVersion !== CURRENT_VERSION;
+
             const [monsterDetails, setMonsterDetails] = useState(INITIAL_MONSTER_DETAILS);
             const [formData, setFormData] = useState(INITIAL_FORM);
             const [damageInput, setDamageInput] = useState({});
@@ -827,9 +895,10 @@
             const [showFilenameModal, setShowFilenameModal] = useState(false);
             const [showDiceModal, setShowDiceModal] = useState(false);
             const [showLogModal, setShowLogModal] = useState(false);
+            const [showChangelogModal, setShowChangelogModal] = useState(false);
             const [viewStatBlockMonster, setViewStatBlockMonster] = useState(null);
             
-            const [homebrewForm, setHomebrewForm] = useState({ name: '', hp: '', ac: '', initMod: '' });
+            const [homebrewForm, setHomebrewForm] = useState({ name: '', hp: '', ac: '', initMod: '', type: 'Unknown' });
             const [lastSource, setLastSource] = useState(null);
             const [openConditionId, setOpenConditionId] = useState(null); 
             const [addMode, setAddMode] = useState('monster'); 
@@ -842,6 +911,8 @@
             // NEW STATE FOR HOMEBREW LAB
             const [labInput, setLabInput] = useState('');
             const [isBrewing, setIsBrewing] = useState(false);
+            const [homebrewSearch, setHomebrewSearch] = useState('');
+            const [homebrewSortBy, setHomebrewSortBy] = useState('name'); // 'name' | 'type'
             
             // NEW STATE FOR DM SCREEN SEARCH & SELECTION
             const [screenSearch, setScreenSearch] = useState('');
@@ -1109,9 +1180,18 @@
             
             // NEW: Clear Homebrew Form
             const clearHomebrewForm = () => {
-                setHomebrewForm({ name: '', hp: '', ac: '', initMod: '' });
+                setHomebrewForm({ name: '', hp: '', ac: '', initMod: '', type: 'Unknown' });
                 setMonsterDetails(INITIAL_MONSTER_DETAILS);
                 showNotification("Homebrew form cleared", "info");
+            };
+
+            // NEW: Handle Help Open (and version check)
+            const handleOpenHelp = () => {
+                setShowHelpModal(true);
+                if (hasUnseenChangelog) {
+                    localStorage.setItem('dm-tracker-last-seen-version', CURRENT_VERSION);
+                    setLastSeenVersion(CURRENT_VERSION);
+                }
             };
 
             // AI & Add Logic
@@ -1145,7 +1225,7 @@
                 if (hb) {
                     const mod = parseInt(hb.initMod) || 0;
                     setFormData(prev => ({ ...prev, hp: hb.hp, ac: hb.ac, initMod: mod, initiative: '' }));
-                    setMonsterDetails({ resistances: hb.resistances||'', vulnerabilities: hb.vulnerabilities||'', actions: hb.actions||'', statBlockSummary: hb.statBlockSummary||'Not saved.' });
+                    setMonsterDetails({ resistances: hb.resistances||'', vulnerabilities: hb.vulnerabilities||'', actions: hb.actions||'', statBlockSummary: hb.statBlockSummary||'Not saved.', type: hb.type || 'Unknown' });
                     setLastSource('homebrew');
                     showNotification("Stats loaded from Homebrew.", 'info');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1153,14 +1233,14 @@
                 }
 
                 setIsGeneratingStats(true);
-                const prompt = `You are a D&D 5e Rules Expert. Generate a COMPLETE, DETAILED stat block for the monster "${formData.name}". DO NOT SUMMARIZE. DO NOT OMIT DATA. Return a JSON object with these specific properties: - 'hp' (integer) - 'ac' (integer) - 'initMod' (integer) - 'resistances' (string: list or "None") - 'vulnerabilities' (string: list or "None") - 'actions' (string: concise list of action names and damage dice, e.g. "Bite (1d6+2)") - 'statBlockSummary' (string: A full markdown text block including: Ability Scores, Saving Throws, Skills, Senses, Languages, Challenge, Special Traits, Actions, and Legendary Actions if applicable. Use strict markdown headers like **Actions**.) Return ONLY valid JSON.`;
+                const prompt = `You are a D&D 5e Rules Expert. Generate a COMPLETE, DETAILED stat block for the monster "${formData.name}". DO NOT SUMMARIZE. DO NOT OMIT DATA. Return a JSON object with these specific properties: - 'hp' (integer) - 'ac' (integer) - 'initMod' (integer) - 'resistances' (string: list or "None") - 'vulnerabilities' (string: list or "None") - 'actions' (string: concise list of action names and damage dice, e.g. "Bite (1d6+2)") - 'statBlockSummary' (string: A full markdown text block including: Ability Scores, Saving Throws, Skills, Senses, Languages, Challenge, Special Traits, Actions, and Legendary Actions if applicable. Use strict markdown headers like **Actions**.) - 'type' (string: e.g. "Aberration", "Beast", "Celestial") Return ONLY valid JSON.`;
 
                 const txt = await callGemini(prompt);
                 if (txt) {
                     try {
                         const json = JSON.parse(txt.replace(/```json|```/g, '').trim());
                         setFormData(prev => ({ ...prev, hp: json.hp, ac: json.ac, initMod: parseInt(json.initMod)||0, initiative: '' }));
-                        setMonsterDetails({ resistances: json.resistances||'', vulnerabilities: json.vulnerabilities||'', actions: json.actions||'', statBlockSummary: json.statBlockSummary||'' });
+                        setMonsterDetails({ resistances: json.resistances||'', vulnerabilities: json.vulnerabilities||'', actions: json.actions||'', statBlockSummary: json.statBlockSummary||'', type: json.type || 'Unknown' });
                         setLastSource('ai');
                         showNotification("Stats generated by AI.", 'info');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1172,14 +1252,14 @@
             const handleBrewMonster = async () => {
                 if (!labInput.trim()) { showNotification("Describe your monster first!", "error"); return; }
                 setIsBrewing(true);
-                const prompt = `You are a D&D 5e Rules Expert. Create a BALANCED, COMPLETE monster stat block based on this concept: "${labInput}". DO NOT SUMMARIZE. Create a full playable monster. Return a JSON object with: - 'name' (string) - 'hp' (integer) - 'ac' (integer) - 'initMod' (integer) - 'resistances' (string) - 'vulnerabilities' (string) - 'actions' (string: concise list of action names and damage dice) - 'statBlockSummary' (string: A full markdown text block including: Ability Scores, Saving Throws, Skills, Senses, Languages, Challenge, Special Traits, Actions, and Legendary Actions if applicable. Use strict markdown headers like **Actions**.) Return ONLY valid JSON.`;
+                const prompt = `You are a D&D 5e Rules Expert. Create a BALANCED, COMPLETE monster stat block based on this concept: "${labInput}". DO NOT SUMMARIZE. Create a full playable monster. Return a JSON object with: - 'name' (string) - 'hp' (integer) - 'ac' (integer) - 'initMod' (integer) - 'resistances' (string) - 'vulnerabilities' (string) - 'actions' (string: concise list of action names and damage dice) - 'statBlockSummary' (string: A full markdown text block including: Ability Scores, Saving Throws, Skills, Senses, Languages, Challenge, Special Traits, Actions, and Legendary Actions if applicable. Use strict markdown headers like **Actions**.) - 'type' (string: e.g. "Aberration", "Beast", "Celestial") Return ONLY valid JSON.`;
 
                 const txt = await callGemini(prompt);
                 if (txt) {
                      try {
                         const json = JSON.parse(txt.replace(/```json|```/g, '').trim());
-                        setHomebrewForm({ name: json.name || "Unknown Beast", hp: json.hp || 10, ac: json.ac || 10, initMod: parseInt(json.initMod) || 0 });
-                        setMonsterDetails({ resistances: json.resistances || '', vulnerabilities: json.vulnerabilities || '', actions: json.actions || '', statBlockSummary: json.statBlockSummary || '' });
+                        setHomebrewForm({ name: json.name || "Unknown Beast", hp: json.hp || 10, ac: json.ac || 10, initMod: parseInt(json.initMod) || 0, type: json.type || 'Unknown' });
+                        setMonsterDetails({ resistances: json.resistances || '', vulnerabilities: json.vulnerabilities || '', actions: json.actions || '', statBlockSummary: json.statBlockSummary || '', type: json.type || 'Unknown' });
                         showNotification("Monster brewed! Review and Save below.", "success");
                      } catch (e) { console.error(e); showNotification("Failed to brew monster. Try again.", "error"); }
                 }
@@ -1235,6 +1315,7 @@
                     hp: parseInt(homebrewForm.hp), 
                     ac: parseInt(homebrewForm.ac)||10, 
                     initMod: parseInt(homebrewForm.initMod)||0, 
+                    type: homebrewForm.type || 'Unknown',
                     ...monsterDetails 
                 };
 
@@ -1248,7 +1329,7 @@
                     showNotification("Saved to Bank", "success");
                 }
 
-                setHomebrewForm({ name: '', hp: '', ac: '', initMod: '' });
+                setHomebrewForm({ name: '', hp: '', ac: '', initMod: '', type: 'Unknown' });
                 setMonsterDetails(INITIAL_MONSTER_DETAILS); 
             };
 
@@ -1260,6 +1341,31 @@
                 }));
             };
 
+            // Helper to get grouped homebrew list
+            const getProcessedHomebrew = () => {
+                let filtered = homebrew.filter(h => 
+                    h.name.toLowerCase().includes(homebrewSearch.toLowerCase()) || 
+                    (h.type && h.type.toLowerCase().includes(homebrewSearch.toLowerCase()))
+                );
+
+                if (homebrewSortBy === 'name') {
+                    return { type: 'flat', data: filtered.sort((a, b) => a.name.localeCompare(b.name)) };
+                } else {
+                    // Group by type
+                    const grouped = {};
+                    filtered.forEach(h => {
+                        const t = h.type || "Unknown";
+                        if (!grouped[t]) grouped[t] = [];
+                        grouped[t].push(h);
+                    });
+                    // Sort keys
+                    const sortedKeys = Object.keys(grouped).sort();
+                    return { type: 'grouped', data: grouped, keys: sortedKeys };
+                }
+            };
+
+            const processedHomebrew = getProcessedHomebrew();
+
             return (
                 <div className="min-h-screen pb-32 font-serif">
                     {notification && <div className={`fixed top-20 right-4 z-[120] px-4 py-3 rounded shadow-xl flex items-center gap-2 animate-bounce-in ${notification.type==='error'?'bg-red-600 text-white':'bg-green-600 text-white'}`}>{notification.type==='error'?<AlertTriangle size={18}/>:<CheckCircle size={18}/>}<span>{notification.message}</span></div>}
@@ -1269,6 +1375,7 @@
                     {showDiceModal && <DiceRollerModal onClose={() => setShowDiceModal(false)} addToLog={addToLog} />}
                     {showLogModal && <BattleLogModal logs={battleLogs} onClose={() => setShowLogModal(false)} onClear={() => setBattleLogs([])} />}
                     {showHomebrewImportModal && <HomebrewImportModal file={showHomebrewImportModal} onConfirm={handleHomebrewConfirm} onClose={() => setShowHomebrewImportModal(null)} />}
+                    {showChangelogModal && <ChangelogModal onClose={() => setShowChangelogModal(false)} />}
 
                     
                     <FloatingNextTurnButton handleNextTurn={handleNextTurn} combatants={combatants} turnIndex={combatState.turnIndex} viewMode={viewMode} />
@@ -1309,7 +1416,14 @@
 
                                             <button onClick={handleExportData} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="Export Full Encounter Data"><Download size={18}/></button>
                                         </div>
-                                        <button onClick={() => setShowHelpModal(true)} className="p-2 bg-slate-900 hover:bg-slate-700 rounded text-slate-400 hover:text-white border border-slate-700" title="Help/Guide"><CircleHelp size={20}/></button>
+                                        <button 
+                                            onClick={handleOpenHelp} 
+                                            className={`p-2 bg-slate-900 hover:bg-slate-700 rounded text-slate-400 hover:text-white border border-slate-700 relative transition-all ${hasUnseenChangelog ? 'ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)] animate-pulse' : ''}`} 
+                                            title="Help/Guide"
+                                        >
+                                            <CircleHelp size={20}/>
+                                            {hasUnseenChangelog && <span className="absolute -top-1 -right-1 flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span></span>}
+                                        </button>
                                         <button onClick={handleClearAll} className={`px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider border transition-colors ${clearConfirm ? 'bg-red-600 text-white border-red-500' : 'bg-slate-900 text-red-400 border-slate-700 hover:bg-slate-800'}`}>{clearConfirm ? "Sure?" : "Clear"}</button>
                                     </div>
                                 </div>
@@ -1327,17 +1441,17 @@
                                             </div>
                                             {addMode === 'monster' && (<div className="text-[10px] text-slate-500 flex items-center gap-1 bg-slate-900 px-2 py-1 rounded"><BookOpen size={10} className="text-indigo-400" /> <span>5th Edition Compatible</span></div>)}
                                         </div>
-                                        <form onSubmit={addCombatant} className="grid grid-cols-2 md:grid-cols-12 gap-4 items-end">
-                                            <div className="col-span-2 md:col-span-4"><label className="text-xs text-slate-400 block mb-1">Name</label><div className="relative"><input className={INPUT_CLASS} value={formData.name} name="name" onChange={handleInputChange} onBlur={handleInputBlur} placeholder={addMode==='monster'?"Lich":"Aragon"} />{addMode==='monster' && <button type="button" onClick={handleAutoFillStats} disabled={isGeneratingStats} className="absolute right-1 top-1 p-1.5 text-indigo-400 hover:text-white">{isGeneratingStats?<Loader2 size={16} className="animate-spin"/>:<Sparkles size={16}/>}</button>}</div></div>
-                                            <div className="col-span-1 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">HP</label><input type="number" className={INPUT_CLASS} name="hp" value={formData.hp} onChange={handleInputChange} onBlur={handleInputBlur} placeholder="Max" /></div>
-                                            <div className={`col-span-1 md:col-span-2`}>
+                                        <form onSubmit={addCombatant} className="grid grid-cols-4 md:grid-cols-12 gap-3 items-end">
+                                            <div className="col-span-4 md:col-span-4"><label className="text-xs text-slate-400 block mb-1">Name</label><div className="relative"><input className={INPUT_CLASS} value={formData.name} name="name" onChange={handleInputChange} onBlur={handleInputBlur} placeholder={addMode==='monster'?"Lich":"Aragon"} />{addMode==='monster' && <button type="button" onClick={handleAutoFillStats} disabled={isGeneratingStats} className="absolute right-1 top-1 p-1.5 text-indigo-400 hover:text-white">{isGeneratingStats?<Loader2 size={16} className="animate-spin"/>:<Sparkles size={16}/>}</button>}</div></div>
+                                            <div className="col-span-2 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">HP</label><input type="number" className={INPUT_CLASS} name="hp" value={formData.hp} onChange={handleInputChange} onBlur={handleInputBlur} placeholder="Max" /></div>
+                                            <div className={`col-span-2 md:col-span-2`}>
                                                 <label className="block text-xs text-slate-400 mb-1">AC</label>
                                                 <input name="ac" type="number" className={INPUT_CLASS} value={formData.ac} onChange={handleInputChange} onBlur={handleInputBlur} placeholder="10" /></div>
-                                            <div className="col-span-1 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">{addMode==='player'?'Init':'Init Mod'}</label><div className="relative"><input type="number" className={INPUT_CLASS} name={addMode==='player'?'initiative':'initMod'} value={addMode==='player'?formData.initiative:formData.initMod} onChange={handleInputChange} onBlur={handleInputBlur} placeholder={addMode==='player'?'Roll':'+0'} />{addMode==='player' && <button type="button" onClick={handleManualRoll} className="absolute right-1 top-1 text-slate-400 hover:text-white"><D20Icon className={`w-6 h-6 ${isRollingInit?'animate-spin-fast text-red-500':''}`}/></button>}</div></div>
-                                            {addMode==='monster' && <div className="col-span-1 md:col-span-1"><label className="text-xs text-slate-400 block mb-1">Qty</label><input type="number" className={INPUT_CLASS} name="qty" value={formData.qty} onChange={handleInputChange} onBlur={handleInputBlur} /></div>}
-                                            <div className="col-span-2 md:col-span-1 flex gap-2">
-                                                <button type="button" onClick={clearSetupForm} className="bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white font-bold py-2 px-3 rounded flex justify-center items-center transition-colors" title="Reset Form"><RotateCcw size={18}/></button>
-                                                <button type="submit" className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded flex justify-center items-center"><Plus size={20}/></button>
+                                            <div className="col-span-2 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">{addMode==='player'?'Init':'Init Mod'}</label><div className="relative"><input type="number" className={INPUT_CLASS} name={addMode==='player'?'initiative':'initMod'} value={addMode==='player'?formData.initiative:formData.initMod} onChange={handleInputChange} onBlur={handleInputBlur} placeholder={addMode==='player'?'Roll':'+0'} />{addMode==='player' && <button type="button" onClick={handleManualRoll} className="absolute right-1 top-1 text-slate-400 hover:text-white"><D20Icon className={`w-6 h-6 ${isRollingInit?'animate-spin-fast text-red-500':''}`}/></button>}</div></div>
+                                            {addMode==='monster' && <div className="col-span-2 md:col-span-1"><label className="text-xs text-slate-400 block mb-1">Qty</label><input type="number" className={INPUT_CLASS} name="qty" value={formData.qty} onChange={handleInputChange} onBlur={handleInputBlur} /></div>}
+                                            <div className={`col-span-4 ${addMode==='monster'?'md:col-span-1':'md:col-span-2'} flex gap-2 h-[38px]`}>
+                                                <button type="button" onClick={clearSetupForm} className="bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white font-bold py-2 px-3 rounded flex justify-center items-center transition-colors h-full" title="Reset Form"><RotateCcw size={18}/></button>
+                                                <button type="submit" className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded flex justify-center items-center h-full"><Plus size={20}/></button>
                                             </div>
                                         </form>
                                         {(monsterDetails.resistances || monsterDetails.actions) && <div className="mt-4 p-3 bg-slate-900/50 rounded border border-slate-700 text-xs space-y-1"><p><span className="text-blue-400">Resistances:</span> {monsterDetails.resistances||'None'}</p><p><span className="text-yellow-400">Actions:</span> {monsterDetails.actions||'None'}</p></div>}
@@ -1390,7 +1504,30 @@
                                     </div>
 
                                     <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                                        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Database className="text-amber-500"/> Homebrew Bank</h2>
+                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                                            <h2 className="text-lg font-bold text-white flex items-center gap-2"><Database className="text-amber-500"/> Homebrew Bank</h2>
+                                            
+                                            {/* SEARCH & SORT TOOLBAR */}
+                                            <div className="flex w-full sm:w-auto gap-2">
+                                                <div className="relative flex-1 sm:flex-none">
+                                                    <input 
+                                                        className="bg-slate-900 border border-slate-600 rounded pl-8 pr-3 py-1.5 text-xs text-white focus:border-indigo-500 w-full"
+                                                        placeholder="Search bank..."
+                                                        value={homebrewSearch}
+                                                        onChange={(e) => setHomebrewSearch(e.target.value)}
+                                                    />
+                                                    <Search size={14} className="absolute left-2.5 top-2 text-slate-500"/>
+                                                </div>
+                                                <button 
+                                                    onClick={() => setHomebrewSortBy(homebrewSortBy === 'name' ? 'type' : 'name')}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white rounded text-xs font-bold border border-slate-600 transition-colors"
+                                                    title={`Sorted by ${homebrewSortBy}`}
+                                                >
+                                                    <Filter size={14} className={homebrewSortBy === 'type' ? 'text-amber-400' : 'text-slate-400'}/>
+                                                    {homebrewSortBy === 'name' ? 'A-Z' : 'Type'}
+                                                </button>
+                                            </div>
+                                        </div>
                                         
                                         {/* NEW: Backup/Restore Buttons */}
                                         <div className="flex gap-2 mb-6">
@@ -1410,26 +1547,63 @@
                                         </div>
 
                                         <form onSubmit={saveHomebrewMonster} className="mb-6 grid grid-cols-2 md:grid-cols-12 gap-3 items-end p-3 bg-slate-700/50 rounded-lg border border-slate-600">
-                                            <div className="col-span-2 md:col-span-4"><label className="text-xs text-slate-400 block mb-1">Name</label><input className={INPUT_CLASS} value={homebrewForm.name} onChange={e=>setHomebrewForm({...homebrewForm,name:e.target.value})} onBlur={handleInputBlur} /></div>
+                                            <div className="col-span-2 md:col-span-3"><label className="text-xs text-slate-400 block mb-1">Name</label><input className={INPUT_CLASS} value={homebrewForm.name} onChange={e=>setHomebrewForm({...homebrewForm,name:e.target.value})} onBlur={handleInputBlur} /></div>
+                                            <div className="col-span-1 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">Type</label>
+                                                <select className={INPUT_CLASS} value={homebrewForm.type} onChange={e=>setHomebrewForm({...homebrewForm,type:e.target.value})}>
+                                                    {MONSTER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                                                </select>
+                                            </div>
                                             <div className="col-span-1 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">HP</label><input type="number" className={INPUT_CLASS} value={homebrewForm.hp} onChange={e=>setHomebrewForm({...homebrewForm,hp:e.target.value})} onBlur={handleInputBlur} /></div>
                                             <div className="col-span-1 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">AC</label><input type="number" className={INPUT_CLASS} value={homebrewForm.ac} onChange={e=>setHomebrewForm({...homebrewForm,ac:e.target.value})} onBlur={handleInputBlur} /></div>
-                                            <div className="col-span-1 md:col-span-3"><label className="text-xs text-slate-400 block mb-1">Init Mod</label><input type="number" className={INPUT_CLASS} value={homebrewForm.initMod} onChange={e=>setHomebrewForm({...homebrewForm,initMod:e.target.value})} onBlur={handleInputBlur} /></div>
+                                            <div className="col-span-1 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">Init Mod</label><input type="number" className={INPUT_CLASS} value={homebrewForm.initMod} onChange={e=>setHomebrewForm({...homebrewForm,initMod:e.target.value})} onBlur={handleInputBlur} /></div>
                                             <div className="col-span-1 md:col-span-1 flex gap-1">
                                                 <button type="button" onClick={clearHomebrewForm} className="bg-slate-800 hover:bg-slate-600 text-slate-400 hover:text-white p-1.5 rounded flex justify-center items-center transition-colors" title="Clear Form"><RotateCcw size={18}/></button>
                                                 <button className="flex-1 bg-amber-700 hover:bg-amber-600 text-white py-1.5 rounded flex justify-center" title="Save Monster or Update Existing"><Save size={18}/></button>
                                             </div>
                                         </form>
+                                        
+                                        {/* DISPLAY LIST */}
                                         <div className="space-y-2">
-                                            {homebrew.map(h => (
-                                                <div key={h.id} className="flex justify-between items-center bg-slate-900/50 p-3 rounded border border-slate-700">
-                                                    <div><div className="font-bold text-white">{h.name}</div><div className="text-xs text-slate-400">HP: {h.hp} | AC: {h.ac} | Init: {h.initMod >= 0 ? '+' : ''}{h.initMod}</div></div>
-                                                    <div className="flex gap-2">
-                                                        {/* FIX: Pass full monster object to openStatBlock */}
-                                                        {h.statBlockSummary && <button onClick={() => openStatBlock(h)} className="text-slate-400 hover:text-white p-1" title="View Stat Block"><CircleHelp size={16}/></button>}
-                                                        <button onClick={()=>deleteHomebrew(h.id)} className="text-slate-500 hover:text-red-500"><Trash2 size={16}/></button>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                            {processedHomebrew.type === 'flat' ? (
+                                                processedHomebrew.data.length > 0 ? (
+                                                    processedHomebrew.data.map(h => (
+                                                        <div key={h.id} className="flex justify-between items-center bg-slate-900/50 p-3 rounded border border-slate-700">
+                                                            <div>
+                                                                <div className="font-bold text-white flex items-center gap-2">{h.name} <span className="text-[10px] text-slate-500 font-normal uppercase border border-slate-700 px-1 rounded">{h.type||'Unknown'}</span></div>
+                                                                <div className="text-xs text-slate-400">HP: {h.hp} | AC: {h.ac} | Init: {h.initMod >= 0 ? '+' : ''}{h.initMod}</div>
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                {h.statBlockSummary && <button onClick={() => openStatBlock(h)} className="text-slate-400 hover:text-white p-1" title="View Stat Block"><CircleHelp size={16}/></button>}
+                                                                <button onClick={()=>deleteHomebrew(h.id)} className="text-slate-500 hover:text-red-500"><Trash2 size={16}/></button>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                ) : <div className="text-center text-slate-500 italic py-4">No matching monsters found.</div>
+                                            ) : (
+                                                /* GROUPED DISPLAY */
+                                                processedHomebrew.keys.length > 0 ? (
+                                                    processedHomebrew.keys.map(typeKey => (
+                                                        <div key={typeKey} className="mb-4">
+                                                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-700 mb-2 pb-1">{typeKey}</h3>
+                                                            <div className="space-y-2">
+                                                                {processedHomebrew.data[typeKey].map(h => (
+                                                                    <div key={h.id} className="flex justify-between items-center bg-slate-900/50 p-3 rounded border border-slate-700">
+                                                                        <div>
+                                                                            <div className="font-bold text-white">{h.name}</div>
+                                                                            <div className="text-xs text-slate-400">HP: {h.hp} | AC: {h.ac} | Init: {h.initMod >= 0 ? '+' : ''}{h.initMod}</div>
+                                                                        </div>
+                                                                        <div className="flex gap-2">
+                                                                            {h.statBlockSummary && <button onClick={() => openStatBlock(h)} className="text-slate-400 hover:text-white p-1" title="View Stat Block"><CircleHelp size={16}/></button>}
+                                                                            <button onClick={()=>deleteHomebrew(h.id)} className="text-slate-500 hover:text-red-500"><Trash2 size={16}/></button>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                ) : <div className="text-center text-slate-500 italic py-4">No matching monsters found.</div>
+                                            )}
+                                            
                                             {homebrew.length === 0 && <div className="text-center text-slate-500 italic py-4">No homebrew monsters saved.</div>}
                                         </div>
                                     </div>
@@ -1550,6 +1724,18 @@
                                     <button onClick={() => setShowHelpModal(false)}><X size={24} className="text-slate-400 hover:text-white"/></button>
                                 </div>
                                 <div className="space-y-4 text-sm text-slate-300">
+                                    <div className="bg-slate-800 p-3 rounded border border-slate-700 mb-4">
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <h3 className="text-amber-400 font-bold text-sm">Version {CURRENT_VERSION}</h3>
+                                                <p className="text-xs text-slate-400">See what's new in this update.</p>
+                                            </div>
+                                            <button onClick={() => { setShowHelpModal(false); setShowChangelogModal(true); }} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded flex items-center gap-2 border border-slate-600 transition-colors">
+                                                <Info size={14} className="text-amber-400"/> View Changelog
+                                            </button>
+                                        </div>
+                                    </div>
+
                                     <div>
                                         <h3 className="text-white font-bold mb-1 flex items-center gap-2"><User size={14}/> Setup</h3>
                                         <p>Add players and monsters. Use the <Sparkles size={12} className="inline text-indigo-400"/> icon to auto-generate 5e stat blocks using AI. Use the Reset icon to clear the form.</p>
