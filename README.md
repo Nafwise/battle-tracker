@@ -3,7 +3,7 @@
 
 ## 🔑 Setup
 **Manual Key Input:**
-`AIzaSyCK402yEU1re4Qv8OEU2FMNQ9lAuFi4TPw`
+``
 
 ---
 
