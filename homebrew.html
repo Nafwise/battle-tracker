@@ -396,7 +396,17 @@
         };
         const ChangelogModal = ({ onClose, currentVersion, lastAcknowledged }) => {
             // UPDATED CHANGELOG: Reflects the split from the main app at V1.1.0
-            const CHANGELOG_DATA = [{ version: currentVersion, date: "Update", changes: ["**Persistence Upgrade:** Added automatic LocalStorage backup. If your session resets (User ID changes), your bank will automatically restore from the browser cache.", "**Smart Import:** Importing JSON now intelligently updates existing monsters by name instead of ignoring them.", "**App Split:** This DM Tools application has been launched as a standalone utility, splitting off from the main Akashic Tome V1.1.0 project.", "**Data Persistence:** Implemented robust Homebrew monster persistence using Google Firestore.", "**AI Stability:** Improved stability and error handling for Gemini API calls."] }];
+            const CHANGELOG_DATA = [
+                { 
+                    version: currentVersion, 
+                    date: "Official Launch", 
+                    changes: [
+                        "**Stand Alone App (Integrated):** The DM Tools Bank now operates as a dedicated, persistent application. It is fully decoupled from the Tracker logic but remains seamlessly integrated via the new Launch/Return navigation.",
+                        "**DB Persistence:** Implemented a robust 'Bridge' system. Your Homebrew Bank is now backed by Firestore with an automatic LocalStorage failsafe. If your session ID rotates, the app detects your local backup and instantly restores your database.",
+                        "**Smart Import:** The import system now performs a 'Smart Merge'. It detects monsters by name to update existing stats rather than creating duplicates, keeping your bank clean."
+                    ] 
+                }
+            ];
             
             const needsAcknowledge = currentVersion > lastAcknowledged;
 
