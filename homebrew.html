@@ -92,7 +92,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         // Import all Firestore functions needed
-        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, setLogLevel, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Global Firebase instances to be initialized and used by the React app
         window.firebaseApp = null;
@@ -151,7 +151,8 @@
                 onSnapshot,
                 collection,
                 query,
-                serverTimestamp
+                serverTimestamp,
+                getDocs
             };
 
         } else {
@@ -361,8 +362,8 @@
                         <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Upload className="text-amber-500"/> Restore Homebrew Bank</h2>
                         <p className="text-slate-300 mb-6 text-sm">You are restoring data from: <span className="font-mono text-amber-300">{file.name}</span></p>
                         <div className="space-y-4">
-                            <button onClick={() => onConfirm('merge')} className="mt-3 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded text-sm">Confirm Merge (Keep existing + Add new)</button>
-                            <button onClick={() => onConfirm('overwrite')} className="mt-3 w-full bg-red-700 hover:bg-red-600 text-white font-bold py-2 rounded text-sm">Confirm Overwrite (Replace all)</button>
+                            <button onClick={() => onConfirm('merge')} className="mt-3 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded text-sm">Smart Merge (Update Existing + Add New)</button>
+                            <button onClick={() => onConfirm('overwrite')} className="mt-3 w-full bg-red-700 hover:bg-red-600 text-white font-bold py-2 rounded text-sm">Overwrite (Replace All)</button>
                         </div>
                         <div className="flex justify-end mt-4"><button onClick={onClose} className="px-4 py-2 text-slate-400 hover:text-white rounded text-sm">Cancel</button></div>
                     </div>
@@ -395,7 +396,7 @@
         };
         const ChangelogModal = ({ onClose, currentVersion, lastAcknowledged }) => {
             // UPDATED CHANGELOG: Reflects the split from the main app at V1.1.0
-            const CHANGELOG_DATA = [{ version: currentVersion, date: "Side App Launch", changes: ["**App Split:** This DM Tools application has been launched as a standalone utility, splitting off from the main Akashic Tome V1.1.0 project.", "**Data Persistence:** Implemented robust Homebrew monster persistence using Google Firestore.", "**AI Stability:** Improved stability and error handling for Gemini API calls.", "**UX/UI:** Fixed several JSX syntax and React mounting warnings to ensure a smoother experience."] }];
+            const CHANGELOG_DATA = [{ version: currentVersion, date: "Update", changes: ["**Persistence Upgrade:** Added automatic LocalStorage backup. If your session resets (User ID changes), your bank will automatically restore from the browser cache.", "**Smart Import:** Importing JSON now intelligently updates existing monsters by name instead of ignoring them.", "**App Split:** This DM Tools application has been launched as a standalone utility, splitting off from the main Akashic Tome V1.1.0 project.", "**Data Persistence:** Implemented robust Homebrew monster persistence using Google Firestore.", "**AI Stability:** Improved stability and error handling for Gemini API calls."] }];
             
             const needsAcknowledge = currentVersion > lastAcknowledged;
 
@@ -533,8 +534,13 @@
             const [appId, setAppId] = useState(null);
             const [isInitialAuthCheckComplete, setIsInitialAuthCheckComplete] = useState(false);
             
-            // App State
-            const [homebrew, setHomebrew] = useState([]);
+            // App State - INITIALIZE FROM LOCAL STORAGE FOR INSTANT VISUALS
+            const [homebrew, setHomebrew] = useState(() => {
+                try {
+                    const localData = localStorage.getItem('dm_homebrew_backup');
+                    return localData ? JSON.parse(localData) : [];
+                } catch(e) { return []; }
+            });
             
             // Changelog State
             const [lastAcknowledgedVersion, setLastAcknowledgedVersion] = useState(() => localStorage.getItem(LAST_ACKNOWLEDGED_VERSION_KEY) || '0.0.0');
@@ -593,11 +599,10 @@
                 };
             }, []);
 
-            // Firestore Data Listener Effect
+            // Firestore Data Listener Effect AND Auto-Persistence Bridge
             useEffect(() => {
                 // Check 1: Ensure fundamental DB/Auth details are present.
                 if (!db || !userId || !appId || !isInitialAuthCheckComplete) {
-                    console.log("Firestore data sync waiting for DB, UserId, or initial Auth Check.");
                     return;
                 }
 
@@ -605,22 +610,58 @@
                 // Now accessing functions directly via window.firebase which is correctly set in the module script
                 const q = window.firebase.query(window.firebase.collection(db, HOMEBREW_PATH));
 
+                // AUTO-RESTORE LOGIC: Check if DB is empty but we have local backup
+                // This handles the "Anonymous ID Rotation" issue by re-uploading your local bank to the new ID.
+                const checkAndRestore = async () => {
+                    try {
+                        const snapshot = await window.firebase.getDocs(q);
+                        if (snapshot.empty && homebrew.length > 0) {
+                            console.log("Empty DB detected, but Local Backup exists. Restoring...");
+                            showNotification("New Session Detected. Restoring Bank...", "info");
+                            
+                            const restorePromises = homebrew.map(m => {
+                                const docData = { ...m };
+                                delete docData.id; // Let Firestore assign new ID
+                                // Ensure standard fields
+                                if (!docData.createdAt) docData.createdAt = window.firebase.serverTimestamp();
+                                
+                                const docRef = window.firebase.doc(window.firebase.collection(db, HOMEBREW_PATH));
+                                return window.firebase.setDoc(docRef, docData);
+                            });
+                            
+                            await Promise.all(restorePromises);
+                            showNotification(`Restored ${homebrew.length} monsters to new session.`, "success");
+                        }
+                    } catch (e) {
+                        console.error("Auto-restore check failed", e);
+                    }
+                };
+                
+                // Run the check once when connection is established
+                checkAndRestore();
+
+                // Standard Listener
                 const unsubscribe = window.firebase.onSnapshot(q, (snapshot) => {
                     const loadedMonsters = snapshot.docs.map(doc => ({
                         id: doc.id,
                         ...doc.data()
                     }));
+                    
+                    // Update State
                     setHomebrew(loadedMonsters);
+                    
+                    // Update Local Backup
+                    if (loadedMonsters.length > 0) {
+                        localStorage.setItem('dm_homebrew_backup', JSON.stringify(loadedMonsters));
+                    }
+                    
                 }, (error) => {
-                    // This error is the "Missing or insufficient permissions" error.
-                    console.error("Firestore snapshot error: Missing or insufficient permissions. This usually indicates an issue with Security Rules in the backend.", error);
-                    showNotification("Failed to load Homebrew Bank. Check database permissions.", "error");
-                    // Important: Set homebrew to empty array to ensure UI loads even if data is unreachable.
-                    setHomebrew([]); 
+                    console.error("Firestore snapshot error:", error);
+                    // Don't show error to user immediately to avoid spam if auth is flickering
                 });
 
                 return () => unsubscribe();
-            }, [db, userId, appId, isInitialAuthCheckComplete]); // Depend on all readiness flags
+            }, [db, userId, appId, isInitialAuthCheckComplete]); 
 
             // Local Storage Effects (for non-critical user preferences)
             useEffect(() => { 
@@ -641,13 +682,10 @@
                     if (isNewVersionAvailable(CURRENT_VERSION, lastAcknowledgedVersion)) {
                         localStorage.setItem(LAST_ACKNOWLEDGED_VERSION_KEY, CURRENT_VERSION);
                         setLastAcknowledgedVersion(CURRENT_VERSION);
-                        // Optional notification for feedback
-                        // showNotification(`Changelog acknowledged (V${CURRENT_VERSION})`, 'info'); 
                     }
                     setShowChangelogModal(false);
                 }
             };
-            // Note: The isNewVersionAvailable function remains outside the component logic flow for showGlow computation.
 
             // Handlers
             const showNotification = (message, type = 'info') => { setNotification({ message, type }); setTimeout(() => setNotification(null), 3000); };
@@ -674,30 +712,49 @@
                 if (!homebrewForm.name || !homebrewForm.hp) { showNotification("Name/HP required", "error"); return; }
                 
                 const HOMEBREW_PATH = `artifacts/${appId}/users/${userId}/homebrew`;
+                
+                // Normalizing name for strict check
+                const targetName = homebrewForm.name.trim();
+                const targetNameLower = targetName.toLowerCase();
+
+                // Find ALL entries that match this name (case-insensitive) to handle duplicates
+                const duplicates = homebrew.filter(h => h.name.trim().toLowerCase() === targetNameLower);
+
                 const newMonsterData = { 
-                    name: homebrewForm.name, 
+                    name: targetName, 
                     hp: parseInt(homebrewForm.hp), 
                     ac: parseInt(homebrewForm.ac)||10, 
                     initMod: parseInt(homebrewForm.initMod)||0, 
                     type: homebrewForm.type || 'Unknown', 
                     ...monsterDetails,
-                    createdAt: window.firebase.serverTimestamp() // Add timestamp for sorting/tracking
+                    updatedAt: window.firebase.serverTimestamp()
                 };
-
-                const existing = homebrew.find(h => h.name.toLowerCase() === homebrewForm.name.toLowerCase());
                 
+                // If it's a completely new entry (no duplicates), add createdAt
+                if (duplicates.length === 0) {
+                    newMonsterData.createdAt = window.firebase.serverTimestamp();
+                }
+
                 try {
-                    if (existing) {
-                        // Update existing monster
-                        const docRef = window.firebase.doc(db, HOMEBREW_PATH, existing.id);
+                    if (duplicates.length > 0) {
+                        // 1. Update the first one
+                        const mainDoc = duplicates[0];
+                        const docRef = window.firebase.doc(db, HOMEBREW_PATH, mainDoc.id);
                         await window.firebase.setDoc(docRef, newMonsterData, { merge: true });
-                        showNotification(`Updated existing monster: ${homebrewForm.name}`, "info");
+                        
+                        // 2. Delete any extra duplicates found in the bank
+                        if (duplicates.length > 1) {
+                            const extras = duplicates.slice(1);
+                            await Promise.all(extras.map(d => window.firebase.deleteDoc(window.firebase.doc(db, HOMEBREW_PATH, d.id))));
+                            showNotification(`Updated "${targetName}" and removed ${extras.length} duplicate(s).`, "success");
+                        } else {
+                            showNotification(`Updated "${targetName}"`, "info");
+                        }
                     } else {
-                        // Add new monster
-                        // Now accessing functions directly via window.firebase
+                        // Create New
                         const docRef = window.firebase.doc(window.firebase.collection(db, HOMEBREW_PATH));
                         await window.firebase.setDoc(docRef, newMonsterData);
-                        showNotification("Saved to Bank", "success");
+                        showNotification(`Created "${targetName}"`, "success");
                     }
                     clearHomebrewForm();
                 } catch (e) {
@@ -729,7 +786,6 @@
             };
 
             const handleExportHomebrew = () => {
-                // Export the current state of homebrew loaded from Firestore
                 const blob = new Blob([JSON.stringify(homebrew, null, 2)], { type: "application/json" });
                 const href = URL.createObjectURL(blob);
                 const baseName = exportFileName.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') || `homebrew_bank`;
@@ -755,15 +811,16 @@
                 reader.readAsText(file);
             };
 
+            // REFINED HANDLE IMPORT (SMART MERGE)
             const handleHomebrewConfirm = async (strategy) => {
                 if (!db || !userId || !appId) { showNotification("Database not ready.", "error"); setShowHomebrewImportModal(null); return; }
 
                 const { data: importedMonsters } = showHomebrewImportModal;
                 const HOMEBREW_PATH = `artifacts/${appId}/users/${userId}/homebrew`;
+                
                 const processedImports = importedMonsters.map(m => { 
-                    // Clean up/re-ID monsters from the imported file
                     const cleanedMonster = { ...m };
-                    delete cleanedMonster.id; 
+                    delete cleanedMonster.id; // ID will be managed by DB or lookup
                     delete cleanedMonster.createdAt;
                     if ((!cleanedMonster.type || cleanedMonster.type === 'Unknown') && cleanedMonster.statBlockSummary) { 
                         cleanedMonster.type = inferTypeFromStatBlock(cleanedMonster.statBlockSummary); 
@@ -780,22 +837,42 @@
                         window.firebase.deleteDoc(window.firebase.doc(db, HOMEBREW_PATH, m.id))
                     );
                     await Promise.all(deletePromises);
-                    monstersToWrite = processedImports;
-                    showNotification(`Overwrote Homebrew Bank with ${monstersToWrite.length} entries.`, "success");
+                    monstersToWrite = processedImports.map(m => ({ ...m, op: 'create' })); // All are new
+                    showNotification(`Overwriting Bank with ${monstersToWrite.length} entries...`, "info");
 
                 } else if (strategy === 'merge') {
-                    const existingNames = new Set(existingMonsters.map(m => m.name.toLowerCase()));
-                    monstersToWrite = processedImports.filter(m => !existingNames.has(m.name.toLowerCase()));
-                    showNotification(`Merged: Added ${monstersToWrite.length} new entries to Homebrew Bank.`, "success");
+                    // SMART MERGE LOGIC
+                    // Map existing names to IDs for O(1) lookup
+                    const existingMap = {};
+                    existingMonsters.forEach(m => { existingMap[m.name.trim().toLowerCase()] = m.id; });
+
+                    monstersToWrite = processedImports.map(m => {
+                        const key = m.name.trim().toLowerCase();
+                        if (existingMap[key]) {
+                            return { ...m, op: 'update', docId: existingMap[key] };
+                        } else {
+                            return { ...m, op: 'create' };
+                        }
+                    });
+                    showNotification(`Processing Smart Merge (${monstersToWrite.length} entries)...`, "info");
                 }
                 
-                // 2. Write new/merged documents
+                // 2. Execute Writes (Update or Create)
                 const writePromises = monstersToWrite.map(m => {
-                    const docRef = window.firebase.doc(window.firebase.collection(db, HOMEBREW_PATH));
-                    return window.firebase.setDoc(docRef, { ...m, createdAt: window.firebase.serverTimestamp() });
+                    const { op, docId, ...data } = m;
+                    if (op === 'update') {
+                        // Update existing doc
+                        const docRef = window.firebase.doc(db, HOMEBREW_PATH, docId);
+                        return window.firebase.setDoc(docRef, { ...data, updatedAt: window.firebase.serverTimestamp() }, { merge: true });
+                    } else {
+                        // Create new doc
+                        const docRef = window.firebase.doc(window.firebase.collection(db, HOMEBREW_PATH));
+                        return window.firebase.setDoc(docRef, { ...data, createdAt: window.firebase.serverTimestamp() });
+                    }
                 });
+                
                 await Promise.all(writePromises);
-
+                showNotification("Import Complete!", "success");
                 setShowHomebrewImportModal(null);
             };
 
