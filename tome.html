@@ -212,7 +212,7 @@
         const D20Icon = (props) => <Icon {...props}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 7v10l10 5 10-5V7" /><path d="M12 22V12" /></Icon>;
         const ScrollText = (props) => <Icon {...props}><path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/></Icon>;
         const History = (props) => (<Icon {...props}><path d="M12 7v5l2 2"/><path d="M22 12A10 10 0 0 1 12 2v0a10 10 0 0 1 10 10z"/><path d="M2 12A10 10 0 0 0 12 2v0a10 10 0 0 0-10 10z"/></Icon>);
-
+        const FlaskConical = (props) => <Icon {...props}><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" /><path d="M8.5 2h7" /><path d="M7 16h10" /></Icon>;
 
         // --- CONSTANTS & UTILITIES (SHARED) ---
         const MONSTER_TYPES = [
@@ -845,7 +845,19 @@
                             <div className="max-w-6xl mx-auto">
                                 <div className="flex justify-between items-center mb-3">
                                     <div className="flex items-center gap-3"><CastleGate className="text-red-500 w-6 h-6 sm:w-8 sm:h-8" /><h1 className="text-lg sm:text-2xl font-bold tracking-tight text-white">Akashic Tracker</h1></div>
-                                    <div className="flex items-center bg-slate-900 rounded px-3 py-1 border border-slate-700"><span className="text-xs font-bold text-slate-500 mr-2">ROUND</span><span className="text-white font-mono text-lg">{combatState.round}</span></div>
+                                    <div className="flex items-center gap-3">
+                                        {/* NEW LINK BUTTON */}
+                                        <a href="./homebrew.html" className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-amber-500 border border-slate-600 hover:border-amber-500 px-3 py-1.5 rounded text-xs font-bold transition-all no-underline">
+                                            <FlaskConical size={16} />
+                                            <span className="hidden sm:inline">Open DM Tools</span>
+                                            <span className="sm:hidden">Tools</span>
+                                        </a>
+
+                                        <div className="flex items-center bg-slate-900 rounded px-3 py-1 border border-slate-700">
+                                            <span className="text-xs font-bold text-slate-500 mr-2">ROUND</span>
+                                            <span className="text-white font-mono text-lg">{combatState.round}</span>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
                                     <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700 w-full sm:w-auto overflow-x-auto no-scrollbar">
