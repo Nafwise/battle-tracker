@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Akashic Tracker</title>
+    
+    <!-- PWA / Mobile App Configuration -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0F172A">
+
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React 18 -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Polyfills & Babel -->
+    <script src="https://cdn.jsdelivr.net/npm/core-js-bundle@3.37.1/minified.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Firebase SDKs (v11.6.1) -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        /* --- The Astral Plane Palette --- */
+        :root {
+            --astral-bg: #0F172A;       /* Deep Midnight Midnight Blue (The Void) */
+            --astral-card: #1E293B;     /* Lighter Slate Blue */
+            --astral-input: #020617;    /* Almost Black for depth */
+            --text-primary: #F8FAFC;    /* Starlight White */
+            --text-secondary: #94A3B8;  /* Nebula Grey */
+            --accent-cyan: #38BDF8;     /* Cyan/Ether (Active) */
+            --accent-purple: #A855F7;   /* Mystic Purple (Magic) */
+            --accent-red: #F43F5E;      /* Rose Red (Danger) */
+            --border-color: #334155;    /* Slate border */
+        }
+
+        body {
+             background-color: #020617; 
+             font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+             color: var(--text-primary);
+             overscroll-behavior-y: none;
+             -webkit-user-select: none;
+             user-select: none;
+             -webkit-tap-highlight-color: transparent;
+        }
+        
+        input, textarea, .selectable-text {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        .astral-container {
+            background-color: var(--astral-bg);
+            background-image: radial-gradient(circle at top right, #1e293b 0%, #0f172a 60%);
+            box-shadow: 0 0 40px rgba(56, 189, 248, 0.05), 0 0 0 1px #334155;
+            border-radius: 12px;
+            margin: 20px auto;
+            max-width: 1200px;
+            min-height: 95vh;
+            position: relative; /* Added for floating buttons to constrain */
+        }
+        
+        @media (max-width: 640px) {
+             .astral-container {
+                 margin: 0;
+                 border-radius: 0;
+                 box-shadow: none;
+                 min-height: 100vh;
+                 border: none;
+             }
+        }
+        
+        /* General Styling Overrides (Tailwind mapping for theme) */
+        .text-red-500, .text-red-400 { color: var(--accent-red) !important; }
+        .text-green-400, .text-green-500, .bg-green-600 { background-color: var(--accent-cyan) !important; color: #0F172A !important; font-weight: 800 !important;}
+        .text-indigo-400, .bg-indigo-600 { background-color: var(--accent-purple) !important; color: white !important;}
+        .bg-slate-900, .bg-gray-900 { background-color: var(--astral-input) !important; border-color: var(--border-color) !important; }
+        .bg-slate-800, .bg-gray-800 { background-color: var(--astral-card) !important; border-color: var(--border-color) !important; }
+        .border-slate-600, .border-slate-700 { border-color: var(--border-color) !important; }
+        /* Adjusted positioning to be relative to astral-container */
+        .floating-button { z-index: 90; position: absolute; bottom: 20px; right: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        /* Removed active:scale-95 to prevent jutter/jump on click */
+        .floating-turn-button { 
+            z-index: 90; 
+            position: absolute; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            padding-top: 1rem; 
+            padding-bottom: 1rem; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5); 
+            transition: all 0.1s; /* Keep transition for color changes */
+        }
+        input, textarea, select { background-color: var(--astral-input) !important; border-color: var(--border-color) !important; color: var(--text-primary) !important; font-size: 16px !important; }
+        input:focus, textarea:focus { border-color: var(--accent-cyan) !important; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important; outline: none !important; }
+        
+        /* Custom style for the inner button within the input group */
+        .input-inline-btn {
+            position: absolute;
+            right: 4px; /* Slightly inward from the edge */
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 4px 8px; /* Added horizontal padding for touch targets */
+            height: calc(100% - 8px);
+            background-color: transparent; /* Hollow look */
+            border: 1px solid var(--border-color); /* Subtle border */
+            border-radius: 6px;
+            color: var(--accent-cyan);
+            transition: all 0.2s;
+            z-index: 10; /* Ensure it floats over the input field's body */
+        }
+        .input-inline-btn:hover {
+            background-color: var(--astral-card); /* Hover fills the hollow space */
+            border-color: var(--accent-cyan);
+        }
+
+        /* Small input fields for initiative/AC on card */
+        .card-inline-input {
+            width: 40px;
+            height: 20px;
+            padding: 0 4px;
+            font-size: 11px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--astral-input);
+            line-height: 1;
+        }
+        
+        /* Animation Utility */
+        @keyframes spin-die { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .animate-spin-fast { animation: spin-die 0.6s ease-in-out infinite; }
+
+        /* Glowing Pulse for new updates */
+        @keyframes pulse-glow {
+          0%, 100% {
+            box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.5);
+          }
+          50% {
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0);
+          }
+        }
+        .animate-pulse-glow {
+            animation: pulse-glow 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+            border-color: var(--accent-cyan) !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, memo, useCallback } = React;
+
+        // --- FIREBASE SETUP ---
+        // Initialize Firebase variables to null initially
+        let app, auth, db;
+        let appId = 'default-app-id';
+
+        try {
+            if (typeof firebase !== 'undefined' && typeof __firebase_config !== 'undefined') {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                app = firebase.initializeApp(firebaseConfig);
+                auth = firebase.auth();
+                db = firebase.firestore();
+                if (typeof __app_id !== 'undefined') {
+                    appId = __app_id;
+                }
+            } else {
+                console.warn("Firebase config not found. Running in offline/local mode.");
+            }
+        } catch (e) {
+            console.error("Firebase Initialization Error:", e);
+        }
+
+        // --- ICONS ---
+        const Icon = ({ children, className, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>
+        );
+        const Sword = (props) => <Icon {...props}><polyline points="14.5 17.5 3 22 4.5 10.5" /><path d="M22 3l-7.5 14.5L10 12 3 7l14.5-4.5 4.5 4.5z" /><line x1="8" y1="14" x2="2.5" y2="19.5" /><line x1="16" y1="5" x2="21.5" y2="10.5" /></Icon>;
+        const Shield = (props) => <Icon {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></Icon>;
+        const Trash2 = (props) => <Icon {...props}><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></Icon>;
+        const Plus = (props) => <Icon {...props}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></Icon>;
+        const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12" /></Icon>;
+        const AlertCircle = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></Icon>;
+        const Zap = (props) => <Icon {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></Icon>;
+        const Ghost = (props) => <Icon {...props}><path d="M9 22l2-2.5L13 22l2-2.5L17 22V10a5 5 0 0 0-5-5 5 5 0 0 0-5 5v12z" /><circle cx="10" cy="13" r="2" /><circle cx="14" cy="13" r="2" /></Icon>;
+        const Sparkles = (props) => <Icon {...props}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.276 1.276L3 12l5.813 1.912a2 2 0 0 1 1.276 1.276L12 21l1.912-5.813a2 2 0 0 1 1.276-1.276L21 12l-5.813-1.912a2 2 0 0 1-1.276-1.276Z" /></Icon>;
+        const Loader2 = (props) => <Icon {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></Icon>;
+        const MessageSquare = (props) => <Icon {...props}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Icon>;
+        const BookOpen = (props) => <Icon {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></Icon>;
+        const X = (props) => <Icon {...props}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></Icon>;
+        const CheckCircle = (props) => <Icon {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></Icon>;
+        const AlertTriangle = (props) => <Icon {...props}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></Icon>;
+        const User = (props) => <Icon {...props}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></Icon>;
+        const Download = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></Icon>;
+        const Upload = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></Icon>;
+        const Settings = (props) => <Icon {...props}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></Icon>;
+        const Key = (props) => <Icon {...props}><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" /></Icon>;
+        const ArrowRight = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></Icon>;
+        const RotateCcw = (props) => <Icon {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></Icon>;
+        const Droplet = (props) => <Icon {...props}><path d="M12 2a10 10 0 0 0-3.54 19.34l-1.09-1.9A8 8 0 0 1 12 4a8 8 0 0 1 4.63 1.34l1.09-1.9A10 10 0 0 0 12 2z" /></Icon>;
+        const Brain = (props) => <Icon {...props}><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" /><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" /></Icon>;
+        const CastleGate = (props) => (<Icon {...props}><path d="M19 21v-8a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v8"/><path d="M4 11V7"/><path d="M20 11V7"/><path d="M2 7h4v4H2z"/><path d="M18 7h4v4h-4z"/><path d="M4 7l2-4 2 4"/><path d="M18 7l2-4 2 4"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/></Icon>);
+        const ArrowDownUp = (props) => (<Icon {...props}><path d="m3 16 4 4 4-4" /><path d="M7 20V4" /><path d="m21 8-4-4-4 4" /><path d="M17 4v16" /></Icon>);
+        const Dices = (props) => <Icon {...props}><path d="m21 16-5.87-4.4a1 1 0 0 0-1.12-.08L9 15"/><path d="M11.5 11 9 15l-2.43 1.82a1 1 0 0 0 .09 1.63L12 21l4.58-2.32a1 1 0 0 0 .5-1.12z"/><path d="M15 9l-3.07-2.3a1 1 0 0 0-1.21-.08L6 10l-1.38 3a1 1 0 0 0 .09 1.07l2.25 3L9 15l2.5-4"/><path d="M2 12h5"/><path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6z"/></Icon>;
+        const D20Icon = (props) => <Icon {...props}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 7v10l10 5 10-5V7" /><path d="M12 22V12" /></Icon>;
+        const ScrollText = (props) => <Icon {...props}><path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/></Icon>;
+        const History = (props) => (<Icon {...props}><path d="M12 7v5l2 2"/><path d="M22 12A10 10 0 0 1 12 2v0a10 10 0 0 1 10 10z"/><path d="M2 12A10 10 0 0 0 12 2v0a10 10 0 0 0-10 10z"/></Icon>);
+
+
+        // --- CONSTANTS & UTILITIES (SHARED) ---
+        const MONSTER_TYPES = [
+            "Aberration", "Beast", "Celestial", "Construct", "Dragon", "Elemental", 
+            "Fey", "Fiend", "Giant", "Humanoid", "Monstrosity", "Ooze", "Plant", "Undead", "Unknown"
+        ];
+        const CONDITIONS = [
+            { name: 'Blinded', color: 'bg-gray-600' }, { name: 'Charmed', color: 'bg-pink-600' }, { name: 'Deafened', color: 'bg-gray-500' }, { name: 'Frightened', color: 'bg-purple-600' },
+            { name: 'Grappled', color: 'bg-orange-700' }, { name: 'Incapacitated', color: 'bg-red-800' }, { name: 'Invisible', color: 'bg-blue-400' }, { name: 'Paralyzed', color: 'bg-yellow-600' },
+            { name: 'Petrified', color: 'bg-stone-500' }, { name: 'Poisoned', color: 'bg-green-600' }, { name: 'Prone', color: 'bg-indigo-700' }, { name: 'Restrained', color: 'bg-orange-800' },
+            { name: 'Stunned', color: 'bg-yellow-500' }, { name: 'Unconscious', color: 'bg-black' },
+        ];
+        const INITIAL_FORM = { name: '', hp: '', ac: '', initiative: '', initMod: 0, qty: 1 };
+        const INITIAL_MONSTER_DETAILS = { resistances: '', vulnerabilities: '', actions: '', statBlockSummary: '', type: 'Unknown' };
+        const HARDCODED_API_KEY = ""; 
+        const CURRENT_VERSION = "1.1.5"; // Updated to match the latest changelog entry
+        // NOTE: Increased right padding of INPUT_CLASS to accommodate the inline button
+        const INPUT_CLASS = "w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 pr-12 focus:outline-none focus:border-indigo-500 text-sm";
+        const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+        const rollInitiative = (mod) => Math.floor(Math.random() * 20) + 1 + mod;
+        const safeLoad = (key, fallback) => { try { const item = localStorage.getItem(key); return item ? JSON.parse(item) : fallback; } catch (e) { console.warn(`Corrupt data for ${key}, using fallback.`); return fallback; } };
+        const sanitizeHtml = (str) => { if (!str) return ''; return str.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gm, "").replace(/on\w+="[^"]*"/g, "", str); };
+        const handleInputBlur = () => { setTimeout(() => { if (document.activeElement === document.body) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 150); };
+        
+        // --- API & AI CALLS ---
+        const inferTypeFromStatBlock = (summary) => {
+            if (!summary) return 'Unknown';
+            const lowerSummary = summary.toLowerCase();
+            const match = lowerSummary.match(/\((.*?)\)/);
+            if (match && match[1]) {
+                const potentialTypes = match[1].split(',').map(s => s.trim());
+                for (const potential of potentialTypes) {
+                    const typeMatch = MONSTER_TYPES.find(type => potential.startsWith(type.toLowerCase()));
+                    if (typeMatch) return typeMatch;
+                }
+            }
+            for (const type of MONSTER_TYPES) { if (type !== 'Unknown' && lowerSummary.includes(type.toLowerCase())) { return type; } }
+            return 'Unknown';
+        };
+
+        const callGemini = async (prompt, userApiKey) => {
+            let attempt = 0;
+            if (!userApiKey) return null;
+            while (attempt < 3) {
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+                    if (!res.ok) throw new Error("API Error");
+                    const data = await res.json();
+                    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                } catch (e) { attempt++; await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 1000)); }
+            }
+        };
+
+        // --- SUBCOMPONENTS & MODALS (BATTLEFIELD) ---
+        const ChangelogModal = ({ onClose, onMarkViewed }) => {
+            const changes = [
+                { version: "1.1.5", date: "Dec 2025", notes: ["**System:** Full Firebase integration enabled. Added Auth and Firestore hooks.", "**Feature:** Homebrew Sync. App now auto-syncs homebrew monsters from your private Firestore collection.", "**Refactor:** Prepared state management for splicing with the Homebrew Manager module."] },
+                { version: "1.1.4", date: "Dec 2025", notes: ["**Feature:** Enhanced Export Workflow. Export now opens a modal allowing you to rename the file before downloading.", "**Stability:** Verified export data includes full homebrew bank for future app reintegration."] },
+                { version: "1.1.3", date: "Dec 2025", notes: ["**Bugfix:** Corrected the `handleNextTurn` logic to ensure rounds cycle properly, fixing the reported turn sequencing bug.", "**UI/UX:** Removed click jutter/jump effect from the Floating Next Turn button.", "**UI/UX:** Updated main header icon to CastleGate.", "**UI/UX:** Added change update glow/pulse to the Changelog button."] },
+                { version: "1.1.2", date: "Dec 2025", notes: ["**UI/UX:** Implemented hollow style/inline buttons for AI sparkle and manual roll features in the setup form.", "**Layout:** Centered the main monster/player setup form container."] },
+                { version: "1.1.1", date: "Dec 2025", notes: ["**Cleanup:** Removed obsolete manual 'Sort Initiative' button.", "**Refinement:** Updated all setup form input placeholders to be clearer suggestions (e.g., 'e.g., Lich').", "**Stability:** Verified application integrity and error boundary behavior."] },
+                { version: "1.1.0", date: "Nov 2025", notes: ["**Feature:** Base App deployed.", "**Feature:** Split Homebrew Away from Main App."] }
+            ].sort((a, b) => {
+                const versionA = a.version.split('.').map(Number);
+                const versionB = b.version.split('.').map(Number);
+                for (let i = 0; i < Math.max(versionA.length, versionB.length); i++) {
+                    const diff = (versionB[i] || 0) - (versionA[i] || 0);
+                    if (diff !== 0) return diff;
+                }
+                return 0;
+            });
+            
+            const handleClose = () => {
+                onMarkViewed();
+                onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div className="bg-gray-900 w-full max-w-lg rounded-xl shadow-2xl border border-gray-700 flex flex-col max-h-[80vh]">
+                        <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl shrink-0">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <History className="text-indigo-400" /> Akashic Log (Changelog)
+                            </h2>
+                            <button onClick={handleClose}><X size={24} className="text-gray-400 hover:text-white"/></button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                            {changes.map((c, i) => (
+                                <div key={i} className="p-4 bg-slate-900 rounded-lg border border-slate-700">
+                                    <div className="flex justify-between items-start mb-2 border-b border-slate-700/50 pb-1">
+                                        <h3 className="text-lg font-bold text-cyan-400">Version {c.version}</h3>
+                                        <span className="text-xs text-slate-500 mt-1">{c.date}</span>
+                                    </div>
+                                    <ul className="list-disc pl-5 space-y-1 text-sm text-slate-300">
+                                        {c.notes.map((note, j) => (
+                                            <li key={j} dangerouslySetInnerHTML={{ __html: note.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="p-3 border-t border-gray-700 bg-gray-800 rounded-b-xl flex justify-end">
+                            <button onClick={handleClose} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-bold">Close</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        const ProgressBar = memo(({ current, max, isPlayer }) => {
+            if (max <= 0) return <div className="text-xs text-indigo-400 italic text-center py-2 border border-indigo-900/50 rounded bg-slate-900/30">{isPlayer ? 'HP Not Tracked' : 'No Max HP'}</div>;
+            const pct = Math.max(0, Math.min(100, (current / max) * 100));
+            const color = pct <= 25 ? 'bg-red-600' : pct <= 50 ? 'bg-yellow-500' : 'bg-green-500';
+            return <div className="h-4 w-full bg-slate-700 rounded-full overflow-hidden mt-2 relative border border-slate-600"><div className={`h-full transition-all duration-300 ease-out ${current===0 ? 'bg-gray-700' : color}`} style={{ width: `${pct}%` }} /><div className="absolute top-0 left-0 w-full h-full flex items-center justify-center text-xs font-bold text-white shadow-sm drop-shadow-md">{current} / {max} HP</div></div>;
+        });
+        const DeathSaveTracker = memo(({ saves, id, onToggle }) => {
+                return (<div className="mt-2 p-2 bg-slate-900/80 rounded border border-red-900 flex flex-col gap-1"><div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase"><span>Death Saves</span></div><div className="flex items-center justify-between gap-2"><div className="flex items-center gap-1"><span className="text-[10px] text-green-500 font-bold w-4">Suc</span>{[0, 1, 2].map(i => (<button key={`suc-${i}`} onClick={() => onToggle(id, 'successes', i)} className={`w-4 h-4 rounded-full border border-green-600 flex items-center justify-center transition-colors ${saves.successes > i ? 'bg-green-600' : 'bg-transparent hover:bg-green-900'}`}></button>))}</div><div className="flex items-center gap-1"><span className="text-[10px] text-red-500 font-bold w-4">Fail</span>{[0, 1, 2].map(i => (<button key={`fail-${i}`} onClick={() => onToggle(id, 'failures', i)} className={`w-4 h-4 rounded-full border border-red-600 flex items-center justify-center transition-colors ${saves.failures > i ? 'bg-red-600' : 'bg-transparent hover:bg-red-900'}`}></button>))}</div></div></div>);
+        });
+        const MonsterActionDetails = ({ combatant }) => {
+            const chips = [ {l:'Resistances', i:<Shield size={12} className="text-blue-400"/>, c:'text-blue-400', v:combatant.resistances}, {l:'Vulnerabilities', i:<Droplet size={12} className="text-red-400"/>, c:'text-red-400', v:combatant.vulnerabilities} ];
+            const acts = combatant.actions ? combatant.actions.split(',').map(a=>a.trim()).filter(a=>a) : [];
+            return (<div className="mt-3 space-y-2"><div className="space-y-1">{chips.map(d => <div key={d.l} className="flex items-center gap-2 text-xs font-medium bg-slate-900/50 p-1.5 rounded border border-slate-700">{d.i}<span className={d.c}>{d.l}:</span><span className="text-white flex-1 truncate" title={d.v||'None'}>{d.v||'None'}</span></div>)}</div>{acts.length > 0 && <div className="pt-2 border-t border-slate-700/50"><h5 className="text-xs font-bold text-yellow-400 mb-1 flex items-center gap-1"><Zap size={12}/> Actions:</h5><ul className="space-y-0.5 pl-3 text-white text-xs list-disc list-inside">{acts.map((a,i)=><li key={i} className="pl-1 leading-tight">{a}</li>)}</ul></div>}</div>);
+        };
+        // UPDATED: Added onUpdateInitiative prop to CombatantCard
+        const CombatantCard = memo(({ combatant: c, active, onUpdateHealth, onToggleConcentration, onToggleActionDetails, onNarrate, onDelete, onStatBlock, onToggleCondition, onToggleDeathSave, openActionDetailsId, openConditionId, setOpenConditionId, narration, isNarrating, onUpdateInitiative }) => {
+            const [localDmg, setLocalDmg] = useState('');
+            const handleLocalDmgSubmit = (e) => { e.preventDefault(); const val = parseInt(localDmg); if (!isNaN(val) && val !== 0) { onUpdateHealth(c.id, -val); setLocalDmg(''); } };
+            
+            // Handler for initiative change that calls the parent function
+            const handleInitChange = (e) => {
+                const newInit = parseInt(e.target.value) || 0;
+                onUpdateInitiative(c.id, newInit);
+            };
+
+            return (
+                <div id={`card-${c.id}`} className={`relative flex flex-col p-4 rounded-xl border shadow-md transition-all ${active ? 'ring-2 ring-green-500 border-green-500 bg-slate-800' : 'bg-slate-800 border-slate-600'}`}>
+                    {active && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">ACTIVE</div>}
+                    {c.isConcentrating && <div className="absolute -top-1 -right-1"><span className="flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span></span></div>}
+                    <div className="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 className={`font-bold text-lg ${c.type==='player'?'text-indigo-300':'text-white'}`}>{c.type === 'player' && <User size={16} />}{c.name}</h3>
+                            <div className="text-xs text-slate-400 mt-1 flex gap-3 items-center">
+                                <span>AC: {c.ac}</span>
+                                <span className="flex items-center gap-1">
+                                    Init: 
+                                    {/* NEW: Editable Initiative Input */}
+                                    <input 
+                                        type="number" 
+                                        value={c.initiative} 
+                                        onChange={handleInitChange} 
+                                        onBlur={handleInputBlur}
+                                        className="card-inline-input" 
+                                        title="Click to edit initiative"
+                                    />
+                                </span>
+                            </div>
+                        </div>
+                        <div className="flex gap-1">
+                            <button onClick={() => onToggleConcentration(c.id)} className={`p-1 hover:text-white transition-colors ${c.isConcentrating ? 'text-sky-400' : 'text-slate-600'} flex items-center justify-center`} title="Toggle Concentration"><Brain size={16} /></button>
+                            {c.statBlockSummary && <button onClick={()=>onStatBlock(c)} className="text-slate-500 hover:text-white p-1 flex items-center justify-center"><AlertCircle size={18}/></button>}
+                            {c.actions && <button onClick={()=>onToggleActionDetails(c.id)} className={`text-slate-500 hover:text-white p-1 ${openActionDetailsId===c.id?'text-indigo-400':''} flex items-center justify-center`}><BookOpen size={18}/></button>}
+                            <button onClick={()=>onNarrate(c)} className="text-slate-500 hover:text-white p-1 flex items-center justify-center">{isNarrating?<Loader2 size={16} className="animate-spin"/>:<MessageSquare size={16}/>}</button>
+                            <button onClick={()=>onDelete(c.id)} className="text-slate-500 hover:text-red-400 p-1 flex items-center justify-center"><Trash2 size={16}/></button>
+                        </div>
+                    </div>
+                    {openActionDetailsId===c.id && <div className="mb-3 bg-slate-900/50 p-2 rounded border border-slate-700"><MonsterActionDetails combatant={c}/></div>}
+                    <ProgressBar current={c.currentHp} max={c.maxHp} isPlayer={c.type==='player'}/>
+                    {c.type === 'player' && c.currentHp === 0 && <DeathSaveTracker saves={c.deathSaves} id={c.id} onToggle={onToggleDeathSave} />}
+                    {c.maxHp>0 && (<div className="flex gap-2 mt-2"><button onClick={()=>onUpdateHealth(c.id,-1)} className="p-1 bg-slate-700 rounded text-red-300 hover:bg-slate-600 flex items-center justify-center" style={{touchAction: 'manipulation'}}><Minus size={14}/></button><button onClick={()=>onUpdateHealth(c.id,1)} className="p-1 bg-slate-700 rounded text-green-300 hover:bg-slate-600 flex items-center justify-center" style={{touchAction: 'manipulation'}}><Plus size={14}/></button><form onSubmit={handleLocalDmgSubmit} className="flex-1"><input className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-center" placeholder="Dmg" value={localDmg} onChange={e=>setLocalDmg(e.target.value)} /></form></div>)}
+                    {narration && <div className="mt-2 text-xs text-indigo-300 italic">"{narration}"</div>}
+                    <div className="mt-3 pt-2 border-t border-slate-700/50">
+                        <div className="flex flex-wrap gap-1">
+                            {c.conditions.map(cond=><span key={cond} onClick={()=>onToggleCondition(c.id,cond)} className="px-1.5 py-0.5 bg-slate-700 rounded text-[10px] cursor-pointer hover:bg-red-900/50">{cond} ×</span>)}
+                            <button onClick={()=>{setOpenConditionId(openConditionId===c.id?null:c.id)}} className="px-1.5 py-0.5 bg-slate-700/50 rounded text-[10px] text-slate-400 hover:text-white">+ Cond</button>
+                        </div>
+                        {openConditionId===c.id && (<div className="mt-2 grid grid-cols-2 gap-1 bg-slate-900 p-2 rounded absolute z-20 w-full left-0 shadow-xl border border-slate-600">{CONDITIONS.map(cond=><button key={cond.name} onClick={()=>onToggleCondition(c.id,cond.name)} className="text-left text-[10px] p-1 hover:bg-slate-700 rounded text-slate-300" style={{touchAction: 'manipulation'}}>{cond.name}</button>)}</div>)}
+                    </div>
+                </div>
+            );
+        });
+        const BattleLogModal = ({ logs, onClose, onClear }) => {
+            const bottomRef = useRef(null);
+            useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [logs]);
+            return (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div className="bg-gray-900 w-full max-w-lg rounded-xl shadow-2xl border border-gray-700 flex flex-col h-[70vh]">
+                        <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl"><h2 className="text-xl font-bold text-white flex items-center gap-2"><ScrollText className="text-indigo-400" /> Battle Log</h2><button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button></div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-900/50">
+                            {logs.length === 0 ? <p className="text-slate-500 text-center text-sm italic py-4">The chronicles are empty...</p> : 
+                            logs.map((log, i) => (<div key={i} className={`text-sm p-2 rounded border-l-2 ${log.type==='damage'?'border-red-500 bg-red-900/10 text-red-200': log.type==='heal'?'border-green-500 bg-green-900/10 text-green-200': log.type==='turn'?'border-yellow-500 bg-yellow-900/10 text-yellow-200': 'border-slate-500 bg-slate-800 text-slate-300'}`}><span className="text-[10px] text-slate-500 block mb-0.5 uppercase tracking-wider">{new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</span>{log.message}</div>))}
+                            <div ref={bottomRef} />
+                        </div>
+                        <div className="p-3 border-t border-gray-700 bg-gray-800 rounded-b-xl flex justify-between"><button onClick={onClear} className="text-xs text-red-400 hover:text-red-300">Clear Log</button><button onClick={onClose} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-bold">Close</button></div>
+                    </div>
+                </div>
+            );
+        };
+        const DiceRollerModal = ({ onClose, addToLog }) => {
+            const [history, setHistory] = useState([]); const [mod, setMod] = useState(0); const [count, setCount] = useState(1); const [selectedDie, setSelectedDie] = useState(20); 
+            const roll = () => {
+                const sides = selectedDie; const n = Math.max(1, parseInt(count) || 1); const m = parseInt(mod) || 0; let totalRaw = 0; let rolls = [];
+                for(let i=0; i<n; i++) { const r = Math.floor(Math.random() * sides) + 1; rolls.push(r); totalRaw += r; }
+                const total = totalRaw + m; const rollStr = `[${rolls.join(', ')}]`; const diceStr = `${n}d${sides}`; const modStr = m !== 0 ? (m > 0 ? `+${m}` : m) : '';
+                const result = { desc: `${diceStr}${modStr}`, detail: `${rollStr} ${modStr} = `, total: total, isCrit: (sides === 20 && n === 1 && rolls[0] === 20), isFail: (sides === 20 && n === 1 && rolls[0] === 1), id: Date.now() };
+                setHistory(prev => [result, ...prev].slice(0, 20));
+                addToLog(`Rolled ${result.desc}: ${rollStr}${modStr} = ${total}`, 'roll');
+            };
+            return (
+                 <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div className="bg-gray-900 w-full max-w-sm rounded-xl shadow-2xl border border-gray-700 flex flex-col max-h-[90vh]">
+                        <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl shrink-0"><h2 className="text-xl font-bold text-white flex items-center gap-2"><D20Icon className="text-green-400 w-6 h-6" /> Dice Roller</h2><button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button></div>
+                        <div className="p-5 space-y-5 overflow-y-auto flex-1">
+                            <div><label className="block text-xs font-bold text-slate-400 uppercase mb-2">Select Die</label><div className="flex flex-wrap gap-2 justify-center">{[4,6,8,10,12,20,100].map(d => (<button key={d} onClick={() => setSelectedDie(d)} className={`w-10 h-10 rounded font-bold font-mono transition-all ${selectedDie === d ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 scale-110' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'}`}>d{d}</button>))}</div></div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div><label className="block text-xs font-bold text-slate-300 uppercase mb-1">Count</label><div className="flex items-center"><button onClick={() => setCount(Math.max(1, count - 1))} className="bg-slate-800 text-slate-300 p-2 rounded-l border border-slate-600 border-r-0 hover:bg-slate-700 hover:text-white"><Minus size={14}/></button><input type="number" value={count} onChange={(e)=>setCount(Math.max(1, parseInt(e.target.value)||1))} className="w-full bg-slate-900 border border-slate-600 py-2 text-center font-bold text-white focus:outline-none" /><button onClick={() => setCount(count + 1)} className="bg-slate-800 text-slate-300 p-2 rounded-r border border-slate-600 border-l-0 hover:bg-slate-700 hover:text-white"><Plus size={14}/></button></div></div>
+                                <div><label className="block text-xs font-bold text-slate-300 uppercase mb-1">Modifier</label><div className="flex items-center"><button onClick={() => setMod(mod - 1)} className="bg-slate-800 text-slate-300 p-2 rounded-l border border-slate-600 border-r-0 hover:bg-slate-700 hover:text-white"><Minus size={14}/></button><input type="number" value={mod} onChange={(e)=>setMod(parseInt(e.target.value)||0)} className="w-full bg-slate-900 border border-slate-600 py-2 text-center font-bold text-white focus:outline-none" /><button onClick={() => setMod(mod + 1)} className="bg-slate-800 text-slate-300 p-2 rounded-r border border-slate-600 border-l-0 hover:bg-slate-700 hover:text-white"><Plus size={14}/></button></div></div>
+                            </div>
+                            <button onClick={roll} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 text-lg"><D20Icon className="w-6 h-6 animate-spin-slow" /> ROLL {count}d{selectedDie} {mod !== 0 && (mod > 0 ? `+${mod}` : mod)}</button>
+                            <div className="bg-slate-950 rounded p-3 h-40 overflow-y-auto border border-slate-800 relative"><div className="flex justify-between items-center mb-2 sticky top-0 bg-slate-950/95 backdrop-blur-sm pb-2 border-b border-slate-800 z-10"><h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">History</h4>{history.length > 0 && <button onClick={() => setHistory([])} className="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase border border-red-900/50 px-2 py-0.5 rounded bg-red-900/10 hover:bg-red-900/30 transition-colors">Clear Log</button>}</div>{history.length === 0 && <div className="text-center text-slate-600 text-xs mt-12 italic">Ready to roll...</div>}<div className="space-y-1.5">{history.map(h => (<div key={h.id} className="flex justify-between items-center text-sm border-b border-slate-800/50 pb-1.5 last:border-0 animate-fade-in"><div className="flex flex-col"><span className="text-slate-400 text-xs font-mono">{h.desc}</span><span className="text-slate-500 text-[10px] truncate max-w-[140px]">{h.detail}</span></div><span className={`font-mono font-bold text-lg ${h.isCrit ? 'text-green-400 drop-shadow-md' : h.isFail ? 'text-red-500' : 'text-white'}`}>{h.total}</span></div>))}</div></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        const MonsterStatBlockModal = ({ combatant, onClose }) => {
+             if (!combatant?.statBlockSummary) return null;
+             const escapeHtml = (unsafe) => { return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+             const renderSummary = (text) => {
+                 return text.split('\n').map((line, index) => {
+                     let cleanLine = escapeHtml(line);
+                     let isHeader = false;
+                     if (cleanLine.trim().startsWith('**') && cleanLine.trim().endsWith('**')) { isHeader = true; } else { const upperLine = cleanLine.trim().toUpperCase(); const knownHeaders = ["ACTIONS", "LEGENDARY ACTIONS", "REACTIONS", "SPECIAL TRAITS", "SPELLCASTING"]; if (knownHeaders.includes(upperLine)) { isHeader = true; cleanLine = cleanLine.trim(); } }
+                     if (isHeader) { return <h3 key={index} className="!text-sm font-bold mt-3 mb-1 text-red-500">{cleanLine.replace(/\*\*/g, '')}</h3>; }
+                     const formattedLine = cleanLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<strong>$1</strong>');
+                     return <p key={index} dangerouslySetInnerHTML={{ __html: sanitizeHtml(formattedLine) }}></p>;
+                 });
+             };
+             return (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div className="bg-gray-900 text-gray-50 w-full max-w-2xl rounded-xl shadow-2xl border border-gray-700 flex flex-col max-h-[90vh]">
+                        <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl"><h2 className="text-xl font-bold text-red-400 flex items-center gap-2"><BookOpen className="text-red-400"/> {combatant.name} - Full Stat Block</h2><button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button></div>
+                        <div className="p-6 overflow-y-auto flex-1 stat-block"><h3 className="!text-2xl text-white border-b-2 border-red-500 pb-2 mb-3">{combatant.name.toUpperCase()} <span className="text-xs font-normal text-slate-400 ml-2">({combatant.type || 'Unknown'})</span></h3><p className="text-sm font-mono text-gray-400">AC: {combatant.ac} | HP: {combatant.maxHp} | Init Mod: {combatant.initMod}</p><div className="mt-4 text-sm text-gray-200">{combatant.statBlockSummary.length > 0 ? renderSummary(combatant.statBlockSummary.replace(/\\n/g, '\n')) : <span className="flex items-center text-red-400"><AlertTriangle className="inline w-4 h-4 text-yellow-500 mr-2" /> Stat block details were not successfully retrieved by the AI.</span>}</div></div>
+                        <div className="p-4 border-t border-gray-700 bg-gray-800 rounded-b-xl flex justify-end"><button onClick={onClose} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-medium">Close Stat Block</button></div>
+                    </div>
+                </div>
+            );
+        };
+        const FilenameModal = ({ fileName, setFileName, onClose, onDownload }) => {
+            return (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div className="bg-gray-900 w-full max-w-md rounded-xl border border-slate-700 p-6 shadow-2xl">
+                        <h2 className="text-xl font-bold text-white mb-4">File Options</h2>
+                        <div className="mb-4">
+                            <label className="block text-xs font-bold text-slate-400 mb-1 uppercase">Export Filename Base</label>
+                            <input className={INPUT_CLASS} value={fileName} name="fileName" onChange={(e) => setFileName(e.target.value)} onBlur={handleInputBlur} placeholder="encounter_name" />
+                            <p className="text-xs text-slate-500 mt-1">Used for encounter export (e.g., `<span className="text-amber-500">{fileName}</span>.json`).</p>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <button onClick={onClose} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-sm font-bold">Cancel</button>
+                            <button onClick={onDownload} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-bold">Download Now</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        const FloatingSettingsButton = ({ apiKey, setModalVisible }) => {
+            const isKeyNeeded = !apiKey;
+            if (isKeyNeeded) { return (<button onClick={() => setModalVisible(true)} className="floating-button px-4 py-2 flex items-center gap-2 bg-red-700 text-white rounded-full font-bold uppercase text-sm border-2 border-red-500 hover:bg-red-600 transition-colors duration-300 animate-pulse" title="Gemini API Key Needed for AI Features"><AlertTriangle size={16} /> API Key Needed</button>); }
+            return (<button onClick={() => setModalVisible(true)} className="floating-button w-10 h-10 flex items-center justify-center bg-slate-700 text-slate-400 hover:text-white rounded-full border border-slate-600 hover:bg-slate-600 transition-colors duration-300" title="AI Settings"><Settings size={20} /></button>);
+        };
+        const FloatingNextTurnButton = ({ handleNextTurn, combatants, viewMode }) => {
+            if (viewMode !== 'battlefield' || combatants.length === 0) return null;
+            // Removed active:scale-95 to prevent jutter/jump on click
+            return <button onClick={handleNextTurn} className="floating-turn-button px-6 py-3 sm:px-4 sm:py-2 bg-green-600 text-white rounded-full font-bold shadow-lg flex items-center gap-2 text-base sm:text-sm">Next Turn <ArrowRight size={16}/></button>;
+        };
+
+        // --- ERROR BOUNDARY ---
+        class ErrorBoundary extends React.Component {
+            constructor(props) { super(props); this.state = { hasError: false }; }
+            static getDerivedStateFromError(error) { return { hasError: true }; }
+            componentDidCatch(error, errorInfo) { console.error("Uncaught error:", error, errorInfo); }
+            handleReset = () => { if(confirm("This will clear local storage to fix the crash. Continue?")) { localStorage.clear(); window.location.reload(); } };
+            render() {
+                if (this.state.hasError) {
+                    return (<div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 text-center"><div className="bg-slate-900 p-8 rounded-xl border border-red-900 shadow-2xl max-w-md"><AlertTriangle size={48} className="text-red-500 mx-auto mb-4" /><h1 className="text-2xl font-bold text-white mb-2">Magical Feedback Loop Detected</h1><p className="text-slate-400 mb-6">The Akashic Tome has encountered a critical error. The Weave is unstable.</p><button onClick={this.handleReset} className="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-lg w-full transition-colors">Perform Ritual of Restoration (Reset Data)</button></div></div>);
+                }
+                return this.props.children;
+            }
+        }
+        
+        // --- MAIN APP ---
+        function App() {
+            const [combatants, setCombatants] = useState(() => safeLoad('dm-tracker-monsters', []));
+            const [homebrew, setHomebrew] = useState(() => safeLoad('dm-tracker-homebrew', [])); 
+            const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('dm-tracker-api-key') || HARDCODED_API_KEY);
+            const [exportFileName, setExportFileName] = useState(() => localStorage.getItem('dm-tracker-filename') || 'encounter_data');
+            const [combatState, setCombatState] = useState(() => safeLoad('dm-tracker-combat-state', { round: 1, turnIndex: 0 }));
+            const [battleLogs, setBattleLogs] = useState(() => safeLoad('dm-tracker-logs', []));
+            const [user, setUser] = useState(null); // Firebase User State
+            
+            const [monsterDetails, setMonsterDetails] = useState(INITIAL_MONSTER_DETAILS);
+            const [formData, setFormData] = useState(INITIAL_FORM);
+            
+            const [isGeneratingStats, setIsGeneratingStats] = useState(false);
+            const [isRollingInit, setIsRollingInit] = useState(false); 
+            const [narratingId, setNarratingId] = useState(null); 
+            const [narrations, setNarrations] = useState({}); 
+            
+            const [showSettingsModal, setShowSettingsModal] = useState(false);
+            const [showFilenameModal, setShowFilenameModal] = useState(false);
+            const [showDiceModal, setShowDiceModal] = useState(false);
+            const [showLogModal, setShowLogModal] = useState(false);
+            const [showChangelogModal, setShowChangelogModal] = useState(false); 
+            const [viewStatBlockMonster, setViewStatBlockMonster] = useState(null);
+            
+            const [addMode, setAddMode] = useState('monster'); 
+            const [notification, setNotification] = useState(null);
+            const [clearConfirm, setClearConfirm] = useState(false);
+            const [openActionDetailsId, setOpenActionDetailsId] = useState(null); 
+            const [openConditionId, setOpenConditionId] = useState(null); 
+            
+            const [viewMode, setViewMode] = useState('setup');
+            const encounterFileInputRef = useRef(null);
+
+            // AUTH & FIREBASE SYNC
+            useEffect(() => {
+                if (!auth) return;
+                const initAuth = async () => {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        try { await auth.signInWithCustomToken(__initial_auth_token); } catch(e) { console.error("Auth Error", e); }
+                    } else {
+                        try { await auth.signInAnonymously(); } catch(e) { console.error("Auth Error", e); }
+                    }
+                };
+                initAuth();
+                const unsubscribe = auth.onAuthStateChanged(setUser);
+                return () => unsubscribe();
+            }, []);
+
+            // Firestore Sync for Homebrew (Read-Only from this side)
+            useEffect(() => {
+                if (!user || !db) return;
+                // Assuming 'homebrew' collection under user's private data path
+                // Path: /artifacts/{appId}/users/{userId}/homebrew
+                // Or whatever specific collection name the Homebrew Manager uses. 
+                // Defaulting to 'homebrew' as per implied structure.
+                // NOTE: This logic replaces the localstorage load if DB is active.
+                
+                const hbCollection = db.collection('artifacts').doc(appId).collection('users').doc(user.uid).collection('homebrew');
+                
+                const unsubscribe = hbCollection.onSnapshot(snapshot => {
+                    const fetchedHomebrew = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    // Only update if we actually got data, otherwise keep local (or empty)
+                    if (fetchedHomebrew.length > 0 || snapshot.empty) {
+                        setHomebrew(fetchedHomebrew);
+                        // Also sync to local storage for offline backup/persistence
+                        localStorage.setItem('dm-tracker-homebrew', JSON.stringify(fetchedHomebrew));
+                    }
+                }, error => {
+                    console.error("Error syncing homebrew:", error);
+                });
+
+                return () => unsubscribe();
+            }, [user]);
+
+
+            // CHANGELOG STATE & LOGIC
+            const isNewUpdateAvailable = () => {
+                const lastViewedVersion = localStorage.getItem('dm-tracker-last-viewed-version');
+                if (!lastViewedVersion) return true;
+                
+                const parseVersion = (v) => v.split('.').map(Number);
+                const current = parseVersion(CURRENT_VERSION);
+                const viewed = parseVersion(lastViewedVersion);
+                
+                for (let i = 0; i < Math.max(current.length, viewed.length); i++) {
+                    const c = current[i] || 0;
+                    const v = viewed[i] || 0;
+                    if (c > v) return true;
+                    if (c < v) return false;
+                }
+                return false;
+            };
+
+            const [newUpdateGlow, setNewUpdateGlow] = useState(isNewUpdateAvailable());
+            
+            const markChangelogViewed = () => {
+                localStorage.setItem('dm-tracker-last-viewed-version', CURRENT_VERSION);
+                setNewUpdateGlow(false);
+            };
+
+            // Effects
+            useEffect(() => { localStorage.setItem('dm-tracker-monsters', JSON.stringify(combatants)); }, [combatants]);
+            useEffect(() => { if (userApiKey && userApiKey !== localStorage.getItem('dm-tracker-api-key')) localStorage.setItem('dm-tracker-api-key', userApiKey); }, [userApiKey]);
+            useEffect(() => { localStorage.setItem('dm-tracker-filename', exportFileName); }, [exportFileName]);
+            useEffect(() => { localStorage.setItem('dm-tracker-combat-state', JSON.stringify(combatState)); }, [combatState]);
+            useEffect(() => { localStorage.setItem('dm-tracker-logs', JSON.stringify(battleLogs)); }, [battleLogs]);
+            useEffect(() => { if (combatants.length === 0) setCombatState({ round: 1, turnIndex: 0 }); else if (combatState.turnIndex >= combatants.length) setCombatState(prev => ({ ...prev, turnIndex: 0 })); }, [combatants.length]);
+            useEffect(() => {
+                if (viewMode === 'battlefield' && combatants.length > 0) {
+                    const activeCombatant = combatants[combatState.turnIndex];
+                    if (activeCombatant) {
+                        const element = document.getElementById(`card-${activeCombatant.id}`);
+                        if (element) { setTimeout(() => { element.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }
+                    }
+                }
+            }, [combatState.turnIndex, viewMode]); 
+
+            // Handlers
+            const showNotification = (message, type = 'info') => { setNotification({ message, type }); setTimeout(() => setNotification(null), 3000); };
+            const addToLog = useCallback((message, type='info') => {
+                const newLog = { message, type, timestamp: new Date().toISOString() };
+                setBattleLogs(prev => [...prev, newLog].slice(-50)); // Keep last 50
+            }, []);
+            const toggleActionDetails = useCallback((id) => { setOpenActionDetailsId(prev => prev === id ? null : id); setOpenConditionId(prev => (prev !== null && prev !== id ? null : prev)); }, []);
+            const openStatBlock = useCallback((monster) => { setViewStatBlockMonster(monster); }, []);
+            
+            const updateInitiative = useCallback((id, newInit) => {
+                setCombatants(prev => {
+                    const updatedCombatants = prev.map(c => 
+                        c.id === id ? { ...c, initiative: newInit } : c
+                    );
+                    const sortedCombatants = updatedCombatants.sort((a, b) => b.initiative - a.initiative);
+                    const activeId = prev[combatState.turnIndex]?.id;
+                    const newActiveIndex = sortedCombatants.findIndex(c => c.id === activeId);
+                    setCombatState(prev => ({ ...prev, turnIndex: newActiveIndex >= 0 ? newActiveIndex : 0 }));
+                    return sortedCombatants;
+                });
+            }, [combatState.turnIndex]);
+
+            // --- COMBAT STATE & GAME LOGIC ---
+            const handleNextTurn = () => {
+                if (combatants.length === 0) return;
+                
+                let nextIndex = combatState.turnIndex;
+                let didWrap = false;
+                let loops = 0;
+                const maxLoops = combatants.length * 2;
+                
+                do {
+                    nextIndex = (nextIndex + 1) % combatants.length;
+                    loops++;
+                    if (nextIndex === 0) { didWrap = true; }
+                    const nextCombatant = combatants[nextIndex];
+                    if (nextCombatant && (nextCombatant.currentHp > 0 || nextCombatant.maxHp === 0 || nextCombatant.type === 'player')) { break; }
+                    if (loops >= maxLoops) { console.warn("Could not find a valid target, stopping turn cycle."); return; }
+                } while (nextIndex !== combatState.turnIndex);
+
+                const nextCombatantName = combatants[nextIndex]?.name || "Unknown";
+                if (didWrap) {
+                     setCombatState(prev => ({ round: prev.round + 1, turnIndex: nextIndex }));
+                     showNotification(`Round ${combatState.round + 1}!`, 'info');
+                     addToLog(`Round ${combatState.round + 1} started. ${nextCombatantName}'s turn.`, 'turn');
+                } else {
+                     setCombatState(prev => ({ ...prev, turnIndex: nextIndex }));
+                     addToLog(`Turn passed to ${nextCombatantName}.`, 'turn');
+                }
+            };
+            const updateHealth = useCallback((id, amount) => {
+                setCombatants(prev => {
+                     const target = prev.find(c => c.id === id);
+                     if (!target) return prev;
+                     if (amount < 0) { addToLog(`${target.name} took ${Math.abs(amount)} damage`, 'damage'); } else if (amount > 0) { addToLog(`${target.name} healed ${amount} HP`, 'heal'); }
+                     return prev.map(m => {
+                        if (m.id !== id) return m;
+                        if (m.type === 'player' && m.maxHp === 0) return m;
+                        const newHp = Math.max(0, Math.min(m.maxHp, m.currentHp + amount));
+                        let newDeathSaves = m.deathSaves;
+                        if (m.type === 'player' && m.currentHp === 0 && newHp > 0) { newDeathSaves = { successes: 0, failures: 0 }; }
+                        return { ...m, currentHp: newHp, deathSaves: newDeathSaves !== undefined ? newDeathSaves : m.deathSaves };
+                    });
+                });
+            }, [addToLog]);
+            const toggleConcentration = useCallback((id) => { setCombatants(prev => prev.map(m => m.id !== id ? m : { ...m, isConcentrating: !m.isConcentrating })); }, []);
+            const toggleDeathSave = useCallback((id, type, index) => {
+                setCombatants(prev => prev.map(m => { if (m.id !== id) return m; const currentSaves = m.deathSaves || { successes: 0, failures: 0 }; let newVal = index + 1; if (currentSaves[type] === newVal) newVal = index; return { ...m, deathSaves: { ...currentSaves, [type]: newVal } }; }));
+            }, []);
+            const toggleCondition = useCallback((id, c) => {
+                setCombatants(prev => prev.map(m => m.id !== id ? m : { ...m, conditions: m.conditions.includes(c) ? m.conditions.filter(i => i !== c) : [...m.conditions, c] }));
+            }, []);
+            const deleteCombatant = useCallback((id) => { setCombatants(prev => prev.filter(m => m.id !== id)); setNarrations(prev => { const n = {...prev}; delete n[id]; return n; }); }, []);
+            const sortCombatants = () => { setCombatants(prev => [...prev].sort((a, b) => b.initiative - a.initiative)); setCombatState(prev => ({ ...prev, turnIndex: 0 })); };
+            const handleClearAll = () => { if (clearConfirm) { setCombatants([]); setNarrations({}); setCombatState({ round: 1, turnIndex: 0 }); setBattleLogs([]); setClearConfirm(false); showNotification("Cleared", "success"); } else { setClearConfirm(true); setTimeout(() => setClearConfirm(false), 3000); } };
+            const handleNarrate = useCallback(async (combatant) => {
+                setNarratingId(combatant.id);
+                const txt = await callGemini(`Write short visceral combat flavor text for ${combatant.name} (HP ${combatant.currentHp}/${combatant.maxHp}). No quotes.`, userApiKey);
+                if (txt) setNarrations(prev => ({ ...prev, [combatant.id]: txt.trim() }));
+                setNarratingId(null);
+            }, [userApiKey]);
+            const handleManualRoll = () => {
+                if (addMode !== 'player') return;
+                setIsRollingInit(true);
+                setTimeout(() => {
+                    const mod = parseInt(formData.initMod) || 0;
+                    const total = rollInitiative(mod);
+                    setFormData(prev => ({ ...prev, initiative: total.toString() }));
+                    setIsRollingInit(false);
+                }, 600);
+            };
+            const clearSetupForm = () => { setFormData(INITIAL_FORM); setMonsterDetails(INITIAL_MONSTER_DETAILS); setLastSource(null); showNotification("Setup form cleared", "info"); };
+            const handleInputChange = (e) => { const { name, value } = e.target; if (name === 'initiative' && addMode === 'monster') return; setFormData(prev => ({ ...prev, [name]: value })); };
+            
+            const handleAutoFillStats = async (e) => {
+                e.preventDefault();
+                if (!formData.name) { showNotification("Name required", "error"); return; }
+                setMonsterDetails(INITIAL_MONSTER_DETAILS);
+                
+                const normName = formData.name.trim().toLowerCase();
+                let hb = homebrew.find(h => h.name.trim().toLowerCase() === normName);
+                if (!hb) { hb = homebrew.find(h => h.name.trim().toLowerCase().includes(normName)); }
+
+                if (hb) {
+                    const mod = parseInt(hb.initMod) || 0;
+                    setFormData(prev => ({ ...prev, hp: hb.hp, ac: hb.ac, initMod: mod, initiative: '' }));
+                    setMonsterDetails({ resistances: hb.resistances||'', vulnerabilities: hb.vulnerabilities||'', actions: hb.actions||'', statBlockSummary: hb.statBlockSummary||'Not saved.', type: hb.type || 'Unknown' });
+                    showNotification("Stats loaded from Homebrew.", 'info');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                }
+                
+                if (!userApiKey) { showNotification("Missing API Key", "error"); setShowSettingsModal(true); return; }
+
+                setIsGeneratingStats(true);
+                const prompt = `You are a D&D 5e Rules Expert. Generate a COMPLETE, DETAILED stat block for the monster "${formData.name}". Return a JSON object with: - 'hp' (integer) - 'ac' (integer) - 'initMod' (integer) - 'resistances' (string: list or "None") - 'vulnerabilities' (string: list or "None") - 'actions' (string: concise list of action names and damage dice) - 'statBlockSummary' (string: A full markdown text block including: Ability Scores, Saving Throws, Skills, Senses, Languages, Challenge, Special Traits, Actions, and Legendary Actions if applicable. Use strict markdown headers like **Actions**.) - 'type' (string: e.g. "Aberration", "Beast", "Celestial") Return ONLY valid JSON.`;
+                const txt = await callGemini(prompt, userApiKey);
+                if (txt) {
+                    try {
+                        const json = JSON.parse(txt.replace(/```json|```/g, '').trim());
+                        let monsterType = json.type || 'Unknown';
+                        if (monsterType === 'Unknown' && json.statBlockSummary) { monsterType = inferTypeFromStatBlock(json.statBlockSummary); }
+                        setFormData(prev => ({ ...prev, hp: json.hp, ac: json.ac, initMod: parseInt(json.initMod)||0, initiative: '' }));
+                        setMonsterDetails({ resistances: json.resistances||'', vulnerabilities: json.vulnerabilities||'', actions: json.actions||'', statBlockSummary: json.statBlockSummary||'', type: monsterType });
+                        showNotification("Stats generated by AI.", 'info');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } catch (e) { showNotification("AI Parse Error", "error"); }
+                }
+                setIsGeneratingStats(false);
+            };
+
+            const addCombatant = (e) => {
+                e.preventDefault();
+                if (!formData.name) { showNotification("Name required", "error"); return; }
+                if (addMode === 'monster' && !formData.hp) { showNotification("HP required", "error"); return; }
+
+                const newC = [];
+                const qty = parseInt(formData.qty) || 1;
+                const mod = parseInt(formData.initMod) || 0;
+                
+                if (addMode === 'player') {
+                    let init = parseInt(formData.initiative);
+                    if (isNaN(init)) { init = rollInitiative(mod); addToLog(`Rolled Init for ${formData.name}: ${init}`, 'roll'); showNotification(`Rolled Init: ${init}`, 'success'); }
+                    newC.push({ id: generateId(), type: 'player', name: formData.name, maxHp: parseInt(formData.hp)||0, currentHp: parseInt(formData.hp)||0, ac: parseInt(formData.ac)||10, initiative: init, conditions: [], deathSaves: { successes: 0, failures: 0 }, isConcentrating: false });
+                    addToLog(`Added player ${formData.name}`, 'info');
+                } else {
+                    for (let i=0; i<qty; i++) {
+                        newC.push({ id: generateId(), type: 'monster', name: qty > 1 ? `${formData.name} ${i+1}` : formData.name, maxHp: parseInt(formData.hp), currentHp: parseInt(formData.hp), ac: parseInt(formData.ac)||10, initiative: rollInitiative(mod), conditions: [], isConcentrating: false, ...monsterDetails });
+                    }
+                    showNotification(`Added ${qty} ${formData.name}(s)`, 'success');
+                    addToLog(`Added ${qty} x ${formData.name}`, 'info');
+                }
+                setCombatants(prev => [...prev, ...newC].sort((a, b) => b.initiative - a.initiative));
+                setFormData(prev => ({ ...INITIAL_FORM, initMod: prev.initMod, qty: prev.qty }));
+                setMonsterDetails(INITIAL_MONSTER_DETAILS);
+                setCombatState(prev => ({ ...prev, turnIndex: 0 })); 
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+            
+            const performExport = () => {
+                const data = { timestamp: new Date().toISOString(), combatants, homebrew: homebrew, combatState, battleLogs };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                const href = URL.createObjectURL(blob);
+                const cleanFileName = exportFileName.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') || `dm_encounter_${new Date().toISOString().slice(0,10)}`;
+                const link = document.createElement('a'); link.href = href; link.download = cleanFileName + '.json'; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                showNotification(`Saved as ${cleanFileName}.json`, "success");
+                setShowFilenameModal(false);
+            };
+
+            const handleExportClick = () => {
+                setShowFilenameModal(true);
+            };
+
+            const handleImportClick = () => { if (encounterFileInputRef.current) { encounterFileInputRef.current.click(); } };
+            const handleFileChange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        let newCombatants = [];
+                        let newCombatState = null;
+                        let newLogs = [];
+
+                        if (Array.isArray(data)) { newCombatants = data; } 
+                        else if (data.combatants && Array.isArray(data.combatants)) {
+                            newCombatants = data.combatants;
+                            if (data.combatState) newCombatState = data.combatState;
+                            if (data.battleLogs) newLogs = data.battleLogs;
+                        } else { throw new Error("Invalid file format."); }
+
+                        if (confirm("Overwrite current encounter state (Combatants, Logs, State)?")) {
+                            setCombatants(newCombatants);
+                            if (newCombatState) setCombatState(newCombatState);
+                            if (newLogs.length > 0) setBattleLogs(newLogs);
+                            showNotification("Encounter loaded!", "success");
+                        }
+                    } catch (err) { showNotification("Failed to load encounter: " + err.message, "error"); }
+                    e.target.value = null; 
+                };
+                reader.readAsText(file);
+            };
+
+            // Navigation and Tool items
+            const NAV_ITEMS = [{ mode: 'setup', label: 'Setup', icon: User }, { mode: 'battlefield', label: 'Battlefield', icon: CastleGate }];
+
+            return (
+                <div className="min-h-screen pb-32 font-serif">
+                    {notification && <div className={`fixed top-4 right-4 z-[120] px-4 py-3 rounded shadow-xl flex items-center gap-2 animate-fade-in ${notification.type==='error'?'bg-red-600 text-white':'bg-green-600 text-white'}`}>{notification.type==='error'?<AlertTriangle size={18}/>:<CheckCircle size={18}/>}<span>{notification.message}</span></div>}
+                    
+                    {viewStatBlockMonster && <MonsterStatBlockModal combatant={viewStatBlockMonster} onClose={() => setViewStatBlockMonster(null)} />}
+                    {showFilenameModal && <FilenameModal fileName={exportFileName} setFileName={setExportFileName} onClose={() => setShowFilenameModal(false)} onDownload={performExport} />}
+                    {showDiceModal && <DiceRollerModal onClose={() => setShowDiceModal(false)} addToLog={addToLog} />}
+                    {showLogModal && <BattleLogModal logs={battleLogs} onClose={() => setShowLogModal(false)} onClear={() => setBattleLogs([])} />}
+                    {showChangelogModal && <ChangelogModal onClose={() => setShowChangelogModal(false)} onMarkViewed={markChangelogViewed} />}
+                    
+                    <div className="astral-container relative z-10 p-2 sm:p-4">
+                        <FloatingNextTurnButton handleNextTurn={handleNextTurn} combatants={combatants} viewMode={viewMode} />
+                        <FloatingSettingsButton apiKey={userApiKey} setModalVisible={setShowSettingsModal} />
+
+                        <header className="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-md -mx-2 sm:-mx-4 -mt-2 sm:-mt-4 px-4 py-3 mb-4">
+                            <div className="max-w-6xl mx-auto">
+                                <div className="flex justify-between items-center mb-3">
+                                    <div className="flex items-center gap-3"><CastleGate className="text-red-500 w-6 h-6 sm:w-8 sm:h-8" /><h1 className="text-lg sm:text-2xl font-bold tracking-tight text-white">Akashic Tracker</h1></div>
+                                    <div className="flex items-center bg-slate-900 rounded px-3 py-1 border border-slate-700"><span className="text-xs font-bold text-slate-500 mr-2">ROUND</span><span className="text-white font-mono text-lg">{combatState.round}</span></div>
+                                </div>
+                                <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+                                    <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700 w-full sm:w-auto overflow-x-auto no-scrollbar">
+                                        {NAV_ITEMS.map(item => (
+                                            <button key={item.mode} onClick={() => setViewMode(item.mode)} className={`flex-1 px-3 py-2 text-xs sm:text-sm font-bold rounded capitalize transition-colors whitespace-nowrap flex items-center justify-center gap-2 ${viewMode === item.mode ? (item.mode==='battlefield'?'bg-red-700 text-white':'bg-indigo-600 text-white') : 'text-slate-400 hover:text-white'}`}>
+                                                <item.icon size={16} />
+                                                <span>{item.label}</span>
+                                                {item.mode==='battlefield' && combatants.length>0 && <span className="ml-1 bg-black/30 px-1.5 rounded-full text-[10px]">{combatants.length}</span>}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="flex w-full sm:w-auto gap-2 justify-end">
+                                        <div className="flex bg-slate-900 rounded-lg p-1 border border-slate-700 flex-1 sm:flex-none justify-center">
+                                            <button onClick={() => setShowLogModal(true)} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Battle Log"><ScrollText size={18}/></button>
+                                            <button onClick={() => setShowDiceModal(true)} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Dice Roller"><D20Icon className="w-5 h-5"/></button>
+                                            <div className="w-px bg-slate-700 mx-1"></div>
+                                            <button onClick={() => setShowChangelogModal(true)} className={`p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center transition-all ${newUpdateGlow ? 'animate-pulse-glow' : ''}`} title="Changelog">
+                                                <History size={18}/>
+                                            </button>
+                                            <div className="w-px bg-slate-700 mx-1"></div>
+                                            <button onClick={handleImportClick} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Import Encounter"><Upload size={18}/></button> 
+                                            <input type="file" ref={encounterFileInputRef} onChange={handleFileChange} className="hidden" accept=".json" />
+                                            <button onClick={handleExportClick} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Export Full Encounter Data"><Download size={18}/></button>
+                                        </div>
+                                        <button onClick={handleClearAll} className={`px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider border transition-colors ${clearConfirm ? 'bg-red-600 text-white border-red-500' : 'bg-slate-900 text-red-400 border-slate-700 hover:bg-slate-800'}`}>{clearConfirm ? "Sure?" : "Clear"}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </header>
+
+                        <main className="max-w-6xl mx-auto">
+                            {viewMode === 'setup' && (
+                                <div className="animate-fade-in">
+                                    <section className="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-md max-w-4xl mx-auto">
+                                        <div className="flex justify-center items-center mb-4">
+                                            <div className="flex gap-4 p-1 rounded-lg border border-slate-700 bg-slate-900/50">
+                                                <button onClick={() => setAddMode('monster')} 
+                                                    className={`px-3 py-1.5 rounded text-sm font-bold flex items-center gap-2 transition-all border ${addMode === 'monster' 
+                                                        ? 'bg-slate-700/50 text-white border-slate-400' 
+                                                        : 'text-slate-500 border-transparent hover:bg-slate-800'}`}>
+                                                    <Ghost size={16}/> Monster
+                                                </button>
+                                                <button onClick={() => setAddMode('player')} 
+                                                    className={`px-3 py-1.5 rounded text-sm font-bold flex items-center gap-2 transition-all border ${addMode === 'player' 
+                                                        ? 'bg-indigo-900/50 text-indigo-100 border-indigo-400' 
+                                                        : 'text-slate-500 border-transparent hover:bg-slate-800'}`}>
+                                                    <User size={16}/> Player
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <form onSubmit={addCombatant} className="grid grid-cols-4 md:grid-cols-12 gap-3 items-end">
+                                            <div className="col-span-4 md:col-span-5">
+                                                <label className="text-xs text-slate-400 block mb-1">Name</label>
+                                                <div className="relative">
+                                                    <input className={INPUT_CLASS} value={formData.name} name="name" onChange={handleInputChange} onBlur={handleInputBlur} placeholder={addMode==='monster'?"e.g., Lich":"e.g., Aragon"} />
+                                                    {addMode==='monster' && (
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={handleAutoFillStats} 
+                                                            disabled={isGeneratingStats} 
+                                                            className="input-inline-btn" 
+                                                            title="Auto-fill Stats with AI"
+                                                            style={{touchAction: 'manipulation'}}
+                                                        >
+                                                            {isGeneratingStats ? <Loader2 size={16} className="animate-spin text-red-500"/> : <Sparkles size={16}/>}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="col-span-2 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">HP</label><input type="number" className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:border-indigo-500 text-sm" name="hp" value={formData.hp} onChange={handleInputChange} onBlur={handleInputBlur} placeholder="e.g., 55 Max" /></div>
+                                            <div className="col-span-2 md:col-span-1"><label className="block text-xs text-slate-400 mb-1">AC</label><input name="ac" type="number" className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:border-indigo-500 text-sm" value={formData.ac} onChange={handleInputChange} onBlur={handleInputBlur} placeholder="e.g., 18" /></div>
+                                            <div className="col-span-2 md:col-span-2">
+                                                <label className="text-xs text-slate-400 block mb-1">{addMode==='player'?'Init':'Init Mod'}</label>
+                                                <div className="relative">
+                                                    <input type="number" className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 pr-12 focus:outline-none focus:border-indigo-500 text-sm" name={addMode==='player'?'initiative':'initMod'} value={addMode==='player'?formData.initiative:formData.initMod} onChange={handleInputChange} onBlur={handleInputBlur} placeholder={addMode==='player'?'Roll (e.g., 18)':'+3 (Mod)'} />
+                                                    {addMode==='player' && (
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={handleManualRoll} 
+                                                            className="input-inline-btn"
+                                                            title="Manual Initiative Roll"
+                                                            style={{touchAction: 'manipulation'}}
+                                                        >
+                                                            <D20Icon className={`w-6 h-6 ${isRollingInit?'animate-spin-fast text-red-500':''}`}/>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {addMode==='monster' && <div className="col-span-2 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">Qty</label><input type="number" className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:border-indigo-500 text-sm" name="qty" value={formData.qty} onChange={handleInputChange} onBlur={handleInputBlur} /></div>}
+                                            <div className="col-span-4 md:col-span-12 flex gap-2 h-[38px] mt-2">
+                                                <button type="button" onClick={clearSetupForm} className="bg-slate-700/50 hover:bg-slate-600/70 border border-slate-700 text-slate-400 hover:text-white font-bold py-2 px-3 rounded flex justify-center items-center transition-colors h-full" title="Reset Form"><RotateCcw size={18}/></button>
+                                                <button type="submit" className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded flex justify-center items-center h-full shadow-lg transition-all active:scale-[0.98]"><Plus size={20}/></button>
+                                            </div>
+                                        </form>
+                                        {(monsterDetails.resistances || monsterDetails.actions) && <div className="mt-4 p-3 bg-slate-900/50 rounded border border-slate-700 text-xs space-y-1"><p><span className="text-blue-400">Resistances:</span> {monsterDetails.resistances||'None'}</p><p><span className="text-yellow-400">Actions:</span> {monsterDetails.actions||'None'}</p></div>}
+                                    </section>
+                                </div>
+                            )}
+
+                            {viewMode === 'battlefield' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
+                                    {combatants.length === 0 && <div className="col-span-full text-center py-20 opacity-50"><div className="text-xl font-serif mb-2">The battlefield is silent...</div><p className="text-sm">Go to <strong>Setup</strong> to add combatants.</p></div>}
+                                    {combatants.map((c, i) => (
+                                        <CombatantCard 
+                                            key={c.id} 
+                                            combatant={c}
+                                            active={i === combatState.turnIndex}
+                                            onUpdateHealth={updateHealth}
+                                            onToggleConcentration={toggleConcentration}
+                                            onToggleActionDetails={toggleActionDetails}
+                                            onNarrate={handleNarrate}
+                                            onDelete={deleteCombatant}
+                                            onStatBlock={openStatBlock}
+                                            onToggleCondition={toggleCondition}
+                                            onToggleDeathSave={toggleDeathSave}
+                                            openActionDetailsId={openActionDetailsId}
+                                            openConditionId={openConditionId}
+                                            setOpenConditionId={setOpenConditionId}
+                                            narration={narrations[c.id]}
+                                            isNarrating={narratingId===c.id}
+                                            onUpdateInitiative={updateInitiative}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </main>
+                    </div>
+
+                    {/* MODALS (Settings) */}
+                    {showSettingsModal && (<div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"><div className="bg-gray-900 w-full max-w-md rounded-xl shadow-2xl border border-gray-700 flex flex-col"><div className="flex justify-between items-center p-4 border-b border-gray-700"><h2 className="text-xl font-bold text-white flex items-center gap-2"><Settings className="text-slate-400" /> Settings</h2><button onClick={() => setShowSettingsModal(false)} className="text-slate-400 hover:text-white"><X size={24} /></button></div><div className="p-6"><label className="block text-sm font-bold text-white mb-2 flex items-center gap-2"><Key size={16} className="text-yellow-500" /> Gemini API Key</label><input type="password" placeholder="Paste your key here..." className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-2" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} /><p className="text-xs text-slate-400 mb-4">The AI features require a Google Gemini API Key. Stored locally.<br/><br/><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-400 underline hover:text-indigo-300">Get a free API Key here</a></p><div className="flex justify-end"><button onClick={() => {setShowSettingsModal(false); showNotification("Settings saved!", "success");}} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded font-bold">Save & Close</button></div></div></div></div>)}
+                </div>
+            );
+        }
+
+        window.onload = function() {
+            setTimeout(() => {
+                try {
+                    const rootElement = document.getElementById('root');
+                    if (rootElement) {
+                         const root = ReactDOM.createRoot(rootElement);
+                         root.render(<ErrorBoundary><App /></ErrorBoundary>);
+                    } else { throw new Error("Root element not found."); }
+                } catch (e) { console.error("React Mounting Failed:", e); document.getElementById('root').innerHTML = `<div class="text-white text-center mt-20">Failed to load app. Check console.</div>`; }
+            }, 100); 
+        };
+    </script>
+</body>
+</html>
