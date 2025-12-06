@@ -3,7 +3,7 @@
 <head><script src="./firebase-config.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Akashic Tome: DM Tools</title>
+    <title>Akashic Tracker</title>
     
     <!-- PWA / Mobile App Configuration -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,6 +19,11 @@
     <!-- Polyfills & Babel -->
     <script src="https://cdn.jsdelivr.net/npm/core-js-bundle@3.37.1/minified.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Firebase SDKs (v11.6.1) -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
     
     <style>
         /* --- The Astral Plane Palette --- */
@@ -57,6 +62,7 @@
             margin: 20px auto;
             max-width: 1200px;
             min-height: 95vh;
+            position: relative; /* Added for floating buttons to constrain */
         }
         
         @media (max-width: 640px) {
@@ -76,386 +82,168 @@
         .bg-slate-900, .bg-gray-900 { background-color: var(--astral-input) !important; border-color: var(--border-color) !important; }
         .bg-slate-800, .bg-gray-800 { background-color: var(--astral-card) !important; border-color: var(--border-color) !important; }
         .border-slate-600, .border-slate-700 { border-color: var(--border-color) !important; }
-        .floating-button { z-index: 90; position: fixed; bottom: 20px; right: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        /* Adjusted positioning to be relative to astral-container */
+        .floating-button { z-index: 90; position: absolute; bottom: 20px; right: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        /* Removed active:scale-95 to prevent jutter/jump on click */
+        .floating-turn-button { 
+            z-index: 90; 
+            position: absolute; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            padding-top: 1rem; 
+            padding-bottom: 1rem; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5); 
+            transition: all 0.1s; /* Keep transition for color changes */
+        }
         input, textarea, select { background-color: var(--astral-input) !important; border-color: var(--border-color) !important; color: var(--text-primary) !important; font-size: 16px !important; }
         input:focus, textarea:focus { border-color: var(--accent-cyan) !important; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important; outline: none !important; }
-        .masonry-grid { column-count: 1; column-gap: 1rem; }
-        @media (min-width: 640px) { .masonry-grid { column-count: 2; } }
-        @media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
+        
+        /* Custom style for the inner button within the input group */
+        .input-inline-btn {
+            position: absolute;
+            right: 4px; /* Slightly inward from the edge */
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 4px 8px; /* Added horizontal padding for touch targets */
+            height: calc(100% - 8px);
+            background-color: transparent; /* Hollow look */
+            border: 1px solid var(--border-color); /* Subtle border */
+            border-radius: 6px;
+            color: var(--accent-cyan);
+            transition: all 0.2s;
+            z-index: 10; /* Ensure it floats over the input field's body */
+        }
+        .input-inline-btn:hover {
+            background-color: var(--astral-card); /* Hover fills the hollow space */
+            border-color: var(--accent-cyan);
+        }
+
+        /* Small input fields for initiative/AC on card */
+        .card-inline-input {
+            width: 40px;
+            height: 20px;
+            padding: 0 4px;
+            font-size: 11px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--astral-input);
+            line-height: 1;
+        }
+        
+        /* Animation Utility */
+        @keyframes spin-die { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .animate-spin-fast { animation: spin-die 0.6s ease-in-out infinite; }
+
+        /* Glowing Pulse for new updates */
+        @keyframes pulse-glow {
+          0%, 100% {
+            box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.5);
+          }
+          50% {
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0);
+          }
+        }
+        .animate-pulse-glow {
+            animation: pulse-glow 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+            border-color: var(--accent-cyan) !important;
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100">
     <div id="root"></div>
 
-    <!-- FIREBASE IMPORTS -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // Import all Firestore functions needed
-        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, setLogLevel, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Global Firebase instances to be initialized and used by the React app
-        window.firebaseApp = null;
-        window.db = null;
-        window.auth = null;
-        window.currentUserId = null;
-        window.isAuthReady = false;
-
-        // Initialize Firebase
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        if (Object.keys(firebaseConfig).length > 0) {
-            window.firebaseApp = initializeApp(firebaseConfig);
-            window.db = getFirestore(window.firebaseApp);
-            window.auth = getAuth(window.firebaseApp);
-            setLogLevel('Debug'); // Enable debug logging
-
-            const authInit = async () => {
-                try {
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(window.auth, initialAuthToken);
-                    } else {
-                        await signInAnonymously(window.auth);
-                    }
-                } catch (error) {
-                    console.error("Firebase Auth Error:", error);
-                    // Fallback to anonymous sign-in if custom token fails
-                    await signInAnonymously(window.auth);
-                }
-            };
-            
-            // Listen for auth state changes and update global variables
-            onAuthStateChanged(window.auth, (user) => {
-                if (user) {
-                    window.currentUserId = user.uid;
-                } else {
-                    // If sign-out or initial state is unauthenticated, use a random ID
-                    window.currentUserId = crypto.randomUUID();
-                }
-                window.isAuthReady = true;
-                // Re-render the React app to ensure data loading starts
-                // A custom event is used here to trigger React update from module scope
-                document.dispatchEvent(new CustomEvent('auth-ready'));
-            });
-
-            authInit();
-            
-            // --- EXPOSE FIREBASE FUNCTIONS TO WINDOW FOR REACT/BABEL SCRIPT ---
-            // This ensures all Firestore modular functions are available globally.
-            window.firebase = {
-                doc,
-                setDoc,
-                deleteDoc,
-                onSnapshot,
-                collection,
-                query,
-                serverTimestamp,
-                getDocs
-            };
-
-        } else {
-            console.error("Firebase configuration not found. Firestore will be disabled.");
-            window.isAuthReady = true;
-            document.dispatchEvent(new CustomEvent('auth-ready'));
-        }
-    </script>
-
-
     <script type="text/babel">
-        const { useState, useEffect, useRef, useCallback } = React;
+        const { useState, useEffect, useRef, memo, useCallback } = React;
+
+        // --- FIREBASE SETUP ---
+        // Initialize Firebase variables to null initially
+        let app, auth, db;
+        let appId = 'default-app-id';
+
+        try {
+            if (typeof firebase !== 'undefined' && typeof __firebase_config !== 'undefined') {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                app = firebase.initializeApp(firebaseConfig);
+                auth = firebase.auth();
+                db = firebase.firestore();
+                if (typeof __app_id !== 'undefined') {
+                    appId = __app_id;
+                }
+            } else {
+                console.warn("Firebase config not found. Running in offline/local mode.");
+            }
+        } catch (e) {
+            console.error("Firebase Initialization Error:", e);
+        }
 
         // --- ICONS ---
-        // (Icons remain the same for brevity)
         const Icon = ({ children, className, ...props }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>
         );
-        const FlaskConical = (props) => <Icon {...props}><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" /><path d="M8.5 2h7" /><path d="M7 16h10" /></Icon>;
-        const Grid = (props) => <Icon {...props}><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /></Icon>;
-        const ChevronDown = (props) => <Icon {...props}><path d="m6 9 6 6 6-6"/></Icon>;
-        const ChevronRight = (props) => <Icon {...props}><path d="m9 18 6-6-6-6"/></Icon>;
-        const X = (props) => <Icon {...props}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></Icon>; 
+        const Sword = (props) => <Icon {...props}><polyline points="14.5 17.5 3 22 4.5 10.5" /><path d="M22 3l-7.5 14.5L10 12 3 7l14.5-4.5 4.5 4.5z" /><line x1="8" y1="14" x2="2.5" y2="19.5" /><line x1="16" y1="5" x2="21.5" y2="10.5" /></Icon>;
+        const Shield = (props) => <Icon {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></Icon>;
+        const Trash2 = (props) => <Icon {...props}><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></Icon>;
+        const Plus = (props) => <Icon {...props}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></Icon>;
+        const Minus = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12" /></Icon>;
+        const AlertCircle = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></Icon>;
+        const Zap = (props) => <Icon {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></Icon>;
+        const Ghost = (props) => <Icon {...props}><path d="M9 22l2-2.5L13 22l2-2.5L17 22V10a5 5 0 0 0-5-5 5 5 0 0 0-5 5v12z" /><circle cx="10" cy="13" r="2" /><circle cx="14" cy="13" r="2" /></Icon>;
+        const Sparkles = (props) => <Icon {...props}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.276 1.276L3 12l5.813 1.912a2 2 0 0 1 1.276 1.276L12 21l1.912-5.813a2 2 0 0 1 1.276-1.276L21 12l-5.813-1.912a2 2 0 0 1-1.276-1.276Z" /></Icon>;
         const Loader2 = (props) => <Icon {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></Icon>;
-        const Save = (props) => <Icon {...props}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></Icon>;
-        const Trash2 = (props) => <Icon {...props}><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></Icon>; 
-        const Ghost = (props) => <Icon {...props}><path d="M9 22l2-2.5L13 22l2-2.5L17 22V10a5 5 0 0 0-5-5 5 5 0 0 0-5 5v12z" /><circle cx="10" cy="13" r="2" /><circle cx="14" cy="13" r="2" /><path d="M19 3a2 2 0 0 0-2 2c0 .5.5 1 1 1h2a2 2 0 0 0 2-2 2 2 0 0 0-2-2z" /></Icon>;
-        const RotateCcw = (props) => <Icon {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></Icon>;
-        const CircleHelp = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></Icon>;
+        const MessageSquare = (props) => <Icon {...props}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Icon>;
+        const BookOpen = (props) => <Icon {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></Icon>;
+        const X = (props) => <Icon {...props}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></Icon>;
         const CheckCircle = (props) => <Icon {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></Icon>;
         const AlertTriangle = (props) => <Icon {...props}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></Icon>;
-        const Settings = (props) => <Icon {...props}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></Icon>;
-        const Key = (props) => <Icon {...props}><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" /></Icon>;
-        const Database = (props) => <Icon {...props}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></Icon>;
+        const User = (props) => <Icon {...props}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></Icon>;
         const Download = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></Icon>;
         const Upload = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></Icon>;
-        const Info = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></Icon>;
-        const Search = (props) => <Icon {...props}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></Icon>;
-        const Filter = (props) => <Icon {...props}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></Icon>;
-        const BookOpen = (props) => <Icon {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></Icon>;
-        const Dices = (props) => <Icon {...props}><path d="m21 16-5.87-4.4a1 1 0 0 0-1.12-.08L9 15"/><path d="M11.5 11 9 15l-2.43 1.82a1 1 0 0 0 .09 1.63L12 21l4.58-2.32a1 1 0 0 0 .5-1.12z"/><path d="M15 9l-3.07-2.3a1 1 0 0 0-1.21-.08L6 10l-1.38 3a1 1 0 0 0 .09 1.07l2.25 3L9 15l2.5-4"/><path d="M2 12h5"/><path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6z"/></Icon>;
-        const ScrollText = (props) => <Icon {...props}><path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/></Icon>;
+        const Settings = (props) => <Icon {...props}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></Icon>;
+        const Key = (props) => <Icon {...props}><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" /></Icon>;
+        const ArrowRight = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></Icon>;
+        const RotateCcw = (props) => <Icon {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></Icon>;
+        const Droplet = (props) => <Icon {...props}><path d="M12 2a10 10 0 0 0-3.54 19.34l-1.09-1.9A8 8 0 0 1 12 4a8 8 0 0 1 4.63 1.34l1.09-1.9A10 10 0 0 0 12 2z" /></Icon>;
+        const Brain = (props) => <Icon {...props}><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" /><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" /></Icon>;
         const CastleGate = (props) => (<Icon {...props}><path d="M19 21v-8a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v8"/><path d="M4 11V7"/><path d="M20 11V7"/><path d="M2 7h4v4H2z"/><path d="M18 7h4v4h-4z"/><path d="M4 7l2-4 2 4"/><path d="M18 7l2-4 2 4"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/></Icon>);
+        const ArrowDownUp = (props) => (<Icon {...props}><path d="m3 16 4 4 4-4" /><path d="M7 20V4" /><path d="m21 8-4-4-4 4" /><path d="M17 4v16" /></Icon>);
+        const Dices = (props) => (<Icon {...props}><path d="m21 16-5.87-4.4a1 1 0 0 0-1.12-.08L9 15"/><path d="M11.5 11 9 15l-2.43 1.82a1 1 0 0 0 .09 1.63L12 21l4.58-2.32a1 1 0 0 0 .5-1.12z"/><path d="M15 9l-3.07-2.3a1 1 0 0 0-1.21-.08L6 10l-1.38 3a1 1 0 0 0 .09 1.07l2.25 3L9 15l2.5-4"/><path d="M2 12h5"/><path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6z"/></Icon>);
+        const D20Icon = (props) => <Icon {...props}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 7v10l10 5 10-5V7" /><path d="M12 22V12" /></Icon>;
+        const ScrollText = (props) => <Icon {...props}><path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/></Icon>;
+        const History = (props) => (<Icon {...props}><path d="M12 7v5l2 2"/><path d="M22 12A10 10 0 0 1 12 2v0a10 10 0 0 1 10 10z"/><path d="M2 12A10 10 0 0 0 12 2v0a10 10 0 0 0-10 10z"/></Icon>);
+        const FlaskConical = (props) => <Icon {...props}><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" /><path d="M8.5 2h7" /><path d="M7 16h10" /></Icon>;
+        const Gamepad2 = (props) => <Icon {...props}><line x1="6" x2="10" y1="12" y2="12" /><line x1="8" x2="8" y1="10" y2="14" /><line x1="15" x2="15.01" y1="13" y2="13" /><line x1="18" x2="18.01" y1="11" y2="11" /><rect width="20" height="12" x="2" y="6" rx="2" /></Icon>;
+        const Skull = (props) => <Icon {...props}><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></Icon>;
+        const Flag = (props) => <Icon {...props}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></Icon>;
+        const Heart = (props) => <Icon {...props}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></Icon>;
+        // Added missing Gem icon definition
         const Gem = (props) => <Icon {...props}><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></Icon>;
-
 
         // --- CONSTANTS & UTILITIES (SHARED) ---
         const MONSTER_TYPES = [
             "Aberration", "Beast", "Celestial", "Construct", "Dragon", "Elemental", 
             "Fey", "Fiend", "Giant", "Humanoid", "Monstrosity", "Ooze", "Plant", "Undead", "Unknown"
         ];
+        const CONDITIONS = [
+            { name: 'Blinded', color: 'bg-gray-600' }, { name: 'Charmed', color: 'bg-pink-600' }, { name: 'Deafened', color: 'bg-gray-500' }, { name: 'Frightened', color: 'bg-purple-600' },
+            { name: 'Grappled', color: 'bg-orange-700' }, { name: 'Incapacitated', color: 'bg-red-800' }, { name: 'Invisible', color: 'bg-blue-400' }, { name: 'Paralyzed', color: 'bg-yellow-600' },
+            { name: 'Petrified', color: 'bg-stone-500' }, { name: 'Poisoned', color: 'bg-green-600' }, { name: 'Prone', color: 'bg-indigo-700' }, { name: 'Restrained', color: 'bg-orange-800' },
+            { name: 'Stunned', color: 'bg-yellow-500' }, { name: 'Unconscious', color: 'bg-black' },
+        ];
+        const INITIAL_FORM = { name: '', hp: '', ac: '', initiative: '', initMod: 0, qty: 1 };
         const INITIAL_MONSTER_DETAILS = { resistances: '', vulnerabilities: '', actions: '', statBlockSummary: '', type: 'Unknown' };
-        const LAST_ACKNOWLEDGED_VERSION_KEY = 'dm-tools-acknowledged-version';
         const HARDCODED_API_KEY = ""; 
-        const CURRENT_VERSION = "1.1.0"; 
-        const INPUT_CLASS = "w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:border-indigo-500 text-sm";
-        
-        // This generateId is used for *new* monsters before they are saved to Firestore, where Firestore assigns the final ID.
-        // It's also used for import/export uniqueness.
+        const CURRENT_VERSION = "1.1.8"; // Updated version
+        // NOTE: Increased right padding of INPUT_CLASS to accommodate the inline button
+        const INPUT_CLASS = "w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 pr-12 focus:outline-none focus:border-indigo-500 text-sm";
         const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
-        
-        // Removed safeLoad utility as we are now using Firestore
-        const sanitizeHtml = (str) => { if (!str) return ''; return str.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gm, "").replace(/on\w+="[^"]*"/g, ""); };
+        const rollInitiative = (mod) => Math.floor(Math.random() * 20) + 1 + mod;
+        const safeLoad = (key, fallback) => { try { const item = localStorage.getItem(key); return item ? JSON.parse(item) : fallback; } catch (e) { console.warn(`Corrupt data for ${key}, using fallback.`); return fallback; } };
+        const sanitizeHtml = (str) => { if (!str) return ''; return str.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gm, "").replace(/on\w+="[^"]*"/g, "", str); };
         const handleInputBlur = () => { setTimeout(() => { if (document.activeElement === document.body) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 150); };
         
-        // DM SCREEN CONTENT - COMPREHENSIVE (Only needed here)
-        const RULES_DATA = [
-            { category: "Conditions & Exhaustion", items: [ 
-                { title: "Blinded", text: "A blinded creature can't see and automatically fails any ability check requiring sight. Attack rolls against the creature have advantage, and the creature's Attack rolls have disadvantage." }, 
-                { title: "Charmed", text: "A charmed creature can't Attack the charmer or target the charmer with harmful Abilities or magical Effects. The charmer has advantage on any ability check to Interact socially with the creature." }, 
-                { title: "Deafened", text: "A deafened creature can't hear and automatically fails any ability check requiring hearing." },
-                { title: "Frightened", text: "A frightened creature has disadvantage on Ability Checks and Attack rolls while the source of its fear is within line of sight. The creature can't willingly move closer to the source of its fear." },
-                { title: "Grappled", text: "Speed becomes 0, and it can't benefit from any bonus to its speed. The condition ends if the grappler is incapacitated or if an effect removes the grappled creature from the reach of the grappler." },
-                { title: "Incapacitated", text: "An incapacitated creature can’t take Actions or Reactions." },
-                { title: "Invisible", text: "An invisible creature is impossible to see without the aid of magic or a special sense. For the purpose of Hiding, the creature is heavily obscured. The creature’s location can be detected by any noise it makes or tracks it leaves. Attack rolls against the creature have disadvantage, and the creature's Attack rolls have advantage." },
-                { title: "Paralyzed", text: "A paralyzed creature is incapacitated and can't move or speak. The creature automatically fails Strength and Dexterity Saving Throws. Attack rolls against the creature have advantage. Any Attack that hits the creature is a critical hit if the attacker is within 5 feet of the creature." },
-                { title: "Petrified", text: "The creature is transformed into a solid inorganic substance (usually stone) and is incapacitated, unaware of its surroundings. Attack rolls against the creature have advantage. The creature has Resistance to all damage. The creature is immune to poison and disease, although a poison or disease already in its System is suspended, not neutralized." },
-                { title: "Poisoned", text: "A poisoned creature has disadvantage on Attack rolls and Ability Checks." },
-                { title: "Prone", text: "The creature's only Movement option is to crawl, unless it stands up. The creature has disadvantage on Attack rolls. An Attack roll against the creature has advantage if the attacker is within 5 feet of the creature. Otherwise, the Attack roll has disadvantage." },
-                { title: "Restrained", text: "The creature’s Speed becomes 0, and it can’t benefit from any bonus to its speed. Attack rolls against the creature have advantage, and the creature’s Attack rolls have disadvantage. The creature has disadvantage on Dexterity Saving Throws." },
-                { title: "Stunned", text: "The creature is incapacitated, can’t move, and can speak only falteringly. The creature automatically fails Strength and Dexterity Saving Throws. Attack rolls against the creature have advantage." },
-                { title: "Unconscious", text: "The creature is incapacitated, can’t move or speak, and is unaware of its surroundings. The creature drops whatever it’s holding and falls prone. The creature automatically fails Strength and Dexterity Saving Throws. Attack rolls against the creature have advantage. Any Attack that hits the creature is a critical hit if the attacker is within 5 feet of the creature." },
-                // Exhaustion Levels (1-6) - Moved to the end of the conditions list for better grouping
-                { title: "Exhaustion Lvl 1", text: "Disadvantage on Ability Checks." },
-                { title: "Exhaustion Lvl 2", text: "Speed halved." },
-                { title: "Exhaustion Lvl 3", text: "Disadvantage on Attack rolls and Saving Throws." },
-                { title: "Exhaustion Lvl 4", text: "Hit point maximum halved." },
-                { title: "Exhaustion Lvl 5", text: "Speed reduced to 0." },
-                { title: "Exhaustion Lvl 6", text: "Death." }
-            ] },
-            { 
-                category: "Combat Actions & Rules", 
-                items: [ 
-                    { title: "Attack", text: "Melee or Ranged Attack. Can be replaced by two-weapon fighting, grapple, or shove." }, 
-                    { title: "Dash", text: "You gain extra Movement for the current turn equal to your speed. You must use a bonus action to Dash if you have the Cunning Action class feature (Rogue)." },
-                    { title: "Dodge", text: "When you take the Dodge action, any Attack roll made against you before the start of your next turn has disadvantage, provided that you can see the attacker. You also make Dexterity Saving Throws with advantage." },
-                    { title: "Ready", text: "You prepare an action and specify a trigger. When the trigger occurs, you can use your Reaction to take the prepared action." },
-                    { title: "Search", text: "You devote your attention to finding something. The DM typically asks you to make a Wisdom (Perception) or Intelligence (Investigation) check." },
-                    { title: "Use an Object", text: "You interact with a second object or manipulate the environment, e.g., opening a difficult door, pulling a lever, or retrieving an item from a backpack. You can interact with one object for free during movement." },
-                    { title: "Cast a Spell", text: "If the spell's casting time is 1 action, you cast the spell. Casting a spell that takes longer than 1 action requires concentration." },
-                    { title: "Opportunity Attack", text: "Reaction when enemy leaves reach. Disengage prevents this. Attack is made immediately before the target leaves your reach." }, 
-                    { title: "Disengage", text: "You spend your action taking the Disengage action, and your movement doesn't provoke opportunity attacks for the rest of the turn." }, 
-                    { title: "Help", text: "You take the Help action to aid a friendly creature in attacking a creature within 5 feet of you, granting advantage on the attack roll. Alternatively, you can aid in an ability check, granting advantage on the next roll before your next turn." } 
-                ] 
-            },
-            { 
-                category: "Movement & Travel", 
-                items: [ 
-                    { title: "Travel Pace (Fast)", text: "3 miles per hour (mph), 30 miles per day (mpd). Characters suffer a -5 penalty to passive Perception." }, 
-                    { title: "Normal Pace", text: "2 mph, 24 mpd." }, 
-                    { title: "Slow Pace", text: "1 mph, 18 mpd. Characters can use Stealth." }, 
-                    { title: "High Jump", text: "Running: Height = 3 + Str Mod. Standing: Half that. Each foot jumped costs 1 foot of Movement." }, 
-                    { title: "Long Jump", text: "Running: Distance = Str Score. Standing: Half that. Each foot jumped costs 1 foot of Movement." },
-                    
-                    { title: "Mount Travel (Horse/Pony)", text: "Normal Pace: 4 mph, 32 mpd. Fast Pace: 6 mph, 48 mpd. Mounts cannot travel Fast through difficult terrain for long periods." }, 
-                    { title: "Wagon/Cart Travel", text: "Normal Pace: 2 mph, 16 mpd (max load 400 lbs per draft animal). Requires roads or open terrain." },
-                    { title: "Ship/Boat Travel", text: "Rowboat: 1.5 mph, 12 mpd. Sailing Ship: 2 mph, 48 mpd (with favorable winds)." },
-                    { title: "Chariot/Coach Travel", text: "Fast Pace: 5 mph, 40 mpd. Requires clear roads." },
-                    { title: "Difficult Terrain Penalty", text: "Movement through difficult terrain (deep snow, heavy rubble, swamps) costs 2 feet of movement for every 1 foot moved." },
-                    { title: "Forced March", text: "Traveling for more than 8 hours per day risks exhaustion. Each extra hour requires a Constitution saving throw (DC 10 + 1 for each hour past 8 hours)." }
-                ] 
-            },
-            { 
-                category: "Environment, Light & Vision", 
-                items: [ 
-                    { title: "Lightly Obscured", text: "Disadvantage on Wisdom (Perception) checks relying on sight. Examples: dim light, patchy fog." }, 
-                    { title: "Heavily Obscured", text: "Creatures effectively suffer the Blinded condition. Examples: darkness, thick fog, dense smoke." },
-                    { title: "Darkvision & Special Senses", text: "Darkvision allows a creature to treat darkness as dim light within a specified range (usually 60 or 120 ft), seeing only shades of gray. \n\n**Blindsight:** Allows a creature to perceive its surroundings without relying on sight, within a specific radius (e.g., 60 ft). Effective against invisibility and darkness, relies on hearing/vibration." },
-                    { title: "Blind Beyond Darkness", text: "Blindness caused by lack of light is negated by Darkvision, but vision through magical darkness (e.g., *darkness* spell) or thick physical barriers requires special abilities (e.g., Truesight or Blindsight)." },
-                    { title: "Falling", text: "1d6 bludgeoning damage per 10ft fallen (max 20d6). Creature lands prone unless it avoids damage." }, 
-                    { title: "Extreme Cold", text: "Creature must succeed on a DC 10 Constitution saving throw at the end of each hour or gain one level of exhaustion. Creatures with resistance to cold damage automatically succeed." },
-                    { title: "Extreme Heat", text: "Creature must succeed on a DC 10 Constitution saving throw at the end of each hour or gain one level of exhaustion. Creatures with resistance to fire damage automatically succeed. Heavy armor imposes disadvantage." },
-                    { title: "Breathing (Suffocation)", text: "Creature can hold its breath for a number of minutes equal to 1 + its Constitution modifier (minimum 30 seconds). When a creature runs out of breath, it drops to 0 Hit Points and is dying. In combat, holding your breath is a free action." },
-                    { title: "High Altitude", text: "Non-acclimated creatures are fatigued (disadvantage on attack rolls and ability checks) when spending 8 hours or more above 10,000 feet." }
-                ] 
-            },
-            { category: "Resting, Healing & Death", items: [ { title: "Short Rest", text: "1 hour minimum. A character can spend one or more Hit Dice to regain HP (roll HD + Con mod per die)." }, { title: "Long Rest", text: "8 hours minimum (6 hours sleep, 1 hour light activity). Regain all lost HP. Regain spent Hit Dice up to half maximum." }, { title: "Death Saves", text: "3 successes before 3 failures = stabilize. 3 failures = death. Rolling a 20 = regain 1 HP. Rolling a 1 = 2 failures." }, { title: "Potion of Healing", text: "Action to drink. Heals 2d4 + 2 HP." } ] },
-            { category: "Ability Checks & DCs", items: [ { title: "Very Easy", text: "DC 5" }, { title: "Easy", text: "DC 10" }, { title: "Moderate", text: "DC 15" }, { title: "Hard", text: "DC 20" }, { title: "Very Hard", text: "DC 25" }, { title: "Nearly Impossible", text: "DC 30" } ] },
-            { category: "Spellcasting", items: [ { title: "Concentration", text: "End if: Cast another concentration spell, take damage (Con save DC 10 or half damage taken, whichever is higher, but never less than 10), incapacitated, or killed." }, { title: "Cylinder", text: "Origin is center of circular top/bottom. Extends equal distance above and below the origin point." }, { title: "Sphere", text: "Casts outward from the spell's point of origin." }, { title: "Visual & Somatic", text: "Requires visible hands and ability to speak." } ] },
-            { 
-                category: "Objects & Structures", 
-                items: [ 
-                    { title: "AC/HP/DT Table", 
-                      text: `**Object Armor Class (AC)**\nCloth/Paper: 11\nRope/Glass/Ice: 13\nWood/Bone: 15\nStone: 17\nIron/Steel: 19\nAdamantine: 23\n\n**Object Hit Points (HP) - By Size**\n| Size | Fragile (e.g., window) | Resilient (e.g., thick door) |\n|---|---|---|\n| Tiny (Lock, vial) | 2 HP | 5 HP |\n| Small (Chest, Lute) | 3 HP | 10 HP |\n| Medium (Barrel, Door) | 4 HP | 18 HP |\n| Large (Cart, Statue) | 5 HP | 27 HP |\n\n**Damage Threshold (DT)**\nObjects may have a Damage Threshold (DT). If a single attack deals less damage than the DT, the object takes no damage.\n| Material | Common DT |\n|---|---|\n| Stone/Thick Wood | DT 10 |\n| Iron/Steel | DT 15 |\n| Reinforced Stone | DT 20 |` 
-                    },
-                    { title: "Breaking Objects", text: "When an object has Resistance/Vulnerability to damage, apply it after the DT is crossed. Once an object's HP is reduced to 0, it is destroyed." },
-                    { title: "Common Door AC/HP", text: "Wooden Door: AC 15, HP 18 (DT 10).\nStone Door: AC 17, HP 27 (DT 15).\nIron Door: AC 19, HP 36 (DT 20).\nDC for forcing a door open (Athletics): Typically DC 15 to 20." }
-                ] 
-            },
-            // UPDATED: Equipment & Services with Blacksmith and Herbalist
-            { 
-                category: "Equipment & Services", 
-                items: [ 
-                    { 
-                        title: "General Store / Adventuring Gear", 
-                        text: "Torch: 1 cp (1 hr light, 20ft bright/20ft dim)\nRope, Hempen (50ft): 1 gp\nRations (1 day): 5 sp\nWaterskin: 2 sp\nBedroll: 1 gp\nBackpack: 2 gp\nHealer's Kit: 5 gp (10 uses, stabilize without check)" 
-                    },
-                    {
-                        title: "Blacksmith: Weapons & Armor (Basic)",
-                        text: "--- Simple Melee ---\nDagger: 2 gp\nClub: 1 sp\nGreatclub: 2 sp\nHandaxe: 5 gp\nLight Hammer: 2 gp\nSpear: 1 gp\n\n--- Simple Ranged ---\nLight Crossbow: 25 gp\nShortbow: 25 gp\n\n--- Armor ---\nPadded Armor: 5 gp (AC 11 + Dex Mod (Max 0))\nLeather Armor: 10 gp (AC 11 + Dex Mod)\nChain Shirt: 50 gp (AC 13 + Dex Mod (Max 2))\nShield: 10 gp (+2 AC)"
-                    },
-                    {
-                        title: "Herbalist / Alchemist (Poisons & Ingredients)",
-                        text: "Antitoxin (vial): 50 gp (Advantage on saves vs poison for 1 hour)\n\nBasic Poison (vial): 100 gp (Injury, DC 10 Con Save or 1d4 poison dmg)\n\nHealer's Kit: 5 gp (10 uses, stabilize without check)\n\nRare Herbs/Components: 5-50 gp (Requires proficiency check to locate/use)."
-                    },
-                    { 
-                        title: "Inn & Tavern", 
-                        text: "--- Lodging (Per Night) ---\nSqualid: 7 cp / Poor: 1 sp / Modest: 5 sp / Comfortable: 8 sp / Wealthy: 2 gp / Aristocratic: 4 gp+\n\n--- Food & Drink ---\nMug of Ale: 4 cp / Gallon of Ale: 2 sp\nMeal - Modest: 3 sp (Stew & Bread)\nMeal - Comfortable: 5 sp (Roast & Sides)" 
-                    },
-                    {
-                        title: "Guild & Faction Services",
-                        text: "--- The Harpers (Spies & Secret Agents) ---\nServices: Information gathering (10-50 gp), Safehouse lodging.\n\n--- The Zhentarim (Mercenaries & Assassins) ---\nServices: Assassination (500 gp+), Smuggling (20% fee), Hired Muscle (2 gp/day).\n\n--- Order of the Gauntlet (Paladins & Clerics) ---\nServices: Armed Escort (10 gp/day), Divine Spellcasting (see Potions & Healing).\n\n--- Local Thieves' Guild ---\nServices: Fencing Stolen Goods (buys at 50% value), Forgery (15-50 gp), Lockpicking/Trap Disarming (20 gp)."
-                    }
-                ]
-            },
-            { category: "DM Guidance & Tools", items: [ 
-                { title: "Social Encounter: Reaction", text: "Use DC 10 + (2/3/5 based on situation) for Persuasion/Deception checks. Remember Attitude: Hostile (needs convincing), Indifferent (neutral), Friendly (wants to help)." },
-                { title: "Running Travel", text: "Determine marching order, pace, and formation. Check for encounters every day (or every 4 hours in dangerous areas). Use group Wisdom (Perception) checks to detect threats/traps." },
-                { title: "Improvising DCs", text: "Easy: DC 10 (Minor hurdle). Medium: DC 15 (Standard difficulty). Hard: DC 20 (Major challenge). Reserve 25+ for heroic or impossible tasks." },
-                { title: "Handling Skill Checks", text: "Don't ask for a check if success is impossible or failure is irrelevant. Ask for a check only if failure creates a compelling consequence. Allow players to describe *how* before rolling." },
-                { title: "Initiative Tracker Setup", text: "Roll Initiative (d20 + Dex Modifier) for all PCs and monsters (group monsters of the same type together). Order from highest to lowest. Track HP/Conditions next to the order." },
-                { title: "Inspiration", text: "Reward players with Inspiration when they roleplay well, do something heroic, or make a clever plan. Inspiration grants advantage on one Attack roll, Saving Throw, or Ability Check." }
-            ] }
-        ];
-        
-        // --- DM TOOLS SPECIFIC MODALS/COMPONENTS ---
-        const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel, confirmText, cancelText }) => {
-            if (!isOpen) return null;
-            return (
-                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-                    <div className="bg-gray-900 w-full max-w-sm rounded-xl border border-red-700 p-6 shadow-2xl">
-                        <h2 className="text-xl font-bold text-red-400 mb-4">{title}</h2>
-                        <p className="text-slate-300 mb-6 text-sm">{message}</p>
-                        <div className="flex justify-end gap-3">
-                            <button onClick={onCancel} className="px-4 py-2 text-slate-400 hover:text-white rounded text-sm font-medium border border-slate-700">{cancelText || 'Cancel'}</button>
-                            <button onClick={onConfirm} className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded text-sm font-bold">{confirmText || 'Confirm'}</button>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const HomebrewImportModal = ({ file, onConfirm, onClose }) => {
-            if (!file) return null;
-            return (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-                    <div className="bg-gray-900 w-full max-w-md rounded-xl border border-slate-700 p-6 shadow-2xl">
-                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Upload className="text-amber-500"/> Restore Homebrew Bank</h2>
-                        <p className="text-slate-300 mb-6 text-sm">You are restoring data from: <span className="font-mono text-amber-300">{file.name}</span></p>
-                        <div className="space-y-4">
-                            <button onClick={() => onConfirm('merge')} className="mt-3 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded text-sm">Smart Merge (Update Existing + Add New)</button>
-                            <button onClick={() => onConfirm('overwrite')} className="mt-3 w-full bg-red-700 hover:bg-red-600 text-white font-bold py-2 rounded text-sm">Overwrite (Replace All)</button>
-                        </div>
-                        <div className="flex justify-end mt-4"><button onClick={onClose} className="px-4 py-2 text-slate-400 hover:text-white rounded text-sm">Cancel</button></div>
-                    </div>
-                </div>
-            );
-        };
-        const MonsterStatBlockModal = ({ combatant, onClose }) => {
-             if (!combatant?.statBlockSummary) return null;
-             const escapeHtml = (unsafe) => { return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
-             const renderSummary = (text) => {
-                 return text.split('\n').map((line, index) => {
-                     let cleanLine = escapeHtml(line);
-                     let isHeader = false;
-                     // Check for bold headers or known keyword headers
-                     if (cleanLine.trim().startsWith('**') && cleanLine.trim().endsWith('**')) { isHeader = true; } else { const upperLine = cleanLine.trim().toUpperCase(); const knownHeaders = ["ACTIONS", "LEGENDARY ACTIONS", "REACTIONS", "SPECIAL TRAITS", "SPELLCASTING"]; if (knownHeaders.includes(upperLine)) { isHeader = true; cleanLine = cleanLine.trim(); } }
-                     if (isHeader) { return <h3 key={index} className="!text-sm font-bold mt-3 mb-1 text-red-500">{cleanLine.replace(/\*\*/g, '')}</h3>; }
-                     const formattedLine = cleanLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<strong>$1</strong>');
-                     return <p key={index} dangerouslySetInnerHTML={{ __html: sanitizeHtml(formattedLine) }}></p>;
-                 });
-             };
-             return (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-                    <div className="bg-gray-900 text-gray-50 w-full max-w-2xl rounded-xl shadow-2xl border border-gray-700 flex flex-col max-h-[90vh]">
-                        <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl"><h2 className="text-xl font-bold text-red-400 flex items-center gap-2"><BookOpen className="text-red-400"/> {combatant.name} - Full Stat Block</h2><button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button></div>
-                        <div className="p-6 overflow-y-auto flex-1 stat-block"><h3 className="!text-2xl text-white border-b-2 border-red-500 pb-2 mb-3">{combatant.name.toUpperCase()} <span className="text-xs font-normal text-slate-400 ml-2">({combatant.type || 'Unknown'})</span></h3><p className="text-sm font-mono text-gray-400">HP: {combatant.hp} | AC: {combatant.ac} | Init Mod: {combatant.initMod}</p><div className="mt-4 text-sm text-gray-200">{combatant.statBlockSummary.length > 0 ? renderSummary(combatant.statBlockSummary.replace(/\\n/g, '\n')) : <span className="flex items-center text-red-400"><AlertTriangle className="inline w-4 h-4 text-yellow-500 mr-2" /> Stat block details were not successfully retrieved by the AI.</span>}</div></div>
-                        <div className="p-4 border-t border-gray-700 bg-gray-800 rounded-b-xl flex justify-end"><button onClick={onClose} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-medium">Close Stat Block</button></div>
-                    </div>
-                </div>
-            );
-        };
-        const ChangelogModal = ({ onClose, currentVersion, lastAcknowledged }) => {
-            // UPDATED CHANGELOG: Reflects the split from the main app at V1.1.0
-            const CHANGELOG_DATA = [
-                { 
-                    version: currentVersion, 
-                    date: "Official Launch", 
-                    changes: [
-                        "**Stand Alone App (Integrated):** The DM Tools Bank now operates as a dedicated, persistent application. It is fully decoupled from the Tracker logic but remains seamlessly integrated via the new Launch/Return navigation.",
-                        "**DB Persistence:** Implemented a robust 'Bridge' system. Your Homebrew Bank is now backed by Firestore with an automatic LocalStorage failsafe. If your session ID rotates, the app detects your local backup and instantly restores your database.",
-                        "**Smart Import:** The import system now performs a 'Smart Merge'. It detects monsters by name to update existing stats rather than creating duplicates, keeping your bank clean."
-                    ] 
-                }
-            ];
-            
-            const needsAcknowledge = currentVersion > lastAcknowledged;
-
-            return (
-                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-                    <div className="bg-gray-900 w-full max-w-lg rounded-xl shadow-2xl border border-gray-700 flex flex-col max-h-[80vh]">
-                        <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl">
-                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                <Info className="text-amber-400" /> Changelog
-                                {needsAcknowledge && <span className="text-xs bg-amber-600 text-white px-2 py-0.5 rounded-full ml-2">New!</span>}
-                            </h2>
-                            <button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button>
-                        </div>
-                        <div className="p-6 overflow-y-auto">
-                            {CHANGELOG_DATA.map((log, index) => (<div key={index} className="mb-6 last:mb-0"><div className="flex justify-between items-center mb-2"><h3 className="text-lg font-bold text-amber-400">Version {log.version}</h3><span className="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded">{log.date}</span></div><ul className="space-y-2">{log.changes.map((change, i) => (<li key={i} className="text-sm text-slate-300 flex items-start gap-2"><span className="text-amber-500 mt-1">•</span><span dangerouslySetInnerHTML={{ __html: change.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}></span></li>))}</ul></div>))}
-                        </div>
-                        <div className="p-4 border-t border-gray-700 bg-gray-800 rounded-b-xl flex justify-between items-center">
-                            {/* Removed Acknowledge Button - Now acknowledges on close */}
-                            <span className="text-xs text-slate-500">Viewing version {currentVersion}.</span>
-                            <button onClick={onClose} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-bold">Close</button>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-        const FilenameModal = ({ fileName, setFileName, onClose }) => {
-            return (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-                    <div className="bg-gray-900 w-full max-w-md rounded-xl border border-slate-700 p-6 shadow-2xl">
-                        <h2 className="text-xl font-bold text-white mb-4">File Options</h2>
-                        <div className="mb-4">
-                            <label className="block text-xs font-bold text-slate-400 mb-1 uppercase">Export Filename Base</label>
-                            {/* Uses localStorage for user preference, which is acceptable */}
-                            <input className={INPUT_CLASS} value={fileName} onChange={(e) => setFileName(e.target.value)} onBlur={handleInputBlur} placeholder="homebrew_bank" />
-                            <p className="text-xs text-slate-500 mt-1">Used for Homebrew Backup (e.g., `<span className="text-amber-500">{fileName}</span>_HB-Backup.json`).</p>
-                        </div>
-                        <div className="flex justify-end gap-2"><button onClick={onClose} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-bold">Done</button></div>
-                    </div>
-                </div>
-            );
-        };
-        const FloatingSettingsButton = ({ apiKey, setModalVisible }) => {
-            const isKeyNeeded = !apiKey;
-            if (isKeyNeeded) { return (<button onClick={() => setModalVisible(true)} className="floating-button px-4 py-2 flex items-center gap-2 bg-red-700 text-white rounded-full font-bold uppercase text-sm border-2 border-red-500 hover:bg-red-600 transition-colors duration-300 animate-pulse" title="Gemini API Key Needed for AI Features"><AlertTriangle size={16} /> API Key Needed</button>); }
-            return (<button onClick={() => setModalVisible(true)} className="floating-button w-10 h-10 flex items-center justify-center bg-slate-700 text-slate-400 hover:text-white rounded-full border border-slate-600 hover:bg-slate-600 transition-colors duration-300" title="AI Settings"><Settings size={20} /></button>);
-        };
-        
-        // --- DM TOOLS SPECIFIC FUNCTIONS ---
+        // --- API & AI CALLS ---
         const inferTypeFromStatBlock = (summary) => {
             if (!summary) return 'Unknown';
             const lowerSummary = summary.toLowerCase();
@@ -480,628 +268,875 @@
                     if (!res.ok) throw new Error("API Error");
                     const data = await res.json();
                     return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-                } catch (e) { 
-                    console.warn(`Gemini API attempt ${attempt + 1} failed. Retrying...`, e);
-                    attempt++; 
-                    await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 1000)); 
-                }
+                } catch (e) { attempt++; await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 1000)); }
             }
-            console.error("Gemini API failed after 3 attempts.");
+        };
+
+        // --- SUBCOMPONENTS & MODALS (BATTLEFIELD) ---
+        const ChangelogModal = ({ onClose, onMarkViewed }) => {
+            const changes = [
+                { version: "1.1.8", date: "Dec 2025", notes: ["**UI Update:** Replaced HP +/- buttons with a centralized Heal/Damage input field separated by a heart icon, providing a cleaner and more intuitive interface for health management.", "**UX Improvement:** Streamlined health adjustments for both Players and Monsters."] },
+                { version: "1.1.7", date: "Dec 2025", notes: ["**Visual Update:** Added explicit visual distinction for Monsters. Monsters now display a 'Ghost' icon and use a distinct reddish text color, preventing confusion with Players.", "**Bugfix:** Hardened the manual 'Add' logic to ensure the correct entity type (Monster vs Player) is always applied based on the active tab."] },
+                { version: "1.1.6", date: "Dec 2025", notes: ["**New:** Added 'Battle Lifecycle' flow. You must now explicitly Start and End battles.", "**New:** Automated Victory Condition. The 'Next Turn' button transforms into 'Victory' when all monsters are defeated (0 HP).", "**Integration:** Defeating monsters now logs a specific '[DEFEATED]' tag, allowing the Loot Records app to parse bodies.", "**UI:** Added 'Start Battle' button to Setup and 'Victory' button to Battlefield."] },
+                { version: "1.1.5", date: "Dec 2025", notes: ["**System:** Full Firebase integration enabled. Added Auth and Firestore hooks.", "**Feature:** Homebrew Sync. App now auto-syncs homebrew monsters from your private Firestore collection.", "**Refactor:** Prepared state management for splicing with the Homebrew Manager module."] }
+            ].sort((a, b) => {
+                const versionA = a.version.split('.').map(Number);
+                const versionB = b.version.split('.').map(Number);
+                for (let i = 0; i < Math.max(versionA.length, versionB.length); i++) {
+                    const diff = (versionB[i] || 0) - (versionA[i] || 0);
+                    if (diff !== 0) return diff;
+                }
+                return 0;
+            });
+            
+            const handleClose = () => {
+                onMarkViewed();
+                onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div className="bg-gray-900 w-full max-w-lg rounded-xl shadow-2xl border border-gray-700 flex flex-col max-h-[80vh]">
+                        <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl shrink-0">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <History className="text-indigo-400" /> Akashic Log (Changelog)
+                            </h2>
+                            <button onClick={handleClose}><X size={24} className="text-gray-400 hover:text-white"/></button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                            {changes.map((c, i) => (
+                                <div key={i} className="p-4 bg-slate-900 rounded-lg border border-slate-700">
+                                    <div className="flex justify-between items-start mb-2 border-b border-slate-700/50 pb-1">
+                                        <h3 className="text-lg font-bold text-cyan-400">Version {c.version}</h3>
+                                        <span className="text-xs text-slate-500 mt-1">{c.date}</span>
+                                    </div>
+                                    <ul className="list-disc pl-5 space-y-1 text-sm text-slate-300">
+                                        {c.notes.map((note, j) => (
+                                            <li key={j} dangerouslySetInnerHTML={{ __html: note.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="p-3 border-t border-gray-700 bg-gray-800 rounded-b-xl flex justify-end">
+                            <button onClick={handleClose} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-bold">Close</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        const ProgressBar = memo(({ current, max, isPlayer }) => {
+            if (max <= 0) return <div className="text-xs text-indigo-400 italic text-center py-2 border border-indigo-900/50 rounded bg-slate-900/30">{isPlayer ? 'HP Not Tracked' : 'No Max HP'}</div>;
+            const pct = Math.max(0, Math.min(100, (current / max) * 100));
+            const color = pct <= 25 ? 'bg-red-600' : pct <= 50 ? 'bg-yellow-500' : 'bg-green-500';
+            return <div className="h-4 w-full bg-slate-700 rounded-full overflow-hidden mt-2 relative border border-slate-600"><div className={`h-full transition-all duration-300 ease-out ${current===0 ? 'bg-gray-700' : color}`} style={{ width: `${pct}%` }} /><div className="absolute top-0 left-0 w-full h-full flex items-center justify-center text-xs font-bold text-white shadow-sm drop-shadow-md">{current} / {max} HP</div></div>;
+        });
+        const DeathSaveTracker = memo(({ saves, id, onToggle }) => {
+                return (<div className="mt-2 p-2 bg-slate-900/80 rounded border border-red-900 flex flex-col gap-1"><div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase"><span>Death Saves</span></div><div className="flex items-center justify-between gap-2"><div className="flex items-center gap-1"><span className="text-[10px] text-green-500 font-bold w-4">Suc</span>{[0, 1, 2].map(i => (<button key={`suc-${i}`} onClick={() => onToggle(id, 'successes', i)} className={`w-4 h-4 rounded-full border border-green-600 flex items-center justify-center transition-colors ${saves.successes > i ? 'bg-green-600' : 'bg-transparent hover:bg-green-900'}`}></button>))}</div><div className="flex items-center gap-1"><span className="text-[10px] text-red-500 font-bold w-4">Fail</span>{[0, 1, 2].map(i => (<button key={`fail-${i}`} onClick={() => onToggle(id, 'failures', i)} className={`w-4 h-4 rounded-full border border-red-600 flex items-center justify-center transition-colors ${saves.failures > i ? 'bg-red-600' : 'bg-transparent hover:bg-red-900'}`}></button>))}</div></div></div>);
+        });
+        const MonsterActionDetails = ({ combatant }) => {
+            const chips = [ {l:'Resistances', i:<Shield size={12} className="text-blue-400"/>, c:'text-blue-400', v:combatant.resistances}, {l:'Vulnerabilities', i:<Droplet size={12} className="text-red-400"/>, c:'text-red-400', v:combatant.vulnerabilities} ];
+            const acts = combatant.actions ? combatant.actions.split(',').map(a=>a.trim()).filter(a=>a) : [];
+            return (<div className="mt-3 space-y-2"><div className="space-y-1">{chips.map(d => <div key={d.l} className="flex items-center gap-2 text-xs font-medium bg-slate-900/50 p-1.5 rounded border border-slate-700">{d.i}<span className={d.c}>{d.l}:</span><span className="text-white flex-1 truncate" title={d.v||'None'}>{d.v||'None'}</span></div>)}</div>{acts.length > 0 && <div className="pt-2 border-t border-slate-700/50"><h5 className="text-xs font-bold text-yellow-400 mb-1 flex items-center gap-1"><Zap size={12}/> Actions:</h5><ul className="space-y-0.5 pl-3 text-white text-xs list-disc list-inside">{acts.map((a,i)=><li key={i} className="pl-1 leading-tight">{a}</li>)}</ul></div>}</div>);
+        };
+        // UPDATED: Added Ghost icon for monsters and better conditional styling
+        const CombatantCard = memo(({ combatant: c, active, onUpdateHealth, onToggleConcentration, onToggleActionDetails, onNarrate, onDelete, onStatBlock, onToggleCondition, onToggleDeathSave, openActionDetailsId, openConditionId, setOpenConditionId, narration, isNarrating, onUpdateInitiative }) => {
+            const [hpInput, setHpInput] = useState('');
+            
+            const handleHpSubmit = (type) => { 
+                const val = parseInt(hpInput); 
+                if (!isNaN(val) && val !== 0) { 
+                    const multiplier = type === 'damage' ? -1 : 1;
+                    onUpdateHealth(c.id, val * multiplier); 
+                    setHpInput(''); 
+                } 
+            };
+
+            // Handler for initiative change that calls the parent function
+            const handleInitChange = (e) => {
+                const newInit = parseInt(e.target.value) || 0;
+                onUpdateInitiative(c.id, newInit);
+            };
+
+            const isMonster = c.type === 'monster';
+            const deathSaves = c.deathSaves || { successes: 0, failures: 0 };
+
+            return (
+                <div id={`card-${c.id}`} className={`relative flex flex-col p-4 rounded-xl border shadow-md transition-all ${active ? 'ring-2 ring-green-500 border-green-500 bg-slate-800' : 'bg-slate-800 border-slate-600'} ${c.currentHp === 0 && isMonster ? 'opacity-50 grayscale' : ''}`}>
+                    {active && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">ACTIVE</div>}
+                    {c.isConcentrating && <div className="absolute -top-1 -right-1"><span className="flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span></span></div>}
+                    {c.currentHp === 0 && isMonster && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none"><Skull size={48} className="text-red-600/80 drop-shadow-lg" /></div>}
+                    <div className="flex justify-between items-start mb-2">
+                        <div>
+                            {/* UPDATED HEADER: Flex container for Icon + Name */}
+                            <h3 className={`font-bold text-lg flex items-center gap-2 ${isMonster ? 'text-red-200' : 'text-indigo-300'}`}>
+                                {isMonster ? <Ghost size={16} className="text-red-400" /> : <User size={16} />}
+                                {c.name}
+                            </h3>
+                            <div className="text-xs text-slate-400 mt-1 flex gap-3 items-center">
+                                <span>AC: {c.ac}</span>
+                                <span className="flex items-center gap-1">
+                                    Init: 
+                                    <input 
+                                        type="number" 
+                                        value={c.initiative} 
+                                        onChange={handleInitChange} 
+                                        onBlur={handleInputBlur}
+                                        disabled={isMonster}
+                                        className={`card-inline-input ${isMonster ? 'opacity-70 cursor-not-allowed bg-slate-900 border-transparent text-slate-500' : ''}`}
+                                        title={isMonster ? "Monsters have fixed initiative" : "Click to edit initiative"}
+                                    />
+                                </span>
+                            </div>
+                        </div>
+                        <div className="flex gap-1">
+                            <button onClick={() => onToggleConcentration(c.id)} className={`p-1 hover:text-white transition-colors ${c.isConcentrating ? 'text-sky-400' : 'text-slate-600'} flex items-center justify-center`} title="Toggle Concentration"><Brain size={16} /></button>
+                            {c.statBlockSummary && <button onClick={()=>onStatBlock(c)} className="text-slate-500 hover:text-white p-1 flex items-center justify-center"><AlertCircle size={18}/></button>}
+                            {c.actions && <button onClick={()=>onToggleActionDetails(c.id)} className={`text-slate-500 hover:text-white p-1 ${openActionDetailsId===c.id?'text-indigo-400':''} flex items-center justify-center`}><BookOpen size={18}/></button>}
+                            <button onClick={()=>onNarrate(c)} className="text-slate-500 hover:text-white p-1 flex items-center justify-center">{isNarrating?<Loader2 size={16} className="animate-spin"/>:<MessageSquare size={16}/>}</button>
+                            <button onClick={()=>onDelete(c.id)} className="text-slate-500 hover:text-red-400 p-1 flex items-center justify-center"><Trash2 size={16}/></button>
+                        </div>
+                    </div>
+                    {openActionDetailsId===c.id && <div className="mb-3 bg-slate-900/50 p-2 rounded border border-slate-700"><MonsterActionDetails combatant={c}/></div>}
+                    <ProgressBar current={c.currentHp} max={c.maxHp} isPlayer={!isMonster}/>
+                    {!isMonster && c.currentHp === 0 && <DeathSaveTracker saves={deathSaves} id={c.id} onToggle={onToggleDeathSave} />}
+                    
+                    {/* NEW HEALTH INPUT SECTION */}
+                    {c.maxHp > 0 && (
+                        <div className="flex items-center gap-2 mt-3 bg-slate-900/50 p-1.5 rounded border border-slate-700">
+                             <input 
+                                className="w-full bg-transparent text-center text-sm font-bold focus:outline-none text-white placeholder-slate-600" 
+                                placeholder="Amount" 
+                                type="number"
+                                value={hpInput} 
+                                onChange={e=>setHpInput(e.target.value)} 
+                            />
+                            <div className="flex gap-1 shrink-0">
+                                <button onClick={() => handleHpSubmit('heal')} className="p-1.5 rounded bg-green-900/30 hover:bg-green-800 text-green-400 transition-colors border border-green-900/50" title="Heal">
+                                    <Plus size={14} strokeWidth={3}/>
+                                </button>
+                                <div className="flex items-center justify-center w-6">
+                                     <Heart size={16} className="text-red-500 fill-red-500/20" />
+                                </div>
+                                <button onClick={() => handleHpSubmit('damage')} className="p-1.5 rounded bg-red-900/30 hover:bg-red-800 text-red-400 transition-colors border border-red-900/50" title="Damage">
+                                    <Minus size={14} strokeWidth={3}/>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {narration && <div className="mt-2 text-xs text-indigo-300 italic">"{narration}"</div>}
+                    <div className="mt-3 pt-2 border-t border-slate-700/50">
+                        <div className="flex flex-wrap gap-1">
+                            {c.conditions.map(cond=><span key={cond} onClick={()=>onToggleCondition(c.id,cond)} className="px-1.5 py-0.5 bg-slate-700 rounded text-[10px] cursor-pointer hover:bg-red-900/50">{cond} ×</span>)}
+                            <button onClick={()=>{setOpenConditionId(openConditionId===c.id?null:c.id)}} className="px-1.5 py-0.5 bg-slate-700/50 rounded text-[10px] text-slate-400 hover:text-white">+ Cond</button>
+                        </div>
+                        {openConditionId===c.id && (<div className="mt-2 grid grid-cols-2 gap-1 bg-slate-900 p-2 rounded absolute z-20 w-full left-0 shadow-xl border border-slate-600">{CONDITIONS.map(cond=><button key={cond.name} onClick={()=>onToggleCondition(c.id,cond.name)} className="text-left text-[10px] p-1 hover:bg-slate-700 rounded text-slate-300" style={{touchAction: 'manipulation'}}>{cond.name}</button>)}</div>)}
+                    </div>
+                </div>
+            );
+        });
+        const BattleLogModal = ({ logs, onClose, onClear }) => {
+            const bottomRef = useRef(null);
+            useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [logs]);
+            return (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div className="bg-gray-900 w-full max-w-lg rounded-xl shadow-2xl border border-gray-700 flex flex-col h-[70vh]">
+                        <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl"><h2 className="text-xl font-bold text-white flex items-center gap-2"><ScrollText className="text-indigo-400" /> Battle Log</h2><button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button></div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-900/50">
+                            {logs.length === 0 ? <p className="text-slate-500 text-center text-sm italic py-4">The chronicles are empty...</p> : 
+                            logs.map((log, i) => (<div key={i} className={`text-sm p-2 rounded border-l-2 ${log.type==='damage'?'border-red-500 bg-red-900/10 text-red-200': log.type==='heal'?'border-green-500 bg-green-900/10 text-green-200': log.type==='turn'?'border-yellow-500 bg-yellow-900/10 text-yellow-200': log.type==='skull'?'border-slate-500 bg-black/30 text-gray-400': 'border-slate-500 bg-slate-800 text-slate-300'}`}><span className="text-[10px] text-slate-500 block mb-0.5 uppercase tracking-wider">{new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</span>{log.message}</div>))}
+                            <div ref={bottomRef} />
+                        </div>
+                        <div className="p-3 border-t border-gray-700 bg-gray-800 rounded-b-xl flex justify-between"><button onClick={onClear} className="text-xs text-red-400 hover:text-red-300">Clear Log</button><button onClick={onClose} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-bold">Close</button></div>
+                    </div>
+                </div>
+            );
+        };
+        // ... (DiceRollerModal, MonsterStatBlockModal, FilenameModal, FloatingSettingsButton remain same)
+        const DiceRollerModal = ({ onClose, addToLog }) => {
+            const [history, setHistory] = useState([]); const [mod, setMod] = useState(0); const [count, setCount] = useState(1); const [selectedDie, setSelectedDie] = useState(20); 
+            const roll = () => {
+                const sides = selectedDie; const n = Math.max(1, parseInt(count) || 1); const m = parseInt(mod) || 0; let totalRaw = 0; let rolls = [];
+                for(let i=0; i<n; i++) { const r = Math.floor(Math.random() * sides) + 1; rolls.push(r); totalRaw += r; }
+                const total = totalRaw + m; const rollStr = `[${rolls.join(', ')}]`; const diceStr = `${n}d${sides}`; const modStr = m !== 0 ? (m > 0 ? `+${m}` : m) : '';
+                const result = { desc: `${diceStr}${modStr}`, detail: `${rollStr} ${modStr} = `, total: total, isCrit: (sides === 20 && n === 1 && rolls[0] === 20), isFail: (sides === 20 && n === 1 && rolls[0] === 1), id: Date.now() };
+                setHistory(prev => [result, ...prev].slice(0, 20));
+                addToLog(`Rolled ${result.desc}: ${rollStr}${modStr} = ${total}`, 'roll');
+            };
+            return (
+                 <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div className="bg-gray-900 w-full max-w-sm rounded-xl shadow-2xl border border-gray-700 flex flex-col max-h-[90vh]">
+                        <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl shrink-0"><h2 className="text-xl font-bold text-white flex items-center gap-2"><D20Icon className="text-green-400 w-6 h-6" /> Dice Roller</h2><button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button></div>
+                        <div className="p-5 space-y-5 overflow-y-auto flex-1">
+                            <div><label className="block text-xs font-bold text-slate-400 uppercase mb-2">Select Die</label><div className="flex flex-wrap gap-2 justify-center">{[4,6,8,10,12,20,100].map(d => (<button key={d} onClick={() => setSelectedDie(d)} className={`w-10 h-10 rounded font-bold font-mono transition-all ${selectedDie === d ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 scale-110' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'}`}>d{d}</button>))}</div></div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div><label className="block text-xs font-bold text-slate-300 uppercase mb-1">Count</label><div className="flex items-center"><button onClick={() => setCount(Math.max(1, count - 1))} className="bg-slate-800 text-slate-300 p-2 rounded-l border border-slate-600 border-r-0 hover:bg-slate-700 hover:text-white"><Minus size={14}/></button><input type="number" value={count} onChange={(e)=>setCount(Math.max(1, parseInt(e.target.value)||1))} className="w-full bg-slate-900 border border-slate-600 py-2 text-center font-bold text-white focus:outline-none" /><button onClick={() => setCount(count + 1)} className="bg-slate-800 text-slate-300 p-2 rounded-r border border-slate-600 border-l-0 hover:bg-slate-700 hover:text-white"><Plus size={14}/></button></div></div>
+                                <div><label className="block text-xs font-bold text-slate-300 uppercase mb-1">Modifier</label><div className="flex items-center"><button onClick={() => setMod(mod - 1)} className="bg-slate-800 text-slate-300 p-2 rounded-l border border-slate-600 border-r-0 hover:bg-slate-700 hover:text-white"><Minus size={14}/></button><input type="number" value={mod} onChange={(e)=>setMod(parseInt(e.target.value)||0)} className="w-full bg-slate-900 border border-slate-600 py-2 text-center font-bold text-white focus:outline-none" /><button onClick={() => setMod(mod + 1)} className="bg-slate-800 text-slate-300 p-2 rounded-r border border-slate-600 border-l-0 hover:bg-slate-700 hover:text-white"><Plus size={14}/></button></div></div>
+                            </div>
+                            <button onClick={roll} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 text-lg"><D20Icon className="w-6 h-6 animate-spin-slow" /> ROLL {count}d{selectedDie} {mod !== 0 && (mod > 0 ? `+${mod}` : mod)}</button>
+                            <div className="bg-slate-950 rounded p-3 h-40 overflow-y-auto border border-slate-800 relative"><div className="flex justify-between items-center mb-2 sticky top-0 bg-slate-950/95 backdrop-blur-sm pb-2 border-b border-slate-800 z-10"><h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">History</h4>{history.length > 0 && <button onClick={() => setHistory([])} className="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase border border-red-900/50 px-2 py-0.5 rounded bg-red-900/10 hover:bg-red-900/30 transition-colors">Clear Log</button>}</div>{history.length === 0 && <div className="text-center text-slate-600 text-xs mt-12 italic">Ready to roll...</div>}<div className="space-y-1.5">{history.map(h => (<div key={h.id} className="flex justify-between items-center text-sm border-b border-slate-800/50 pb-1.5 last:border-0 animate-fade-in"><div className="flex flex-col"><span className="text-slate-400 text-xs font-mono">{h.desc}</span><span className="text-slate-500 text-[10px] truncate max-w-[140px]">{h.detail}</span></div><span className={`font-mono font-bold text-lg ${h.isCrit ? 'text-green-400 drop-shadow-md' : h.isFail ? 'text-red-500' : 'text-white'}`}>{h.total}</span></div>))}</div></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        const MonsterStatBlockModal = ({ combatant, onClose }) => {
+             if (!combatant?.statBlockSummary) return null;
+             const escapeHtml = (unsafe) => { return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+             const renderSummary = (text) => {
+                 return text.split('\n').map((line, index) => {
+                     let cleanLine = escapeHtml(line);
+                     let isHeader = false;
+                     if (cleanLine.trim().startsWith('**') && cleanLine.trim().endsWith('**')) { isHeader = true; } else { const upperLine = cleanLine.trim().toUpperCase(); const knownHeaders = ["ACTIONS", "LEGENDARY ACTIONS", "REACTIONS", "SPECIAL TRAITS", "SPELLCASTING"]; if (knownHeaders.includes(upperLine)) { isHeader = true; cleanLine = cleanLine.trim(); } }
+                     if (isHeader) { return <h3 key={index} className="!text-sm font-bold mt-3 mb-1 text-red-500">{cleanLine.replace(/\*\*/g, '')}</h3>; }
+                     const formattedLine = cleanLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<strong>$1</strong>');
+                     return <p key={index} dangerouslySetInnerHTML={{ __html: sanitizeHtml(formattedLine) }}></p>;
+                 });
+             };
+             return (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div className="bg-gray-900 text-gray-50 w-full max-w-2xl rounded-xl shadow-2xl border border-gray-700 flex flex-col max-h-[90vh]">
+                        <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl"><h2 className="text-xl font-bold text-red-400 flex items-center gap-2"><BookOpen className="text-red-400"/> {combatant.name} - Full Stat Block</h2><button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button></div>
+                        <div className="p-6 overflow-y-auto flex-1 stat-block"><h3 className="!text-2xl text-white border-b-2 border-red-500 pb-2 mb-3">{combatant.name.toUpperCase()} <span className="text-xs font-normal text-slate-400 ml-2">({combatant.type || 'Unknown'})</span></h3><p className="text-sm font-mono text-gray-400">AC: {combatant.ac} | HP: {combatant.maxHp} | Init Mod: {combatant.initMod}</p><div className="mt-4 text-sm text-gray-200">{combatant.statBlockSummary.length > 0 ? renderSummary(combatant.statBlockSummary.replace(/\\n/g, '\n')) : <span className="flex items-center text-red-400"><AlertTriangle className="inline w-4 h-4 text-yellow-500 mr-2" /> Stat block details were not successfully retrieved by the AI.</span>}</div></div>
+                        <div className="p-4 border-t border-gray-700 bg-gray-800 rounded-b-xl flex justify-end"><button onClick={onClose} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-medium">Close Stat Block</button></div>
+                    </div>
+                </div>
+            );
+        };
+        const FilenameModal = ({ fileName, setFileName, onClose, onDownload }) => {
+            return (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div className="bg-gray-900 w-full max-w-md rounded-xl border border-slate-700 p-6 shadow-2xl">
+                        <h2 className="text-xl font-bold text-white mb-4">File Options</h2>
+                        <div className="mb-4">
+                            <label className="block text-xs font-bold text-slate-400 mb-1 uppercase">Export Filename Base</label>
+                            <input className={INPUT_CLASS} value={fileName} name="fileName" onChange={(e) => setFileName(e.target.value)} onBlur={handleInputBlur} placeholder="encounter_name" />
+                            <p className="text-xs text-slate-500 mt-1">Used for encounter export (e.g., `<span className="text-amber-500">{fileName}</span>.json`).</p>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <button onClick={onClose} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-sm font-bold">Cancel</button>
+                            <button onClick={onDownload} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-bold">Download Now</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        const FloatingSettingsButton = ({ apiKey, setModalVisible }) => {
+            const isKeyNeeded = !apiKey;
+            if (isKeyNeeded) { return (<button onClick={() => setModalVisible(true)} className="floating-button px-4 py-2 flex items-center gap-2 bg-red-700 text-white rounded-full font-bold uppercase text-sm border-2 border-red-500 hover:bg-red-600 transition-colors duration-300 animate-pulse" title="Gemini API Key Needed for AI Features"><AlertTriangle size={16} /> API Key Needed</button>); }
+            return (<button onClick={() => setModalVisible(true)} className="floating-button w-10 h-10 flex items-center justify-center bg-slate-700 text-slate-400 hover:text-white rounded-full border border-slate-600 hover:bg-slate-600 transition-colors duration-300" title="AI Settings"><Settings size={20} /></button>);
+        };
+        
+        // NEW: Floating Victory Button
+        const FloatingVictoryButton = ({ handleVictory, combatants, viewMode, status }) => {
+            if (viewMode !== 'battlefield' || status !== 'active') return null;
+            
+            // Check if all monsters are defeated (HP 0)
+            const activeMonsters = combatants.filter(c => c.type === 'monster' && c.currentHp > 0);
+            
+            if (activeMonsters.length === 0 && combatants.some(c => c.type === 'monster')) {
+                return (
+                    <button onClick={handleVictory} className="floating-turn-button px-6 py-3 bg-yellow-600 hover:bg-yellow-500 text-white rounded-full font-bold shadow-[0_0_20px_rgba(234,179,8,0.5)] flex items-center gap-2 text-base animate-bounce">
+                        <Flag size={20}/> VICTORY! End Battle
+                    </button>
+                );
+            }
             return null;
+        };
+
+        const FloatingNextTurnButton = ({ handleNextTurn, combatants, viewMode, status }) => {
+            if (viewMode !== 'battlefield' || status !== 'active' || combatants.length === 0) return null;
+            
+            // Hide if victory condition is met (Victory button takes over)
+            const activeMonsters = combatants.filter(c => c.type === 'monster' && c.currentHp > 0);
+            if (activeMonsters.length === 0 && combatants.some(c => c.type === 'monster')) return null;
+
+            return <button onClick={handleNextTurn} className="floating-turn-button px-6 py-3 sm:px-4 sm:py-2 bg-green-600 text-white rounded-full font-bold shadow-lg flex items-center gap-2 text-base sm:text-sm">Next Turn <ArrowRight size={16}/></button>;
         };
 
         // --- ERROR BOUNDARY ---
         class ErrorBoundary extends React.Component {
-            constructor(props) { 
-                super(props); 
-                this.state = { hasError: false, showResetConfirm: false }; 
-            }
-            static getDerivedStateFromError(error) { return { hasError: true, showResetConfirm: false }; }
+            constructor(props) { super(props); this.state = { hasError: false }; }
+            static getDerivedStateFromError(error) { return { hasError: true }; }
             componentDidCatch(error, errorInfo) { console.error("Uncaught error:", error, errorInfo); }
-            
-            handleOpenReset = () => { this.setState({ showResetConfirm: true }); };
-
-            handleReset = () => { 
-                this.setState({ showResetConfirm: false });
-                console.warn("Performing Ritual of Restoration: Clearing local storage (non-Firestore data only) and reloading.");
-                // Clear only user preferences and API key stored in localStorage
-                localStorage.removeItem('dm-tracker-api-key');
-                localStorage.removeItem('dm-tracker-filename');
-                window.location.reload(); 
-            };
-
+            handleReset = () => { if(confirm("This will clear local storage to fix the crash. Continue?")) { localStorage.clear(); window.location.reload(); } };
             render() {
                 if (this.state.hasError) {
-                    return (
-                        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 text-center">
-                            {this.state.showResetConfirm && (
-                                <ConfirmationModal 
-                                    isOpen={true}
-                                    title="System Reset Warning"
-                                    message="The application has crashed. A reset will clear local preferences (API key, filename) and reload the app. Your Homebrew monsters stored in Firestore will be preserved."
-                                    onConfirm={this.handleReset}
-                                    onCancel={() => this.setState({ showResetConfirm: false })}
-                                    confirmText="Reset App"
-                                />
-                            )}
-                            <div className="bg-slate-900 p-8 rounded-xl border border-red-900 shadow-2xl max-w-md">
-                                <AlertTriangle size={48} className="text-red-500 mx-auto mb-4" />
-                                <h1 className="text-2xl font-bold text-white mb-2">Magical Feedback Loop Detected</h1>
-                                <p className="text-slate-400 mb-6">The Akashic Tome has encountered a critical error. The Weave is unstable.</p>
-                                <button onClick={this.handleOpenReset} className="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-lg w-full transition-colors">Perform Ritual of Restoration (Reset App)</button>
-                            </div>
-                        </div>
-                    );
+                    return (<div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 text-center"><div className="bg-slate-900 p-8 rounded-xl border border-red-900 shadow-2xl max-w-md"><AlertTriangle size={48} className="text-red-500 mx-auto mb-4" /><h1 className="text-2xl font-bold text-white mb-2">Magical Feedback Loop Detected</h1><p className="text-slate-400 mb-6">The Akashic Tome has encountered a critical error. The Weave is unstable.</p><button onClick={this.handleReset} className="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-lg w-full transition-colors">Perform Ritual of Restoration (Reset Data)</button></div></div>);
                 }
                 return this.props.children;
             }
         }
-
+        
         // --- MAIN APP ---
         function App() {
-            // Firestore/Auth state
-            const [db, setDb] = useState(null);
-            const [userId, setUserId] = useState(null);
-            const [appId, setAppId] = useState(null);
-            const [isInitialAuthCheckComplete, setIsInitialAuthCheckComplete] = useState(false);
-            
-            // App State
-            const [homebrew, setHomebrew] = useState([]);
-            
-            // Changelog State
-            const [lastAcknowledgedVersion, setLastAcknowledgedVersion] = useState(() => localStorage.getItem(LAST_ACKNOWLEDGED_VERSION_KEY) || '0.0.0');
-            const isNewVersionAvailable = (current, acknowledged) => current > acknowledged; // Simple string comparison for X.Y.Z
-            const showGlow = isNewVersionAvailable(CURRENT_VERSION, lastAcknowledgedVersion);
-
-            // API Key and filename still use localStorage for *user preference/config*
+            const [combatants, setCombatants] = useState(() => safeLoad('dm-tracker-monsters', []));
+            const [homebrew, setHomebrew] = useState(() => safeLoad('dm-tracker-homebrew', [])); 
             const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('dm-tracker-api-key') || HARDCODED_API_KEY);
-            const [exportFileName, setExportFileName] = useState(() => localStorage.getItem('dm-tracker-filename') || 'homebrew_bank');
-            const [notification, setNotification] = useState(null);
-            const [viewStatBlockMonster, setViewStatBlockMonster] = useState(null);
-            const [showSettingsModal, setShowSettingsModal] = useState(false);
-            const [showChangelogModal, setShowChangelogModal] = useState(false);
-            const [showFilenameModal, setShowFilenameModal] = useState(false);
-            const [showHomebrewImportModal, setShowHomebrewImportModal] = useState(null); 
-            const homebrewFileInputRef = useRef(null); 
-            
-            const [viewMode, setViewMode] = useState('homebrew');
-            
-            // Homebrew Lab State
-            const [labInput, setLabInput] = useState('');
-            const [isBrewing, setIsBrewing] = useState(false);
-            const [homebrewForm, setHomebrewForm] = useState({ name: '', hp: '', ac: '', initMod: '', type: 'Unknown' });
-            const [monsterDetails, setMonsterDetails] = useState(INITIAL_MONSTER_DETAILS);
-            const [homebrewSearch, setHomebrewSearch] = useState('');
-            const [homebrewSortBy, setHomebrewSortBy] = useState('name'); 
-
-            // DM Screen State
-            const [screenSearch, setScreenSearch] = useState('');
-            const [selectedRule, setSelectedRule] = useState(null);
-            const [expandedCategories, setExpandedCategories] = useState(() => {
-                const initial = {};
-                RULES_DATA.forEach(cat => initial[cat.category] = false);
-                return initial;
+            const [exportFileName, setExportFileName] = useState(() => localStorage.getItem('dm-tracker-filename') || 'encounter_data');
+            // MIGRATION: Ensure status exists in state if loaded from old localStorage
+            const [combatState, setCombatState] = useState(() => {
+                const loaded = safeLoad('dm-tracker-combat-state', { round: 1, turnIndex: 0, status: 'prep' });
+                return { ...loaded, status: loaded.status || 'prep' };
             });
+            const [battleLogs, setBattleLogs] = useState(() => safeLoad('dm-tracker-logs', []));
+            const [user, setUser] = useState(null); // Firebase User State
+            
+            const [monsterDetails, setMonsterDetails] = useState(INITIAL_MONSTER_DETAILS);
+            const [formData, setFormData] = useState(INITIAL_FORM);
+            
+            const [isGeneratingStats, setIsGeneratingStats] = useState(false);
+            const [isRollingInit, setIsRollingInit] = useState(false); 
+            const [narratingId, setNarratingId] = useState(null); 
+            const [narrations, setNarrations] = useState({}); 
+            
+            const [showSettingsModal, setShowSettingsModal] = useState(false);
+            const [showFilenameModal, setShowFilenameModal] = useState(false);
+            const [showDiceModal, setShowDiceModal] = useState(false);
+            const [showLogModal, setShowLogModal] = useState(false);
+            const [showChangelogModal, setShowChangelogModal] = useState(false); 
+            const [viewStatBlockMonster, setViewStatBlockMonster] = useState(null);
+            const [showVictoryModal, setShowVictoryModal] = useState(false);
+            
+            const [addMode, setAddMode] = useState('monster'); 
+            const [notification, setNotification] = useState(null);
+            const [clearConfirm, setClearConfirm] = useState(false);
+            const [openActionDetailsId, setOpenActionDetailsId] = useState(null); 
+            const [openConditionId, setOpenConditionId] = useState(null); 
+            
+            const [viewMode, setViewMode] = useState('setup');
+            const encounterFileInputRef = useRef(null);
 
-            // Authentication and Firestore Initialization Effect
+            // AUTH & FIREBASE SYNC
             useEffect(() => {
-                const handleAuthReady = () => {
-                    if (window.isAuthReady && window.db && window.currentUserId) {
-                        setDb(window.db);
-                        setUserId(window.currentUserId);
-                        // __app_id is a global variable from the environment
-                        setAppId(typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'); 
-                        setIsInitialAuthCheckComplete(true);
+                if (!auth) return;
+                const initAuth = async () => {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        try { await auth.signInWithCustomToken(__initial_auth_token); } catch(e) { console.error("Auth Error", e); }
+                    } else {
+                        try { await auth.signInAnonymously(); } catch(e) { console.error("Auth Error", e); }
                     }
                 };
-
-                // Listen for custom event dispatch from module script after auth completes
-                document.addEventListener('auth-ready', handleAuthReady);
-                // Also call immediately in case the event fired before this component mounted
-                handleAuthReady(); 
-
-                return () => {
-                    document.removeEventListener('auth-ready', handleAuthReady);
-                };
+                initAuth();
+                const unsubscribe = auth.onAuthStateChanged(setUser);
+                return () => unsubscribe();
             }, []);
 
-            // Firestore Data Listener Effect
+            // Firestore Sync for Homebrew (Read-Only from this side)
             useEffect(() => {
-                // Check 1: Ensure fundamental DB/Auth details are present.
-                if (!db || !userId || !appId || !isInitialAuthCheckComplete) {
-                    console.log("Firestore data sync waiting for DB, UserId, or initial Auth Check.");
-                    return;
-                }
-
-                const HOMEBREW_PATH = `artifacts/${appId}/users/${userId}/homebrew`;
-                // Now accessing functions directly via window.firebase which is correctly set in the module script
-                const q = window.firebase.query(window.firebase.collection(db, HOMEBREW_PATH));
-
-                const unsubscribe = window.firebase.onSnapshot(q, (snapshot) => {
-                    const loadedMonsters = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
-                    setHomebrew(loadedMonsters);
-                }, (error) => {
-                    // This error is the "Missing or insufficient permissions" error.
-                    console.error("Firestore snapshot error: Missing or insufficient permissions. This usually indicates an issue with Security Rules in the backend.", error);
-                    showNotification("Failed to load Homebrew Bank. Check database permissions.", "error");
-                    // Important: Set homebrew to empty array to ensure UI loads even if data is unreachable.
-                    setHomebrew([]); 
-                });
-
-                return () => unsubscribe();
-            }, [db, userId, appId, isInitialAuthCheckComplete]); // Depend on all readiness flags
-
-            // Local Storage Effects (for non-critical user preferences)
-            useEffect(() => { 
-                if (userApiKey && userApiKey !== localStorage.getItem('dm-tracker-api-key')) {
-                    localStorage.setItem('dm-tracker-api-key', userApiKey);
-                }
-            }, [userApiKey]);
-            useEffect(() => { 
-                localStorage.setItem('dm-tracker-filename', exportFileName); 
-            }, [exportFileName]);
-
-            // Changelog Handlers
-            const handleChangelogToggle = (shouldOpen) => {
-                if (shouldOpen) {
-                    setShowChangelogModal(true);
-                } else {
-                    // Acknowledge logic on close: Set acknowledged version to current version
-                    if (isNewVersionAvailable(CURRENT_VERSION, lastAcknowledgedVersion)) {
-                        localStorage.setItem(LAST_ACKNOWLEDGED_VERSION_KEY, CURRENT_VERSION);
-                        setLastAcknowledgedVersion(CURRENT_VERSION);
-                        // Optional notification for feedback
-                        // showNotification(`Changelog acknowledged (V${CURRENT_VERSION})`, 'info'); 
+                if (!user || !db) return;
+                const hbCollection = db.collection('artifacts').doc(appId).collection('users').doc(user.uid).collection('homebrew');
+                const unsubscribe = hbCollection.onSnapshot(snapshot => {
+                    const fetchedHomebrew = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    if (fetchedHomebrew.length > 0 || snapshot.empty) {
+                        setHomebrew(fetchedHomebrew);
+                        localStorage.setItem('dm-tracker-homebrew', JSON.stringify(fetchedHomebrew));
                     }
-                    setShowChangelogModal(false);
+                }, error => {
+                    console.error("Error syncing homebrew:", error);
+                });
+                return () => unsubscribe();
+            }, [user]);
+
+
+            // CHANGELOG STATE & LOGIC
+            const isNewUpdateAvailable = () => {
+                const lastViewedVersion = localStorage.getItem('dm-tracker-last-viewed-version');
+                if (!lastViewedVersion) return true;
+                const parseVersion = (v) => v.split('.').map(Number);
+                const current = parseVersion(CURRENT_VERSION);
+                const viewed = parseVersion(lastViewedVersion);
+                for (let i = 0; i < Math.max(current.length, viewed.length); i++) {
+                    const c = current[i] || 0;
+                    const v = viewed[i] || 0;
+                    if (c > v) return true;
+                    if (c < v) return false;
                 }
+                return false;
             };
-            // Note: The isNewVersionAvailable function remains outside the component logic flow for showGlow computation.
+
+            const [newUpdateGlow, setNewUpdateGlow] = useState(isNewUpdateAvailable());
+            
+            const markChangelogViewed = () => {
+                localStorage.setItem('dm-tracker-last-viewed-version', CURRENT_VERSION);
+                setNewUpdateGlow(false);
+            };
+
+            // Effects
+            useEffect(() => { localStorage.setItem('dm-tracker-monsters', JSON.stringify(combatants)); }, [combatants]);
+            useEffect(() => { if (userApiKey && userApiKey !== localStorage.getItem('dm-tracker-api-key')) localStorage.setItem('dm-tracker-api-key', userApiKey); }, [userApiKey]);
+            useEffect(() => { localStorage.setItem('dm-tracker-filename', exportFileName); }, [exportFileName]);
+            useEffect(() => { localStorage.setItem('dm-tracker-combat-state', JSON.stringify(combatState)); }, [combatState]);
+            useEffect(() => { localStorage.setItem('dm-tracker-logs', JSON.stringify(battleLogs)); }, [battleLogs]);
+            useEffect(() => { 
+                if (combatants.length === 0) setCombatState({ round: 1, turnIndex: 0, status: 'prep' }); 
+                else if (combatState.turnIndex >= combatants.length) setCombatState(prev => ({ ...prev, turnIndex: 0 })); 
+            }, [combatants.length]);
+            useEffect(() => {
+                if (viewMode === 'battlefield' && combatants.length > 0) {
+                    const activeCombatant = combatants[combatState.turnIndex];
+                    if (activeCombatant) {
+                        const element = document.getElementById(`card-${activeCombatant.id}`);
+                        if (element) { setTimeout(() => { element.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }
+                    }
+                }
+            }, [combatState.turnIndex, viewMode]); 
 
             // Handlers
             const showNotification = (message, type = 'info') => { setNotification({ message, type }); setTimeout(() => setNotification(null), 3000); };
+            const addToLog = useCallback((message, type='info') => {
+                const newLog = { message, type, timestamp: new Date().toISOString() };
+                setBattleLogs(prev => [...prev, newLog].slice(-50)); // Keep last 50
+            }, []);
+            const toggleActionDetails = useCallback((id) => { setOpenActionDetailsId(prev => prev === id ? null : id); setOpenConditionId(prev => (prev !== null && prev !== id ? null : prev)); }, []);
             const openStatBlock = useCallback((monster) => { setViewStatBlockMonster(monster); }, []);
-            const toggleCategory = (category) => { setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] })); };
-            const clearHomebrewForm = () => { setHomebrewForm({ name: '', hp: '', ac: '', initMod: '', type: 'Unknown' }); setMonsterDetails(INITIAL_MONSTER_DETAILS); showNotification("Homebrew form cleared", "info"); };
             
-            // Firestore Operations
-            const deleteHomebrew = async (id) => {
-                if (!db || !userId || !appId) { showNotification("Database not ready.", "error"); return; }
-                const HOMEBREW_PATH = `artifacts/${appId}/users/${userId}/homebrew`;
-                try {
-                    await window.firebase.deleteDoc(window.firebase.doc(db, HOMEBREW_PATH, id));
-                    showNotification("Monster deleted.", "info");
-                } catch (e) {
-                    console.error("Error deleting document:", e);
-                    showNotification("Failed to delete monster. Permission denied.", "error");
-                }
-            };
-            
-            const saveHomebrewMonster = async (e) => {
-                e.preventDefault();
-                if (!db || !userId || !appId) { showNotification("Database not ready.", "error"); return; }
-                if (!homebrewForm.name || !homebrewForm.hp) { showNotification("Name/HP required", "error"); return; }
-                
-                const HOMEBREW_PATH = `artifacts/${appId}/users/${userId}/homebrew`;
-                const newMonsterData = { 
-                    name: homebrewForm.name, 
-                    hp: parseInt(homebrewForm.hp), 
-                    ac: parseInt(homebrewForm.ac)||10, 
-                    initMod: parseInt(homebrewForm.initMod)||0, 
-                    type: homebrewForm.type || 'Unknown', 
-                    ...monsterDetails,
-                    createdAt: window.firebase.serverTimestamp() // Add timestamp for sorting/tracking
-                };
-
-                const existing = homebrew.find(h => h.name.toLowerCase() === homebrewForm.name.toLowerCase());
-                
-                try {
-                    if (existing) {
-                        // Update existing monster
-                        const docRef = window.firebase.doc(db, HOMEBREW_PATH, existing.id);
-                        await window.firebase.setDoc(docRef, newMonsterData, { merge: true });
-                        showNotification(`Updated existing monster: ${homebrewForm.name}`, "info");
-                    } else {
-                        // Add new monster
-                        // Now accessing functions directly via window.firebase
-                        const docRef = window.firebase.doc(window.firebase.collection(db, HOMEBREW_PATH));
-                        await window.firebase.setDoc(docRef, newMonsterData);
-                        showNotification("Saved to Bank", "success");
+            const updateInitiative = useCallback((id, newInit) => {
+                setCombatants(prev => {
+                    const updatedCombatants = prev.map(c => 
+                        c.id === id ? { ...c, initiative: newInit } : c
+                    );
+                    // Only re-sort if we are in prep mode
+                    if (combatState.status === 'prep') {
+                        return updatedCombatants.sort((a, b) => b.initiative - a.initiative);
                     }
-                    clearHomebrewForm();
-                } catch (e) {
-                    console.error("Error saving document:", e);
-                    showNotification("Failed to save monster. Permission denied.", "error");
+                    return updatedCombatants;
+                });
+            }, [combatState.status]);
+
+            // --- BATTLE LIFECYCLE ---
+            const startBattle = () => {
+                if (combatants.length === 0) { showNotification("No combatants!", "error"); return; }
+                const sorted = [...combatants].sort((a, b) => b.initiative - a.initiative);
+                setCombatants(sorted);
+                setCombatState({ round: 1, turnIndex: 0, status: 'active' });
+                setViewMode('battlefield');
+                addToLog("--- BATTLE STARTED ---", "turn");
+                showNotification("Battle Started! Initiative Locked.", "success");
+            };
+
+            const endBattle = () => {
+                setCombatState(prev => ({ ...prev, status: 'complete' }));
+                addToLog("--- BATTLE ENDED ---", "turn");
+                setShowVictoryModal(true);
+            };
+
+            // --- COMBAT STATE & GAME LOGIC ---
+            const handleNextTurn = () => {
+                if (combatants.length === 0 || combatState.status !== 'active') return;
+                
+                let nextIndex = combatState.turnIndex;
+                let didWrap = false;
+                let loops = 0;
+                const maxLoops = combatants.length * 2;
+                
+                do {
+                    nextIndex = (nextIndex + 1) % combatants.length;
+                    loops++;
+                    if (nextIndex === 0) { didWrap = true; }
+                    const nextCombatant = combatants[nextIndex];
+                    if (nextCombatant && (nextCombatant.currentHp > 0 || nextCombatant.maxHp === 0 || nextCombatant.type === 'player')) { break; }
+                    if (loops >= maxLoops) { console.warn("Could not find a valid target, stopping turn cycle."); return; }
+                } while (nextIndex !== combatState.turnIndex);
+
+                const nextCombatantName = combatants[nextIndex]?.name || "Unknown";
+                if (didWrap) {
+                     setCombatState(prev => ({ ...prev, round: prev.round + 1, turnIndex: nextIndex }));
+                     showNotification(`Round ${combatState.round + 1}!`, 'info');
+                     addToLog(`Round ${combatState.round + 1} started. ${nextCombatantName}'s turn.`, 'turn');
+                } else {
+                     setCombatState(prev => ({ ...prev, turnIndex: nextIndex }));
+                     addToLog(`Turn passed to ${nextCombatantName}.`, 'turn');
                 }
             };
 
-            const handleBrewMonster = async () => {
-                if (!labInput.trim()) { showNotification("Describe your monster first!", "error"); return; }
-                if (!userApiKey) { showNotification("Missing API Key", "error"); setShowSettingsModal(true); return; }
-                setIsBrewing(true);
-                const prompt = `You are a D&D 5e Rules Expert. Create a BALANCED, COMPLETE monster stat block based on this concept: "${labInput}". Return a JSON object with: 'name' (string), 'hp' (integer), 'ac' (integer), 'initMod' (integer), 'resistances' (string), 'vulnerabilities' (string), 'actions' (string: concise list of action names and damage dice), 'statBlockSummary' (string: A full markdown text block including: Ability Scores, Saving Throws, Skills, Senses, Languages, Challenge, Special Traits, Actions, and Legendary Actions if applicable. Use strict markdown headers like **Actions**.) 'type' (string: e.g. "Aberration", "Beast", "Celestial") Return ONLY valid JSON.`;
+            const updateHealth = useCallback((id, amount) => {
+                setCombatants(prev => {
+                     const target = prev.find(c => c.id === id);
+                     if (!target) return prev;
+                     if (amount < 0) { addToLog(`${target.name} took ${Math.abs(amount)} damage`, 'damage'); } else if (amount > 0) { addToLog(`${target.name} healed ${amount} HP`, 'heal'); }
+                     
+                     return prev.map(m => {
+                        if (m.id !== id) return m;
+                        if (m.type === 'player' && m.maxHp === 0) return m;
+                        
+                        const newHp = Math.max(0, Math.min(m.maxHp, m.currentHp + amount));
+                        
+                        // Check for DEFEAT (only if it wasn't already 0)
+                        if (newHp === 0 && m.currentHp > 0 && m.type === 'monster') {
+                            addToLog(`[DEFEATED] ${m.name}`, 'skull');
+                        }
 
+                        let newDeathSaves = m.deathSaves;
+                        if (m.type === 'player' && m.currentHp === 0 && newHp > 0) { newDeathSaves = { successes: 0, failures: 0 }; }
+                        return { ...m, currentHp: newHp, deathSaves: newDeathSaves !== undefined ? newDeathSaves : m.deathSaves };
+                    });
+                });
+            }, [addToLog]);
+
+            // ... (rest of simple handlers: toggleConcentration, toggleDeathSave, toggleCondition, deleteCombatant etc)
+            const toggleConcentration = useCallback((id) => { setCombatants(prev => prev.map(m => m.id !== id ? m : { ...m, isConcentrating: !m.isConcentrating })); }, []);
+            const toggleDeathSave = useCallback((id, type, index) => {
+                setCombatants(prev => prev.map(m => { if (m.id !== id) return m; const currentSaves = m.deathSaves || { successes: 0, failures: 0 }; let newVal = index + 1; if (currentSaves[type] === newVal) newVal = index; return { ...m, deathSaves: { ...currentSaves, [type]: newVal } }; }));
+            }, []);
+            const toggleCondition = useCallback((id, c) => {
+                setCombatants(prev => prev.map(m => m.id !== id ? m : { ...m, conditions: m.conditions.includes(c) ? m.conditions.filter(i => i !== c) : [...m.conditions, c] }));
+            }, []);
+            const deleteCombatant = useCallback((id) => { setCombatants(prev => prev.filter(m => m.id !== id)); setNarrations(prev => { const n = {...prev}; delete n[id]; return n; }); }, []);
+            const handleClearAll = () => { if (clearConfirm) { setCombatants([]); setNarrations({}); setCombatState({ round: 1, turnIndex: 0, status: 'prep' }); setBattleLogs([]); setClearConfirm(false); showNotification("Cleared", "success"); } else { setClearConfirm(true); setTimeout(() => setClearConfirm(false), 3000); } };
+            const handleNarrate = useCallback(async (combatant) => {
+                setNarratingId(combatant.id);
+                const txt = await callGemini(`Write short visceral combat flavor text for ${combatant.name} (HP ${combatant.currentHp}/${combatant.maxHp}). No quotes.`, userApiKey);
+                if (txt) setNarrations(prev => ({ ...prev, [combatant.id]: txt.trim() }));
+                setNarratingId(null);
+            }, [userApiKey]);
+            const handleManualRoll = () => {
+                if (addMode !== 'player') return;
+                setIsRollingInit(true);
+                setTimeout(() => {
+                    const mod = parseInt(formData.initMod) || 0;
+                    const total = rollInitiative(mod);
+                    setFormData(prev => ({ ...prev, initiative: total.toString() }));
+                    setIsRollingInit(false);
+                }, 600);
+            };
+            const clearSetupForm = () => { setFormData(INITIAL_FORM); setMonsterDetails(INITIAL_MONSTER_DETAILS); showNotification("Setup form cleared", "info"); };
+            const handleInputChange = (e) => { const { name, value } = e.target; if (name === 'initiative' && addMode === 'monster') return; setFormData(prev => ({ ...prev, [name]: value })); };
+            
+            const handleAutoFillStats = async (e) => {
+                e.preventDefault();
+                if (!formData.name) { showNotification("Name required", "error"); return; }
+                setMonsterDetails(INITIAL_MONSTER_DETAILS);
+                const normName = formData.name.trim().toLowerCase();
+                let hb = homebrew.find(h => h.name.trim().toLowerCase() === normName);
+                if (!hb) { hb = homebrew.find(h => h.name.trim().toLowerCase().includes(normName)); }
+                if (hb) {
+                    const mod = parseInt(hb.initMod) || 0;
+                    setFormData(prev => ({ ...prev, hp: hb.hp, ac: hb.ac, initMod: mod, initiative: '' }));
+                    setMonsterDetails({ resistances: hb.resistances||'', vulnerabilities: hb.vulnerabilities||'', actions: hb.actions||'', statBlockSummary: hb.statBlockSummary||'Not saved.', type: hb.type || 'Unknown' });
+                    showNotification("Stats loaded from Homebrew.", 'info');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                }
+                if (!userApiKey) { showNotification("Missing API Key", "error"); setShowSettingsModal(true); return; }
+                setIsGeneratingStats(true);
+                const prompt = `You are a D&D 5e Rules Expert. Generate a COMPLETE, DETAILED stat block for the monster "${formData.name}". Return a JSON object with: - 'hp' (integer) - 'ac' (integer) - 'initMod' (integer) - 'resistances' (string: list or "None") - 'vulnerabilities' (string: list or "None") - 'actions' (string: concise list of action names and damage dice) - 'statBlockSummary' (string: A full markdown text block including: Ability Scores, Saving Throws, Skills, Senses, Languages, Challenge, Special Traits, Actions, and Legendary Actions if applicable. Use strict markdown headers like **Actions**.) - 'type' (string: e.g. "Aberration", "Beast", "Celestial") Return ONLY valid JSON.`;
                 const txt = await callGemini(prompt, userApiKey);
                 if (txt) {
-                     try {
+                    try {
                         const json = JSON.parse(txt.replace(/```json|```/g, '').trim());
                         let monsterType = json.type || 'Unknown';
                         if (monsterType === 'Unknown' && json.statBlockSummary) { monsterType = inferTypeFromStatBlock(json.statBlockSummary); }
-                        setHomebrewForm({ name: json.name || "Unknown Beast", hp: json.hp || 10, ac: json.ac || 10, initMod: parseInt(json.initMod) || 0, type: monsterType });
-                        setMonsterDetails({ resistances: json.resistances || '', vulnerabilities: json.vulnerabilities || '', actions: json.actions || '', statBlockSummary: json.statBlockSummary || '', type: monsterType });
-                        showNotification("Monster brewed! Review and Save below.", "success");
-                     } catch (e) { console.error(e); showNotification("Failed to brew monster. Try again. Check console for details.", "error"); }
-                } else {
-                    showNotification("AI failed to generate stat block.", "error");
+                        setFormData(prev => ({ ...prev, hp: json.hp, ac: json.ac, initMod: parseInt(json.initMod)||0, initiative: '' }));
+                        setMonsterDetails({ resistances: json.resistances||'', vulnerabilities: json.vulnerabilities||'', actions: json.actions||'', statBlockSummary: json.statBlockSummary||'', type: monsterType });
+                        showNotification("Stats generated by AI.", 'info');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } catch (e) { showNotification("AI Parse Error", "error"); }
                 }
-                setIsBrewing(false);
+                setIsGeneratingStats(false);
             };
 
-            const handleExportHomebrew = () => {
-                // Export the current state of homebrew loaded from Firestore
-                const blob = new Blob([JSON.stringify(homebrew, null, 2)], { type: "application/json" });
+            const addCombatant = (e) => {
+                e.preventDefault();
+                if (!formData.name) { showNotification("Name required", "error"); return; }
+                if (addMode === 'monster' && !formData.hp) { showNotification("HP required", "error"); return; }
+                const newC = [];
+                const qty = parseInt(formData.qty) || 1;
+                const mod = parseInt(formData.initMod) || 0;
+                if (addMode === 'player') {
+                    let init = parseInt(formData.initiative);
+                    if (isNaN(init)) { init = rollInitiative(mod); addToLog(`Rolled Init for ${formData.name}: ${init}`, 'roll'); showNotification(`Rolled Init: ${init}`, 'success'); }
+                    // FORCED TYPE: PLAYER
+                    newC.push({ id: generateId(), type: 'player', name: formData.name, maxHp: parseInt(formData.hp)||0, currentHp: parseInt(formData.hp)||0, ac: parseInt(formData.ac)||10, initiative: init, conditions: [], deathSaves: { successes: 0, failures: 0 }, isConcentrating: false });
+                    addToLog(`Added player ${formData.name}`, 'info');
+                } else {
+                    for (let i=0; i<qty; i++) {
+                        // FORCED TYPE: MONSTER
+                        const { type: specificType, ...restDetails } = monsterDetails;
+                        newC.push({ 
+                            id: generateId(), 
+                            type: 'monster', 
+                            monsterType: specificType, 
+                            name: qty > 1 ? `${formData.name} ${i+1}` : formData.name, 
+                            maxHp: parseInt(formData.hp), 
+                            currentHp: parseInt(formData.hp), 
+                            ac: parseInt(formData.ac)||10, 
+                            initiative: rollInitiative(mod), 
+                            conditions: [], 
+                            isConcentrating: false, 
+                            ...restDetails 
+                        });
+                    }
+                    showNotification(`Added ${qty} ${formData.name}(s)`, 'success');
+                    addToLog(`Added ${qty} x ${formData.name}`, 'info');
+                }
+                setCombatants(prev => {
+                    const updated = [...prev, ...newC];
+                    // Auto-sort if we are in PREP mode
+                    if(combatState.status === 'prep') return updated.sort((a, b) => b.initiative - a.initiative);
+                    return updated;
+                });
+                setFormData(prev => ({ ...INITIAL_FORM, initMod: prev.initMod, qty: prev.qty }));
+                setMonsterDetails(INITIAL_MONSTER_DETAILS);
+                // Don't reset turn index if battle is active
+                if(combatState.status === 'prep') setCombatState(prev => ({ ...prev, turnIndex: 0 })); 
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+            
+            const performExport = () => {
+                const data = { timestamp: new Date().toISOString(), combatants, homebrew: homebrew, combatState, battleLogs };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
                 const href = URL.createObjectURL(blob);
-                const baseName = exportFileName.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') || `homebrew_bank`;
-                const fileName = `${baseName}_HB-Backup.json`;
-                const link = document.createElement('a');
-                link.href = href; link.download = fileName; document.body.appendChild(link); link.click(); document.body.removeChild(link);
-                showNotification(`Homebrew Bank saved as ${fileName}`, "success");
+                const cleanFileName = exportFileName.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') || `dm_encounter_${new Date().toISOString().slice(0,10)}`;
+                const link = document.createElement('a'); link.href = href; link.download = cleanFileName + '.json'; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                showNotification(`Saved as ${cleanFileName}.json`, "success");
+                setShowFilenameModal(false);
             };
 
-            const handleHomebrewImportClick = () => { if (homebrewFileInputRef.current) { homebrewFileInputRef.current.click(); } };
-            const handleHomebrewFileChange = (e) => {
+            const handleExportClick = () => { setShowFilenameModal(true); };
+            const handleImportClick = () => { if (encounterFileInputRef.current) { encounterFileInputRef.current.click(); } };
+            const handleFileChange = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     try {
-                        const importedData = JSON.parse(event.target.result);
-                        if (!Array.isArray(importedData)) throw new Error("File content is not a list of monsters.");
-                        setShowHomebrewImportModal({ data: importedData, name: file.name });
-                    } catch (err) { showNotification("Failed to parse Homebrew file: " + err.message, "error"); }
+                        const data = JSON.parse(event.target.result);
+                        let newCombatants = [];
+                        let newCombatState = null;
+                        let newLogs = [];
+                        if (Array.isArray(data)) { newCombatants = data; } 
+                        else if (data.combatants && Array.isArray(data.combatants)) {
+                            newCombatants = data.combatants;
+                            if (data.combatState) newCombatState = data.combatState;
+                            if (data.battleLogs) newLogs = data.battleLogs;
+                        } else { throw new Error("Invalid file format."); }
+                        if (confirm("Overwrite current encounter state (Combatants, Logs, State)?")) {
+                            setCombatants(newCombatants);
+                            if (newCombatState) setCombatState(newCombatState);
+                            if (newLogs.length > 0) setBattleLogs(newLogs);
+                            showNotification("Encounter loaded!", "success");
+                        }
+                    } catch (err) { showNotification("Failed to load encounter: " + err.message, "error"); }
                     e.target.value = null; 
                 };
                 reader.readAsText(file);
             };
 
-            const handleHomebrewConfirm = async (strategy) => {
-                if (!db || !userId || !appId) { showNotification("Database not ready.", "error"); setShowHomebrewImportModal(null); return; }
-
-                const { data: importedMonsters } = showHomebrewImportModal;
-                const HOMEBREW_PATH = `artifacts/${appId}/users/${userId}/homebrew`;
-                const processedImports = importedMonsters.map(m => { 
-                    // Clean up/re-ID monsters from the imported file
-                    const cleanedMonster = { ...m };
-                    delete cleanedMonster.id; 
-                    delete cleanedMonster.createdAt;
-                    if ((!cleanedMonster.type || cleanedMonster.type === 'Unknown') && cleanedMonster.statBlockSummary) { 
-                        cleanedMonster.type = inferTypeFromStatBlock(cleanedMonster.statBlockSummary); 
-                    } 
-                    return cleanedMonster;
-                }).filter(m => m.name && m.hp);
-
-                let monstersToWrite = [];
-                let existingMonsters = homebrew;
-
-                if (strategy === 'overwrite') {
-                    // 1. Delete all existing documents first
-                    const deletePromises = existingMonsters.map(m => 
-                        window.firebase.deleteDoc(window.firebase.doc(db, HOMEBREW_PATH, m.id))
-                    );
-                    await Promise.all(deletePromises);
-                    monstersToWrite = processedImports;
-                    showNotification(`Overwrote Homebrew Bank with ${monstersToWrite.length} entries.`, "success");
-
-                } else if (strategy === 'merge') {
-                    const existingNames = new Set(existingMonsters.map(m => m.name.toLowerCase()));
-                    monstersToWrite = processedImports.filter(m => !existingNames.has(m.name.toLowerCase()));
-                    showNotification(`Merged: Added ${monstersToWrite.length} new entries to Homebrew Bank.`, "success");
-                }
-                
-                // 2. Write new/merged documents
-                const writePromises = monstersToWrite.map(m => {
-                    const docRef = window.firebase.doc(window.firebase.collection(db, HOMEBREW_PATH));
-                    return window.firebase.setDoc(docRef, { ...m, createdAt: window.firebase.serverTimestamp() });
-                });
-                await Promise.all(writePromises);
-
-                setShowHomebrewImportModal(null);
-            };
-
-
-            const getProcessedHomebrew = () => {
-                let filtered = homebrew.filter(h => h.name.toLowerCase().includes(homebrewSearch.toLowerCase()) || (h.type && h.type.toLowerCase().includes(homebrewSearch.toLowerCase())));
-                if (homebrewSortBy === 'name') { return { type: 'flat', data: filtered.sort((a, b) => a.name.localeCompare(b.name)) }; } 
-                else {
-                    const grouped = {};
-                    filtered.forEach(h => { const t = h.type || "Unknown"; if (!grouped[t]) grouped[t] = []; grouped[t].push(h); });
-                    const sortedKeys = Object.keys(grouped).sort();
-                    return { type: 'grouped', data: grouped, keys: sortedKeys };
-                }
-            };
-            const processedHomebrew = getProcessedHomebrew();
-
             // Navigation and Tool items
-            const NAV_ITEMS = [{ mode: 'homebrew', label: 'Homebrew', icon: FlaskConical }, { mode: 'screen', label: 'DM Information', icon: Grid }];
-
+            const NAV_ITEMS = [{ mode: 'setup', label: 'Setup', icon: User }, { mode: 'battlefield', label: 'Battlefield', icon: CastleGate }];
 
             return (
-                <div className="min-h-screen pb-20 font-serif">
+                <div className="min-h-screen pb-32 font-serif">
                     {notification && <div className={`fixed top-4 right-4 z-[120] px-4 py-3 rounded shadow-xl flex items-center gap-2 animate-fade-in ${notification.type==='error'?'bg-red-600 text-white':'bg-green-600 text-white'}`}>{notification.type==='error'?<AlertTriangle size={18}/>:<CheckCircle size={18}/>}<span>{notification.message}</span></div>}
                     
                     {viewStatBlockMonster && <MonsterStatBlockModal combatant={viewStatBlockMonster} onClose={() => setViewStatBlockMonster(null)} />}
-                    {showFilenameModal && <FilenameModal fileName={exportFileName} setFileName={setExportFileName} onClose={() => setShowFilenameModal(false)} />}
-                    {/* The next two modals are placeholders and don't need implementation yet */}
-                    {/* {showDiceModal && <DiceRollerModal onClose={() => setShowDiceModal(false)} addToLog={addToLog} />} */}
-                    {/* {showLogModal && <BattleLogModal logs={battleLogs} onClose={() => setBattleLogs(false)} onClear={() => setBattleLogs([])} />} */}
-                    {showHomebrewImportModal && <HomebrewImportModal file={showHomebrewImportModal} onConfirm={handleHomebrewConfirm} onClose={() => setShowHomebrewImportModal(null)} />}
+                    {showFilenameModal && <FilenameModal fileName={exportFileName} setFileName={setExportFileName} onClose={() => setShowFilenameModal(false)} onDownload={performExport} />}
+                    {showDiceModal && <DiceRollerModal onClose={() => setShowDiceModal(false)} addToLog={addToLog} />}
+                    {showLogModal && <BattleLogModal logs={battleLogs} onClose={() => setShowLogModal(false)} onClear={() => setBattleLogs([])} />}
+                    {showChangelogModal && <ChangelogModal onClose={() => setShowChangelogModal(false)} onMarkViewed={markChangelogViewed} />}
                     
-                    {showChangelogModal && (
-                        <ChangelogModal 
-                            onClose={() => handleChangelogToggle(false)}
-                            currentVersion={CURRENT_VERSION}
-                            lastAcknowledged={lastAcknowledgedVersion}
-                        />
+                    {/* VICTORY MODAL */}
+                    {showVictoryModal && (
+                        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                            <div className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-md rounded-xl border border-yellow-600 p-8 shadow-[0_0_50px_rgba(234,179,8,0.2)] text-center animate-fade-in">
+                                <Flag size={48} className="mx-auto text-yellow-500 mb-4 animate-bounce"/>
+                                <h2 className="text-3xl font-bold text-white mb-2">VICTORY!</h2>
+                                <p className="text-slate-400 mb-6">The battlefield is silent. The threat is vanquished.</p>
+                                <div className="space-y-3">
+                                    <a href="./loot.html" className="block w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
+                                        <Gem size={20}/> Claim Loot Records
+                                    </a>
+                                    <button onClick={() => setShowVictoryModal(false)} className="block w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg transition-colors">
+                                        Remain Here
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     )}
 
-                    <FloatingSettingsButton apiKey={userApiKey} setModalVisible={setShowSettingsModal} />
-
                     <div className="astral-container relative z-10 p-2 sm:p-4">
+                        <FloatingVictoryButton handleVictory={endBattle} combatants={combatants} viewMode={viewMode} status={combatState.status} />
+                        <FloatingNextTurnButton handleNextTurn={handleNextTurn} combatants={combatants} viewMode={viewMode} status={combatState.status} />
+                        <FloatingSettingsButton apiKey={userApiKey} setModalVisible={setShowSettingsModal} />
+
                         <header className="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-md -mx-2 sm:-mx-4 -mt-2 sm:-mt-4 px-4 py-3 mb-4">
                             <div className="max-w-6xl mx-auto">
                                 <div className="flex justify-between items-center mb-3">
-                                    <div className="flex items-center gap-3"><BookOpen className="text-amber-500 w-6 h-6 sm:w-8 sm:h-8" /><h1 className="text-lg sm:text-2xl font-bold tracking-tight text-white">DM Tools Bank</h1></div>
-                                    
-                                    <div className="flex flex-col items-end gap-2">
-                                        <div className="flex gap-2">
-                                             <a href="./loot.html" className="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white border-2 border-red-800 hover:border-red-400 px-3 py-1.5 rounded-full text-xs font-bold transition-all no-underline shadow-[0_0_15px_rgba(220,38,38,0.5)] hover:shadow-[0_0_25px_rgba(220,38,38,0.8)] hover:scale-105" title="Open Loot Records">
-                                                <div className="bg-black rounded-full p-0.5"><Gem size={14} className="text-red-500" /></div>
-                                                <span className="hidden sm:inline">Loot</span>
-                                            </a>
-                                             <a href="./tome.html" className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-lg border border-indigo-400 hover:scale-105 active:scale-95 no-underline">
-                                                <CastleGate size={16} />
-                                                <span>Launch Tracker</span>
-                                            </a>
+                                    <div className="flex items-center gap-3"><CastleGate className="text-red-500 w-6 h-6 sm:w-8 sm:h-8" /><h1 className="text-lg sm:text-2xl font-bold tracking-tight text-white">Akashic Tracker</h1></div>
+                                    <div className="flex items-center gap-3">
+                                        {/* LINK BUTTONS */}
+                                        <a href="./loot.html" className="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white border-2 border-red-800 hover:border-red-400 px-3 py-1.5 rounded-full text-xs font-bold transition-all no-underline shadow-[0_0_15px_rgba(220,38,38,0.5)] hover:shadow-[0_0_25px_rgba(220,38,38,0.8)] hover:scale-105" title="Open Loot Records">
+                                            <div className="bg-black rounded-full p-0.5"><Gem size={14} className="text-red-500" /></div>
+                                            <span className="hidden sm:inline">Loot</span>
+                                        </a>
+                                        <a href="./homebrew.html" className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-amber-500 border border-slate-600 hover:border-amber-500 px-3 py-1.5 rounded text-xs font-bold transition-all no-underline" title="Open DM Tools">
+                                            <FlaskConical size={16} />
+                                            <span className="hidden sm:inline">DM Tools</span>
+                                        </a>
+
+                                        <div className={`flex items-center rounded px-3 py-1 border ${combatState.status === 'active' ? 'bg-red-900/30 border-red-500 animate-pulse' : 'bg-slate-900 border-slate-700'}`}>
+                                            <span className={`text-xs font-bold mr-2 ${combatState.status === 'active' ? 'text-red-400' : 'text-slate-500'}`}>{combatState.status === 'active' ? 'COMBAT' : 'PREP'}</span>
+                                            <span className="text-white font-mono text-lg">{combatState.round}</span>
                                         </div>
-                                        {userId && <div className="text-[10px] text-slate-500 font-mono break-all leading-tight"><span className="text-amber-400">User ID:</span> {userId}</div>}
                                     </div>
                                 </div>
                                 <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
                                     <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700 w-full sm:w-auto overflow-x-auto no-scrollbar">
                                         {NAV_ITEMS.map(item => (
-                                            <button key={item.mode} onClick={() => setViewMode(item.mode)} className={`flex-1 px-3 py-2 text-xs sm:text-sm font-bold rounded capitalize transition-colors whitespace-nowrap flex items-center justify-center gap-2 ${viewMode === item.mode ? (item.mode==='homebrew'?'bg-amber-700 text-white':'bg-indigo-600 text-white') : 'text-slate-400 hover:text-white'}`}>
+                                            <button key={item.mode} onClick={() => setViewMode(item.mode)} className={`flex-1 px-3 py-2 text-xs sm:text-sm font-bold rounded capitalize transition-colors whitespace-nowrap flex items-center justify-center gap-2 ${viewMode === item.mode ? (item.mode==='battlefield'?'bg-red-700 text-white':'bg-indigo-600 text-white') : 'text-slate-400 hover:text-white'}`}>
                                                 <item.icon size={16} />
                                                 <span>{item.label}</span>
+                                                {item.mode==='battlefield' && combatants.length>0 && <span className="ml-1 bg-black/30 px-1.5 rounded-full text-[10px]">{combatants.length}</span>}
                                             </button>
                                         ))}
                                     </div>
                                     <div className="flex w-full sm:w-auto gap-2 justify-end">
                                         <div className="flex bg-slate-900 rounded-lg p-1 border border-slate-700 flex-1 sm:flex-none justify-center">
-                                            <button onClick={() => setShowFilenameModal(true)} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Set File Name">...</button>
+                                            <button onClick={() => setShowLogModal(true)} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Battle Log"><ScrollText size={18}/></button>
+                                            <button onClick={() => setShowDiceModal(true)} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Dice Roller"><D20Icon className="w-5 h-5"/></button>
                                             <div className="w-px bg-slate-700 mx-1"></div>
-                                            <button onClick={handleHomebrewImportClick} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Import Homebrew"><Upload size={18}/></button> 
-                                            <input type="file" ref={homebrewFileInputRef} onChange={handleHomebrewFileChange} className="hidden" accept=".json" />
-                                            <button onClick={handleExportHomebrew} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Export Homebrew Bank"><Download size={18}/></button>
+                                            <button onClick={() => setShowChangelogModal(true)} className={`p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center transition-all ${newUpdateGlow ? 'animate-pulse-glow' : ''}`} title="Changelog">
+                                                <History size={18}/>
+                                            </button>
+                                            <div className="w-px bg-slate-700 mx-1"></div>
+                                            <button onClick={handleImportClick} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Import Encounter"><Upload size={18}/></button> 
+                                            <input type="file" ref={encounterFileInputRef} onChange={handleFileChange} className="hidden" accept=".json" />
+                                            <button onClick={handleExportClick} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Export Full Encounter Data"><Download size={18}/></button>
                                         </div>
-                                        {/* GLOW LOGIC APPLIED HERE */}
-                                        <button onClick={() => handleChangelogToggle(true)} 
-                                            className={`p-2 bg-slate-900 hover:bg-slate-700 rounded text-slate-400 hover:text-white border border-slate-700 relative transition-all flex items-center justify-center
-                                            ${showGlow ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-slate-800 shadow-lg shadow-amber-500/50' : ''}`} 
-                                            title="Help/Guide (Changelog)">
-                                            <CircleHelp size={20}/>
-                                            {showGlow && <span className="absolute top-0 right-0 w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>}
-                                        </button>
+                                        <button onClick={handleClearAll} className={`px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider border transition-colors ${clearConfirm ? 'bg-red-600 text-white border-red-500' : 'bg-slate-900 text-red-400 border-slate-700 hover:bg-slate-800'}`}>{clearConfirm ? "Sure?" : "Clear"}</button>
                                     </div>
                                 </div>
                             </div>
                         </header>
 
                         <main className="max-w-6xl mx-auto">
-                            {/* Removed Setup and Battlefield views for brevity in this response */}
-
-                            {viewMode === 'homebrew' && (
+                            {viewMode === 'setup' && (
                                 <div className="animate-fade-in">
-                                    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 mb-6">
-                                        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2 text-amber-500"><FlaskConical size={20}/> Monster Homebrew Lab</h2>
-                                        <div className="mb-4"><textarea className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 h-24 resize-none" placeholder="Describe your monster concept (e.g., 'A clockwork dragon made of rusty gears that breathes steam')" value={labInput} onChange={(e) => setLabInput(e.target.value)} onBlur={handleInputBlur}></textarea></div>
-                                        <button onClick={handleBrewMonster} disabled={isBrewing} className="w-full bg-amber-700 hover:bg-amber-600 text-white font-bold py-2 rounded flex justify-center items-center gap-2">{isBrewing ? <Loader2 size={18} className="animate-spin"/> : <Ghost size={20}/>} {isBrewing ? "Brewing..." : "Brew Monster"}</button>
-                                    </div>
-
-                                    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-                                            <h2 className="text-lg font-bold text-white flex items-center gap-2"><Database className="text-amber-500"/> Homebrew Bank</h2>
-                                            
-                                            {/* SEARCH & SORT TOOLBAR */}
-                                            <div className="flex w-full sm:w-auto gap-2">
-                                                <div className="relative flex-1 sm:flex-none">
-                                                    <input 
-                                                        className="bg-slate-900 border border-slate-600 rounded pl-8 pr-3 py-1.5 text-xs text-white focus:border-indigo-500 w-full"
-                                                        placeholder="Search bank..."
-                                                        value={homebrewSearch}
-                                                        onChange={(e) => setHomebrewSearch(e.target.value)}
-                                                    />
-                                                    <Search size={14} className="absolute left-2.5 top-2 text-slate-500"/>
-                                                </div>
-                                                <button 
-                                                    onClick={() => setHomebrewSortBy(homebrewSortBy === 'name' ? 'type' : 'name')}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white rounded text-xs font-bold border border-slate-600 transition-colors"
-                                                    title={`Sorted by ${homebrewSortBy}`}
-                                                >
-                                                    <Filter size={14} className={homebrewSortBy === 'type' ? 'text-amber-400' : 'text-slate-400'}/>
-                                                    {homebrewSortBy === 'name' ? 'A-Z' : 'Type'}
+                                    <section className="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-md max-w-4xl mx-auto">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <div className="flex gap-4 p-1 rounded-lg border border-slate-700 bg-slate-900/50">
+                                                <button onClick={() => setAddMode('monster')} 
+                                                    className={`px-3 py-1.5 rounded text-sm font-bold flex items-center gap-2 transition-all border ${addMode === 'monster' 
+                                                        ? 'bg-slate-700/50 text-white border-slate-400' 
+                                                        : 'text-slate-500 border-transparent hover:bg-slate-800'}`}>
+                                                    <Ghost size={16}/> Monster
+                                                </button>
+                                                <button onClick={() => setAddMode('player')} 
+                                                    className={`px-3 py-1.5 rounded text-sm font-bold flex items-center gap-2 transition-all border ${addMode === 'player' 
+                                                        ? 'bg-indigo-900/50 text-indigo-100 border-indigo-400' 
+                                                        : 'text-slate-500 border-transparent hover:bg-slate-800'}`}>
+                                                    <User size={16}/> Player
                                                 </button>
                                             </div>
+                                            
+                                            {/* START BATTLE BUTTON */}
+                                            {combatants.length > 0 && combatState.status === 'prep' && (
+                                                <button onClick={startBattle} className="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg animate-pulse">
+                                                    <Sword size={18}/> START BATTLE
+                                                </button>
+                                            )}
+                                            {combatState.status === 'active' && (
+                                                <div className="text-xs font-bold text-red-400 bg-red-900/20 px-3 py-2 rounded border border-red-900">
+                                                    BATTLE IN PROGRESS
+                                                </div>
+                                            )}
                                         </div>
-                                        
-                                        {/* NEW: Backup/Restore Buttons */}
-                                        <div className="flex gap-2 mb-6">
-                                            <button onClick={handleHomebrewImportClick} className="flex-1 flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-700 text-slate-400 hover:text-white font-bold py-2 px-3 rounded text-sm border border-slate-700">
-                                                <Upload size={18}/> Restore
-                                            </button>
-                                            <input 
-                                                type="file" 
-                                                ref={homebrewFileInputRef} 
-                                                onChange={handleHomebrewFileChange} 
-                                                className="hidden" 
-                                                accept=".json" 
-                                            />
-                                            <button onClick={handleExportHomebrew} className="flex-1 flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-700 text-slate-400 hover:text-white font-bold py-2 px-3 rounded text-sm border border-slate-700">
-                                                <Download size={18}/> Backup
-                                            </button>
-                                        </div>
-
-                                        <form onSubmit={saveHomebrewMonster} className="mb-6 grid grid-cols-2 md:grid-cols-12 gap-3 items-end p-3 bg-slate-700/50 rounded-lg border border-slate-600">
-                                            <div className="col-span-2 md:col-span-3"><label className="text-xs text-slate-400 block mb-1">Name</label><input className={INPUT_CLASS} value={homebrewForm.name} onChange={e=>setHomebrewForm({...homebrewForm,name:e.target.value})} onBlur={handleInputBlur} /></div>
-                                            <div className="col-span-1 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">Type</label>
-                                                <select className={INPUT_CLASS} value={homebrewForm.type} onChange={e=>setHomebrewForm({...homebrewForm,type:e.target.value})}>
-                                                    {MONSTER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                                                </select>
+                                        <form onSubmit={addCombatant} className="grid grid-cols-4 md:grid-cols-12 gap-3 items-end">
+                                            <div className="col-span-4 md:col-span-5">
+                                                <label className="text-xs text-slate-400 block mb-1">Name</label>
+                                                <div className="relative">
+                                                    <input className={INPUT_CLASS} value={formData.name} name="name" onChange={handleInputChange} onBlur={handleInputBlur} placeholder={addMode==='monster'?"e.g., Lich":"e.g., Aragon"} />
+                                                    {addMode==='monster' && (
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={handleAutoFillStats} 
+                                                            disabled={isGeneratingStats} 
+                                                            className="input-inline-btn" 
+                                                            title="Auto-fill Stats with AI"
+                                                            style={{touchAction: 'manipulation'}}
+                                                        >
+                                                            {isGeneratingStats ? <Loader2 size={16} className="animate-spin text-red-500"/> : <Sparkles size={16}/>}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="col-span-1 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">HP</label><input type="number" className={INPUT_CLASS} value={homebrewForm.hp} onChange={e=>setHomebrewForm({...homebrewForm,hp:e.target.value})} onBlur={handleInputBlur} /></div>
-                                            <div className="col-span-1 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">AC</label><input type="number" className={INPUT_CLASS} value={homebrewForm.ac} onChange={e=>setHomebrewForm({...homebrewForm,ac:e.target.value})} onBlur={handleInputBlur} /></div>
-                                            <div className="col-span-1 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">Init Mod</label><input type="number" className={INPUT_CLASS} value={homebrewForm.initMod} onChange={e=>setHomebrewForm({...homebrewForm,initMod:e.target.value})} onBlur={handleInputBlur} /></div>
-                                            <div className="col-span-2 md:col-span-1 flex gap-1">
-                                                <button type="button" onClick={clearHomebrewForm} className="bg-slate-800 hover:bg-slate-600 text-slate-400 hover:text-white p-1.5 rounded flex justify-center items-center transition-colors" title="Clear Form"><RotateCcw size={18}/></button>
-                                                <button className="flex-1 bg-amber-700 hover:bg-amber-600 text-white py-1.5 rounded flex justify-center items-center" title="Save Monster or Update Existing"><Save size={18}/></button>
+                                            <div className="col-span-2 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">HP</label><input type="number" className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:border-indigo-500 text-sm" name="hp" value={formData.hp} onChange={handleInputChange} onBlur={handleInputBlur} placeholder="e.g., 55 Max" /></div>
+                                            <div className="col-span-2 md:col-span-1"><label className="block text-xs text-slate-400 mb-1">AC</label><input name="ac" type="number" className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:border-indigo-500 text-sm" value={formData.ac} onChange={handleInputChange} onBlur={handleInputBlur} placeholder="e.g., 18" /></div>
+                                            <div className="col-span-2 md:col-span-2">
+                                                <label className="text-xs text-slate-400 block mb-1">{addMode==='player'?'Init':'Init Mod'}</label>
+                                                <div className="relative">
+                                                    <input type="number" className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 pr-12 focus:outline-none focus:border-indigo-500 text-sm" name={addMode==='player'?'initiative':'initMod'} value={addMode==='player'?formData.initiative:formData.initMod} onChange={handleInputChange} onBlur={handleInputBlur} placeholder={addMode==='player'?'Roll (e.g., 18)':'+3 (Mod)'} />
+                                                    {addMode==='player' && (
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={handleManualRoll} 
+                                                            className="input-inline-btn"
+                                                            title="Manual Initiative Roll"
+                                                            style={{touchAction: 'manipulation'}}
+                                                        >
+                                                            <D20Icon className={`w-6 h-6 ${isRollingInit?'animate-spin-fast text-red-500':''}`}/>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {addMode==='monster' && <div className="col-span-2 md:col-span-2"><label className="text-xs text-slate-400 block mb-1">Qty</label><input type="number" className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:border-indigo-500 text-sm" name="qty" value={formData.qty} onChange={handleInputChange} onBlur={handleInputBlur} /></div>}
+                                            <div className="col-span-4 md:col-span-12 flex gap-2 h-[38px] mt-2">
+                                                <button type="button" onClick={clearSetupForm} className="bg-slate-700/50 hover:bg-slate-600/70 border border-slate-700 text-slate-400 hover:text-white font-bold py-2 px-3 rounded flex justify-center items-center transition-colors h-full" title="Reset Form"><RotateCcw size={18}/></button>
+                                                <button type="submit" className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded flex justify-center items-center h-full shadow-lg transition-all active:scale-[0.98]"><Plus size={20}/></button>
                                             </div>
                                         </form>
-                                        
-                                        {/* DISPLAY LIST */}
-                                        <div className="space-y-2">
-                                            {processedHomebrew.type === 'flat' ? (
-                                                processedHomebrew.data.length > 0 ? (
-                                                    processedHomebrew.data.map(h => (
-                                                        <div key={h.id} className="flex justify-between items-center bg-slate-900/50 p-3 rounded border border-slate-700">
-                                                            <div>
-                                                                <div className="font-bold text-white flex items-center gap-2">{h.name} <span className="text-[10px] text-slate-500 font-normal uppercase border border-slate-700 px-1 rounded">{h.type||'Unknown'}</span></div>
-                                                                <div className="text-xs text-slate-400">HP: {h.hp} | AC: {h.ac} | Init: {h.initMod >= 0 ? '+' : ''}{h.initMod}</div>
-                                                            </div>
-                                                            <div className="flex gap-2">
-                                                                {h.statBlockSummary && <button onClick={() => openStatBlock(h)} className="text-slate-400 hover:text-white p-1 flex items-center justify-center" title="View Stat Block"><CircleHelp size={16}/></button>}
-                                                                <button onClick={()=>deleteHomebrew(h.id)} className="text-slate-500 hover:text-red-500 flex items-center justify-center"><Trash2 size={16}/></button>
-                                                            </div>
-                                                        </div>
-                                                    ))
-                                                ) : <div className="text-center text-slate-500 italic py-4">No matching monsters found.</div>
-                                            ) : (
-                                                /* GROUPED DISPLAY */
-                                                processedHomebrew.keys.length > 0 ? (
-                                                    processedHomebrew.keys.map(typeKey => (
-                                                        <div key={typeKey} className="mb-4">
-                                                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-700 mb-2 pb-1">{typeKey}</h3>
-                                                            <div className="space-y-2">
-                                                                {processedHomebrew.data[typeKey].map(h => (
-                                                                    <div key={h.id} className="flex justify-between items-center bg-slate-900/50 p-3 rounded border border-slate-700">
-                                                                        <div>
-                                                                            <div className="font-bold text-white">{h.name}</div>
-                                                                            <div className="text-xs text-slate-400">HP: {h.hp} | AC: {h.ac} | Init: {h.initMod >= 0 ? '+' : ''}{h.initMod}</div>
-                                                                        </div>
-                                                                        <div className="flex gap-2">
-                                                                            {h.statBlockSummary && <button onClick={() => openStatBlock(h)} className="text-slate-400 hover:text-white p-1 flex items-center justify-center" title="View Stat Block"><CircleHelp size={16}/></button>}
-                                                                            <button onClick={()=>deleteHomebrew(h.id)} className="text-slate-500 hover:text-red-500 flex items-center justify-center"><Trash2 size={16}/></button>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    ))
-                                                ) : <div className="text-center text-slate-500 italic py-4">No matching monsters found.</div>
-                                            )}
-                                            
-                                            {homebrew.length === 0 && <div className="text-center text-slate-500 italic py-4">No homebrew monsters saved.</div>}
-                                        </div>
-                                    </div>
+                                        {(monsterDetails.resistances || monsterDetails.actions) && <div className="mt-4 p-3 bg-slate-900/50 rounded border border-slate-700 text-xs space-y-1"><p><span className="text-blue-400">Resistances:</span> {monsterDetails.resistances||'None'}</p><p><span className="text-yellow-400">Actions:</span> {monsterDetails.actions||'None'}</p></div>}
+                                    </section>
                                 </div>
                             )}
 
-                            {viewMode === 'screen' && (
-                                <div className="animate-fade-in flex flex-col md:flex-row gap-4 h-[calc(100vh-140px)] md:h-[75vh]">
-                                    <div className={`w-full md:w-1/3 lg:w-1/4 bg-slate-900/50 border border-slate-700 rounded-xl overflow-hidden flex-col ${selectedRule ? 'hidden md:flex' : 'flex'}`}>
-                                        <div className="p-3 border-b border-slate-700 bg-slate-900 sticky top-0 z-10"><div className="relative"><input type="text" placeholder="Search rules..." className="w-full bg-slate-800 border border-slate-600 rounded pl-8 pr-8 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" value={screenSearch} onChange={(e) => setScreenSearch(e.target.value)} /><div className="absolute left-2.5 top-3.5 text-slate-400"><Search size={14}/></div>{screenSearch && <button onClick={() => setScreenSearch('')} className="absolute right-2 top-3.5 text-slate-400 hover:text-white"><X size={14}/></button>}</div></div>
-                                        <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                                            {RULES_DATA.map((category, idx) => {
-                                                const matchesSearch = !screenSearch || category.items.some(item => item.title.toLowerCase().includes(screenSearch.toLowerCase()));
-                                                if (!matchesSearch) return null;
-                                                const isExpanded = expandedCategories[category.category] || screenSearch.length > 0;
-                                                return (<div key={idx} className="mb-1">
-                                                    {/* UPDATED: Styling the Category Button */}
-                                                    <button onClick={() => toggleCategory(category.category)} 
-                                                            className={`w-full flex items-center justify-between p-3 md:p-2 text-left text-sm font-bold rounded transition-colors border border-slate-700 mb-1 ${isExpanded ? 'bg-slate-700 text-white' : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/80'}`}>
-                                                        <span className="uppercase tracking-wider text-[10px] sm:text-xs text-indigo-300">{category.category}</span>
-                                                        {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                                                    </button>
-                                                    {isExpanded && (
-                                                        <div className="ml-2 mt-1 space-y-0.5 border-l border-slate-700 pl-2">
-                                                            {category.items.filter(item => !screenSearch || item.title.toLowerCase().includes(screenSearch.toLowerCase())).map((item, i) => (
-                                                                <button key={i} 
-                                                                    onClick={() => setSelectedRule(item)} 
-                                                                    className={`w-full text-left px-3 py-2 md:px-2 md:py-1.5 text-sm md:text-xs rounded transition-colors 
-                                                                                ${selectedRule === item ? 'bg-indigo-600 text-white font-bold shadow-md' : 'bg-slate-900/50 text-slate-400 hover:bg-slate-700'}`}>
-                                                                    {item.title}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>);
-                                            })}
-                                        </div>
-                                    </div>
-                                    <div class={`flex-1 bg-slate-800/50 border border-slate-700 rounded-xl p-4 md:p-6 overflow-y-auto flex-col items-start shadow-inner ${selectedRule ? 'flex' : 'hidden md:flex'}`}>
-                                        {selectedRule ? (<div class="w-full animate-fade-in"><button onClick={() => setSelectedRule(null)} class="md:hidden mb-4 flex items-center gap-2 text-xs font-bold text-indigo-300 bg-slate-900/80 px-3 py-2 rounded-lg border border-slate-700 w-full justify-center">Back to Index</button><div class="inline-block px-3 py-1 bg-indigo-900/50 text-indigo-300 text-[10px] font-bold uppercase tracking-widest rounded-full mb-3 border border-indigo-500/30">Rule Details</div><h2 class="text-2xl md:text-3xl font-bold text-white mb-4 border-b border-slate-700 pb-4">{selectedRule.title}</h2><div class="prose prose-invert max-w-none text-slate-300 leading-loose text-base md:text-lg whitespace-pre-wrap">{selectedRule.text}</div></div>) : (<div class="w-full h-full flex flex-col items-center justify-center text-slate-600 opacity-50 select-none"><Grid size={64} strokeWidth={1} class="mb-4 text-slate-700"/><p class="text-xl font-serif italic text-center">Select a rule from the index<br/>to view details.</p></div>)}
-                                    </div>
+                            {viewMode === 'battlefield' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in pb-20">
+                                    {combatants.length === 0 && <div className="col-span-full text-center py-20 opacity-50"><div className="text-xl font-serif mb-2">The battlefield is silent...</div><p className="text-sm">Go to <strong>Setup</strong> to add combatants.</p></div>}
+                                    {combatants.map((c, i) => (
+                                        <CombatantCard 
+                                            key={c.id} 
+                                            combatant={c}
+                                            active={i === combatState.turnIndex && combatState.status === 'active'}
+                                            onUpdateHealth={updateHealth}
+                                            onToggleConcentration={toggleConcentration}
+                                            onToggleActionDetails={toggleActionDetails}
+                                            onNarrate={handleNarrate}
+                                            onDelete={deleteCombatant}
+                                            onStatBlock={openStatBlock}
+                                            onToggleCondition={toggleCondition}
+                                            onToggleDeathSave={toggleDeathSave}
+                                            openActionDetailsId={openActionDetailsId}
+                                            openConditionId={openConditionId}
+                                            setOpenConditionId={setOpenConditionId}
+                                            narration={narrations[c.id]}
+                                            isNarrating={narratingId===c.id}
+                                            onUpdateInitiative={updateInitiative}
+                                        />
+                                    ))}
                                 </div>
                             )}
                         </main>
                     </div>
 
-                    {/* MODALS (Settings & Help) */}
+                    {/* MODALS (Settings) */}
                     {showSettingsModal && (<div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"><div className="bg-gray-900 w-full max-w-md rounded-xl shadow-2xl border border-gray-700 flex flex-col"><div className="flex justify-between items-center p-4 border-b border-gray-700"><h2 className="text-xl font-bold text-white flex items-center gap-2"><Settings className="text-slate-400" /> Settings</h2><button onClick={() => setShowSettingsModal(false)} className="text-slate-400 hover:text-white"><X size={24} /></button></div><div className="p-6"><label className="block text-sm font-bold text-white mb-2 flex items-center gap-2"><Key size={16} className="text-yellow-500" /> Gemini API Key</label><input type="password" placeholder="Paste your key here..." className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-2" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} /><p className="text-xs text-slate-400 mb-4">The AI features require a Google Gemini API Key. Stored locally.<br/><br/><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-400 underline hover:text-indigo-300">Get a free API Key here</a></p><div className="flex justify-end"><button onClick={() => {setShowSettingsModal(false); showNotification("Settings saved!", "success");}} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded font-bold">Save & Close</button></div></div></div></div>)}
                 </div>
             );
         }
-        
-        // --- Global Root variable for the one-time root creation ---
-        let reactRoot = null;
 
         window.onload = function() {
-            const renderApp = () => {
+            setTimeout(() => {
                 try {
                     const rootElement = document.getElementById('root');
                     if (rootElement) {
-                         // Check if window.firebase is available before rendering App
-                         if (window.db && window.firebase && window.firebase.collection) {
-                             if (!reactRoot) {
-                                 // Create root only once
-                                 reactRoot = ReactDOM.createRoot(rootElement);
-                             }
-                             // Render/update the app on the existing root
-                             reactRoot.render(<ErrorBoundary><App /></ErrorBoundary>);
-                         } else {
-                             // This path indicates Firebase setup failed or the module script didn't run properly.
-                             console.error("Firebase functions not exposed to window.firebase object. Cannot initialize App.");
-                             rootElement.innerHTML = `<div class="p-8 text-center"><h2 class="text-xl font-bold text-red-500">Initialization Error</h2><p class="text-slate-400 mt-2">The database connection failed to start. Please check the console for details.</p></div>`;
-                         }
+                         const root = ReactDOM.createRoot(rootElement);
+                         root.render(<ErrorBoundary><App /></ErrorBoundary>);
                     } else { throw new Error("Root element not found."); }
                 } catch (e) { console.error("React Mounting Failed:", e); document.getElementById('root').innerHTML = `<div class="text-white text-center mt-20">Failed to load app. Check console.</div>`; }
-            };
-            
-            // Wait for the DOM and then start the rendering process
-            document.addEventListener('auth-ready', () => {
-                // Ensure rendering logic runs after the Firebase/Auth setup is complete
-                renderApp();
-            });
-
-            // Initial render call in case 'auth-ready' fires too quickly, 
-            // but rely on 'auth-ready' for subsequent state updates.
-            // A small timeout helps ensure Firebase script has executed initially.
-            setTimeout(() => {
-                if (window.isAuthReady) {
-                    renderApp();
-                }
-            }, 100);
+            }, 100); 
         };
     </script>
 </body>
