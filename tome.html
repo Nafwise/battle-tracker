@@ -213,6 +213,10 @@
         const ScrollText = (props) => <Icon {...props}><path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/></Icon>;
         const History = (props) => (<Icon {...props}><path d="M12 7v5l2 2"/><path d="M22 12A10 10 0 0 1 12 2v0a10 10 0 0 1 10 10z"/><path d="M2 12A10 10 0 0 0 12 2v0a10 10 0 0 0-10 10z"/></Icon>);
         const FlaskConical = (props) => <Icon {...props}><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" /><path d="M8.5 2h7" /><path d="M7 16h10" /></Icon>;
+        const Gamepad2 = (props) => <Icon {...props}><line x1="6" x2="10" y1="12" y2="12" /><line x1="8" x2="8" y1="10" y2="14" /><line x1="15" x2="15.01" y1="13" y2="13" /><line x1="18" x2="18.01" y1="11" y2="11" /><rect width="20" height="12" x="2" y="6" rx="2" /></Icon>;
+        const Skull = (props) => <Icon {...props}><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></Icon>;
+        const Flag = (props) => <Icon {...props}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></Icon>;
+        const Heart = (props) => <Icon {...props}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></Icon>;
 
         // --- CONSTANTS & UTILITIES (SHARED) ---
         const MONSTER_TYPES = [
@@ -228,7 +232,7 @@
         const INITIAL_FORM = { name: '', hp: '', ac: '', initiative: '', initMod: 0, qty: 1 };
         const INITIAL_MONSTER_DETAILS = { resistances: '', vulnerabilities: '', actions: '', statBlockSummary: '', type: 'Unknown' };
         const HARDCODED_API_KEY = ""; 
-        const CURRENT_VERSION = "1.1.5"; // Updated to match the latest changelog entry
+        const CURRENT_VERSION = "1.1.8"; // Updated version
         // NOTE: Increased right padding of INPUT_CLASS to accommodate the inline button
         const INPUT_CLASS = "w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 pr-12 focus:outline-none focus:border-indigo-500 text-sm";
         const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
@@ -269,12 +273,10 @@
         // --- SUBCOMPONENTS & MODALS (BATTLEFIELD) ---
         const ChangelogModal = ({ onClose, onMarkViewed }) => {
             const changes = [
-                { version: "1.1.5", date: "Dec 2025", notes: ["**System:** Full Firebase integration enabled. Added Auth and Firestore hooks.", "**Feature:** Homebrew Sync. App now auto-syncs homebrew monsters from your private Firestore collection.", "**Refactor:** Prepared state management for splicing with the Homebrew Manager module."] },
-                { version: "1.1.4", date: "Dec 2025", notes: ["**Feature:** Enhanced Export Workflow. Export now opens a modal allowing you to rename the file before downloading.", "**Stability:** Verified export data includes full homebrew bank for future app reintegration."] },
-                { version: "1.1.3", date: "Dec 2025", notes: ["**Bugfix:** Corrected the `handleNextTurn` logic to ensure rounds cycle properly, fixing the reported turn sequencing bug.", "**UI/UX:** Removed click jutter/jump effect from the Floating Next Turn button.", "**UI/UX:** Updated main header icon to CastleGate.", "**UI/UX:** Added change update glow/pulse to the Changelog button."] },
-                { version: "1.1.2", date: "Dec 2025", notes: ["**UI/UX:** Implemented hollow style/inline buttons for AI sparkle and manual roll features in the setup form.", "**Layout:** Centered the main monster/player setup form container."] },
-                { version: "1.1.1", date: "Dec 2025", notes: ["**Cleanup:** Removed obsolete manual 'Sort Initiative' button.", "**Refinement:** Updated all setup form input placeholders to be clearer suggestions (e.g., 'e.g., Lich').", "**Stability:** Verified application integrity and error boundary behavior."] },
-                { version: "1.1.0", date: "Nov 2025", notes: ["**Feature:** Base App deployed.", "**Feature:** Split Homebrew Away from Main App."] }
+                { version: "1.1.8", date: "Dec 2025", notes: ["**UI Update:** Replaced HP +/- buttons with a centralized Heal/Damage input field separated by a heart icon, providing a cleaner and more intuitive interface for health management.", "**UX Improvement:** Streamlined health adjustments for both Players and Monsters."] },
+                { version: "1.1.7", date: "Dec 2025", notes: ["**Visual Update:** Added explicit visual distinction for Monsters. Monsters now display a 'Ghost' icon and use a distinct reddish text color, preventing confusion with Players.", "**Bugfix:** Hardened the manual 'Add' logic to ensure the correct entity type (Monster vs Player) is always applied based on the active tab."] },
+                { version: "1.1.6", date: "Dec 2025", notes: ["**New:** Added 'Battle Lifecycle' flow. You must now explicitly Start and End battles.", "**New:** Automated Victory Condition. The 'Next Turn' button transforms into 'Victory' when all monsters are defeated (0 HP).", "**Integration:** Defeating monsters now logs a specific '[DEFEATED]' tag, allowing the Loot Records app to parse bodies.", "**UI:** Added 'Start Battle' button to Setup and 'Victory' button to Battlefield."] },
+                { version: "1.1.5", date: "Dec 2025", notes: ["**System:** Full Firebase integration enabled. Added Auth and Firestore hooks.", "**Feature:** Homebrew Sync. App now auto-syncs homebrew monsters from your private Firestore collection.", "**Refactor:** Prepared state management for splicing with the Homebrew Manager module."] }
             ].sort((a, b) => {
                 const versionA = a.version.split('.').map(Number);
                 const versionB = b.version.split('.').map(Number);
@@ -335,36 +337,52 @@
             const acts = combatant.actions ? combatant.actions.split(',').map(a=>a.trim()).filter(a=>a) : [];
             return (<div className="mt-3 space-y-2"><div className="space-y-1">{chips.map(d => <div key={d.l} className="flex items-center gap-2 text-xs font-medium bg-slate-900/50 p-1.5 rounded border border-slate-700">{d.i}<span className={d.c}>{d.l}:</span><span className="text-white flex-1 truncate" title={d.v||'None'}>{d.v||'None'}</span></div>)}</div>{acts.length > 0 && <div className="pt-2 border-t border-slate-700/50"><h5 className="text-xs font-bold text-yellow-400 mb-1 flex items-center gap-1"><Zap size={12}/> Actions:</h5><ul className="space-y-0.5 pl-3 text-white text-xs list-disc list-inside">{acts.map((a,i)=><li key={i} className="pl-1 leading-tight">{a}</li>)}</ul></div>}</div>);
         };
-        // UPDATED: Added onUpdateInitiative prop to CombatantCard
+        // UPDATED: Added Ghost icon for monsters and better conditional styling
         const CombatantCard = memo(({ combatant: c, active, onUpdateHealth, onToggleConcentration, onToggleActionDetails, onNarrate, onDelete, onStatBlock, onToggleCondition, onToggleDeathSave, openActionDetailsId, openConditionId, setOpenConditionId, narration, isNarrating, onUpdateInitiative }) => {
-            const [localDmg, setLocalDmg] = useState('');
-            const handleLocalDmgSubmit = (e) => { e.preventDefault(); const val = parseInt(localDmg); if (!isNaN(val) && val !== 0) { onUpdateHealth(c.id, -val); setLocalDmg(''); } };
+            const [hpInput, setHpInput] = useState('');
             
+            const handleHpSubmit = (type) => { 
+                const val = parseInt(hpInput); 
+                if (!isNaN(val) && val !== 0) { 
+                    const multiplier = type === 'damage' ? -1 : 1;
+                    onUpdateHealth(c.id, val * multiplier); 
+                    setHpInput(''); 
+                } 
+            };
+
             // Handler for initiative change that calls the parent function
             const handleInitChange = (e) => {
                 const newInit = parseInt(e.target.value) || 0;
                 onUpdateInitiative(c.id, newInit);
             };
 
+            const isMonster = c.type === 'monster';
+            const deathSaves = c.deathSaves || { successes: 0, failures: 0 };
+
             return (
-                <div id={`card-${c.id}`} className={`relative flex flex-col p-4 rounded-xl border shadow-md transition-all ${active ? 'ring-2 ring-green-500 border-green-500 bg-slate-800' : 'bg-slate-800 border-slate-600'}`}>
+                <div id={`card-${c.id}`} className={`relative flex flex-col p-4 rounded-xl border shadow-md transition-all ${active ? 'ring-2 ring-green-500 border-green-500 bg-slate-800' : 'bg-slate-800 border-slate-600'} ${c.currentHp === 0 && isMonster ? 'opacity-50 grayscale' : ''}`}>
                     {active && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">ACTIVE</div>}
                     {c.isConcentrating && <div className="absolute -top-1 -right-1"><span className="flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span></span></div>}
+                    {c.currentHp === 0 && isMonster && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none"><Skull size={48} className="text-red-600/80 drop-shadow-lg" /></div>}
                     <div className="flex justify-between items-start mb-2">
                         <div>
-                            <h3 className={`font-bold text-lg ${c.type==='player'?'text-indigo-300':'text-white'}`}>{c.type === 'player' && <User size={16} />}{c.name}</h3>
+                            {/* UPDATED HEADER: Flex container for Icon + Name */}
+                            <h3 className={`font-bold text-lg flex items-center gap-2 ${isMonster ? 'text-red-200' : 'text-indigo-300'}`}>
+                                {isMonster ? <Ghost size={16} className="text-red-400" /> : <User size={16} />}
+                                {c.name}
+                            </h3>
                             <div className="text-xs text-slate-400 mt-1 flex gap-3 items-center">
                                 <span>AC: {c.ac}</span>
                                 <span className="flex items-center gap-1">
                                     Init: 
-                                    {/* NEW: Editable Initiative Input */}
                                     <input 
                                         type="number" 
                                         value={c.initiative} 
                                         onChange={handleInitChange} 
                                         onBlur={handleInputBlur}
-                                        className="card-inline-input" 
-                                        title="Click to edit initiative"
+                                        disabled={isMonster}
+                                        className={`card-inline-input ${isMonster ? 'opacity-70 cursor-not-allowed bg-slate-900 border-transparent text-slate-500' : ''}`}
+                                        title={isMonster ? "Monsters have fixed initiative" : "Click to edit initiative"}
                                     />
                                 </span>
                             </div>
@@ -378,9 +396,33 @@
                         </div>
                     </div>
                     {openActionDetailsId===c.id && <div className="mb-3 bg-slate-900/50 p-2 rounded border border-slate-700"><MonsterActionDetails combatant={c}/></div>}
-                    <ProgressBar current={c.currentHp} max={c.maxHp} isPlayer={c.type==='player'}/>
-                    {c.type === 'player' && c.currentHp === 0 && <DeathSaveTracker saves={c.deathSaves} id={c.id} onToggle={onToggleDeathSave} />}
-                    {c.maxHp>0 && (<div className="flex gap-2 mt-2"><button onClick={()=>onUpdateHealth(c.id,-1)} className="p-1 bg-slate-700 rounded text-red-300 hover:bg-slate-600 flex items-center justify-center" style={{touchAction: 'manipulation'}}><Minus size={14}/></button><button onClick={()=>onUpdateHealth(c.id,1)} className="p-1 bg-slate-700 rounded text-green-300 hover:bg-slate-600 flex items-center justify-center" style={{touchAction: 'manipulation'}}><Plus size={14}/></button><form onSubmit={handleLocalDmgSubmit} className="flex-1"><input className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-center" placeholder="Dmg" value={localDmg} onChange={e=>setLocalDmg(e.target.value)} /></form></div>)}
+                    <ProgressBar current={c.currentHp} max={c.maxHp} isPlayer={!isMonster}/>
+                    {!isMonster && c.currentHp === 0 && <DeathSaveTracker saves={deathSaves} id={c.id} onToggle={onToggleDeathSave} />}
+                    
+                    {/* NEW HEALTH INPUT SECTION */}
+                    {c.maxHp > 0 && (
+                        <div className="flex items-center gap-2 mt-3 bg-slate-900/50 p-1.5 rounded border border-slate-700">
+                             <input 
+                                className="w-full bg-transparent text-center text-sm font-bold focus:outline-none text-white placeholder-slate-600" 
+                                placeholder="Amount" 
+                                type="number"
+                                value={hpInput} 
+                                onChange={e=>setHpInput(e.target.value)} 
+                            />
+                            <div className="flex gap-1 shrink-0">
+                                <button onClick={() => handleHpSubmit('heal')} className="p-1.5 rounded bg-green-900/30 hover:bg-green-800 text-green-400 transition-colors border border-green-900/50" title="Heal">
+                                    <Plus size={14} strokeWidth={3}/>
+                                </button>
+                                <div className="flex items-center justify-center w-6">
+                                     <Heart size={16} className="text-red-500 fill-red-500/20" />
+                                </div>
+                                <button onClick={() => handleHpSubmit('damage')} className="p-1.5 rounded bg-red-900/30 hover:bg-red-800 text-red-400 transition-colors border border-red-900/50" title="Damage">
+                                    <Minus size={14} strokeWidth={3}/>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {narration && <div className="mt-2 text-xs text-indigo-300 italic">"{narration}"</div>}
                     <div className="mt-3 pt-2 border-t border-slate-700/50">
                         <div className="flex flex-wrap gap-1">
@@ -401,7 +443,7 @@
                         <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl"><h2 className="text-xl font-bold text-white flex items-center gap-2"><ScrollText className="text-indigo-400" /> Battle Log</h2><button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button></div>
                         <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-900/50">
                             {logs.length === 0 ? <p className="text-slate-500 text-center text-sm italic py-4">The chronicles are empty...</p> : 
-                            logs.map((log, i) => (<div key={i} className={`text-sm p-2 rounded border-l-2 ${log.type==='damage'?'border-red-500 bg-red-900/10 text-red-200': log.type==='heal'?'border-green-500 bg-green-900/10 text-green-200': log.type==='turn'?'border-yellow-500 bg-yellow-900/10 text-yellow-200': 'border-slate-500 bg-slate-800 text-slate-300'}`}><span className="text-[10px] text-slate-500 block mb-0.5 uppercase tracking-wider">{new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</span>{log.message}</div>))}
+                            logs.map((log, i) => (<div key={i} className={`text-sm p-2 rounded border-l-2 ${log.type==='damage'?'border-red-500 bg-red-900/10 text-red-200': log.type==='heal'?'border-green-500 bg-green-900/10 text-green-200': log.type==='turn'?'border-yellow-500 bg-yellow-900/10 text-yellow-200': log.type==='skull'?'border-slate-500 bg-black/30 text-gray-400': 'border-slate-500 bg-slate-800 text-slate-300'}`}><span className="text-[10px] text-slate-500 block mb-0.5 uppercase tracking-wider">{new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</span>{log.message}</div>))}
                             <div ref={bottomRef} />
                         </div>
                         <div className="p-3 border-t border-gray-700 bg-gray-800 rounded-b-xl flex justify-between"><button onClick={onClear} className="text-xs text-red-400 hover:text-red-300">Clear Log</button><button onClick={onClose} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-bold">Close</button></div>
@@ -409,6 +451,7 @@
                 </div>
             );
         };
+        // ... (DiceRollerModal, MonsterStatBlockModal, FilenameModal, FloatingSettingsButton remain same)
         const DiceRollerModal = ({ onClose, addToLog }) => {
             const [history, setHistory] = useState([]); const [mod, setMod] = useState(0); const [count, setCount] = useState(1); const [selectedDie, setSelectedDie] = useState(20); 
             const roll = () => {
@@ -482,9 +525,31 @@
             if (isKeyNeeded) { return (<button onClick={() => setModalVisible(true)} className="floating-button px-4 py-2 flex items-center gap-2 bg-red-700 text-white rounded-full font-bold uppercase text-sm border-2 border-red-500 hover:bg-red-600 transition-colors duration-300 animate-pulse" title="Gemini API Key Needed for AI Features"><AlertTriangle size={16} /> API Key Needed</button>); }
             return (<button onClick={() => setModalVisible(true)} className="floating-button w-10 h-10 flex items-center justify-center bg-slate-700 text-slate-400 hover:text-white rounded-full border border-slate-600 hover:bg-slate-600 transition-colors duration-300" title="AI Settings"><Settings size={20} /></button>);
         };
-        const FloatingNextTurnButton = ({ handleNextTurn, combatants, viewMode }) => {
-            if (viewMode !== 'battlefield' || combatants.length === 0) return null;
-            // Removed active:scale-95 to prevent jutter/jump on click
+        
+        // NEW: Floating Victory Button
+        const FloatingVictoryButton = ({ handleVictory, combatants, viewMode, status }) => {
+            if (viewMode !== 'battlefield' || status !== 'active') return null;
+            
+            // Check if all monsters are defeated (HP 0)
+            const activeMonsters = combatants.filter(c => c.type === 'monster' && c.currentHp > 0);
+            
+            if (activeMonsters.length === 0 && combatants.some(c => c.type === 'monster')) {
+                return (
+                    <button onClick={handleVictory} className="floating-turn-button px-6 py-3 bg-yellow-600 hover:bg-yellow-500 text-white rounded-full font-bold shadow-[0_0_20px_rgba(234,179,8,0.5)] flex items-center gap-2 text-base animate-bounce">
+                        <Flag size={20}/> VICTORY! End Battle
+                    </button>
+                );
+            }
+            return null;
+        };
+
+        const FloatingNextTurnButton = ({ handleNextTurn, combatants, viewMode, status }) => {
+            if (viewMode !== 'battlefield' || status !== 'active' || combatants.length === 0) return null;
+            
+            // Hide if victory condition is met (Victory button takes over)
+            const activeMonsters = combatants.filter(c => c.type === 'monster' && c.currentHp > 0);
+            if (activeMonsters.length === 0 && combatants.some(c => c.type === 'monster')) return null;
+
             return <button onClick={handleNextTurn} className="floating-turn-button px-6 py-3 sm:px-4 sm:py-2 bg-green-600 text-white rounded-full font-bold shadow-lg flex items-center gap-2 text-base sm:text-sm">Next Turn <ArrowRight size={16}/></button>;
         };
 
@@ -508,7 +573,11 @@
             const [homebrew, setHomebrew] = useState(() => safeLoad('dm-tracker-homebrew', [])); 
             const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('dm-tracker-api-key') || HARDCODED_API_KEY);
             const [exportFileName, setExportFileName] = useState(() => localStorage.getItem('dm-tracker-filename') || 'encounter_data');
-            const [combatState, setCombatState] = useState(() => safeLoad('dm-tracker-combat-state', { round: 1, turnIndex: 0 }));
+            // MIGRATION: Ensure status exists in state if loaded from old localStorage
+            const [combatState, setCombatState] = useState(() => {
+                const loaded = safeLoad('dm-tracker-combat-state', { round: 1, turnIndex: 0, status: 'prep' });
+                return { ...loaded, status: loaded.status || 'prep' };
+            });
             const [battleLogs, setBattleLogs] = useState(() => safeLoad('dm-tracker-logs', []));
             const [user, setUser] = useState(null); // Firebase User State
             
@@ -526,6 +595,7 @@
             const [showLogModal, setShowLogModal] = useState(false);
             const [showChangelogModal, setShowChangelogModal] = useState(false); 
             const [viewStatBlockMonster, setViewStatBlockMonster] = useState(null);
+            const [showVictoryModal, setShowVictoryModal] = useState(false);
             
             const [addMode, setAddMode] = useState('monster'); 
             const [notification, setNotification] = useState(null);
@@ -554,26 +624,16 @@
             // Firestore Sync for Homebrew (Read-Only from this side)
             useEffect(() => {
                 if (!user || !db) return;
-                // Assuming 'homebrew' collection under user's private data path
-                // Path: /artifacts/{appId}/users/{userId}/homebrew
-                // Or whatever specific collection name the Homebrew Manager uses. 
-                // Defaulting to 'homebrew' as per implied structure.
-                // NOTE: This logic replaces the localstorage load if DB is active.
-                
                 const hbCollection = db.collection('artifacts').doc(appId).collection('users').doc(user.uid).collection('homebrew');
-                
                 const unsubscribe = hbCollection.onSnapshot(snapshot => {
                     const fetchedHomebrew = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    // Only update if we actually got data, otherwise keep local (or empty)
                     if (fetchedHomebrew.length > 0 || snapshot.empty) {
                         setHomebrew(fetchedHomebrew);
-                        // Also sync to local storage for offline backup/persistence
                         localStorage.setItem('dm-tracker-homebrew', JSON.stringify(fetchedHomebrew));
                     }
                 }, error => {
                     console.error("Error syncing homebrew:", error);
                 });
-
                 return () => unsubscribe();
             }, [user]);
 
@@ -582,11 +642,9 @@
             const isNewUpdateAvailable = () => {
                 const lastViewedVersion = localStorage.getItem('dm-tracker-last-viewed-version');
                 if (!lastViewedVersion) return true;
-                
                 const parseVersion = (v) => v.split('.').map(Number);
                 const current = parseVersion(CURRENT_VERSION);
                 const viewed = parseVersion(lastViewedVersion);
-                
                 for (let i = 0; i < Math.max(current.length, viewed.length); i++) {
                     const c = current[i] || 0;
                     const v = viewed[i] || 0;
@@ -609,7 +667,10 @@
             useEffect(() => { localStorage.setItem('dm-tracker-filename', exportFileName); }, [exportFileName]);
             useEffect(() => { localStorage.setItem('dm-tracker-combat-state', JSON.stringify(combatState)); }, [combatState]);
             useEffect(() => { localStorage.setItem('dm-tracker-logs', JSON.stringify(battleLogs)); }, [battleLogs]);
-            useEffect(() => { if (combatants.length === 0) setCombatState({ round: 1, turnIndex: 0 }); else if (combatState.turnIndex >= combatants.length) setCombatState(prev => ({ ...prev, turnIndex: 0 })); }, [combatants.length]);
+            useEffect(() => { 
+                if (combatants.length === 0) setCombatState({ round: 1, turnIndex: 0, status: 'prep' }); 
+                else if (combatState.turnIndex >= combatants.length) setCombatState(prev => ({ ...prev, turnIndex: 0 })); 
+            }, [combatants.length]);
             useEffect(() => {
                 if (viewMode === 'battlefield' && combatants.length > 0) {
                     const activeCombatant = combatants[combatState.turnIndex];
@@ -634,17 +695,34 @@
                     const updatedCombatants = prev.map(c => 
                         c.id === id ? { ...c, initiative: newInit } : c
                     );
-                    const sortedCombatants = updatedCombatants.sort((a, b) => b.initiative - a.initiative);
-                    const activeId = prev[combatState.turnIndex]?.id;
-                    const newActiveIndex = sortedCombatants.findIndex(c => c.id === activeId);
-                    setCombatState(prev => ({ ...prev, turnIndex: newActiveIndex >= 0 ? newActiveIndex : 0 }));
-                    return sortedCombatants;
+                    // Only re-sort if we are in prep mode
+                    if (combatState.status === 'prep') {
+                        return updatedCombatants.sort((a, b) => b.initiative - a.initiative);
+                    }
+                    return updatedCombatants;
                 });
-            }, [combatState.turnIndex]);
+            }, [combatState.status]);
+
+            // --- BATTLE LIFECYCLE ---
+            const startBattle = () => {
+                if (combatants.length === 0) { showNotification("No combatants!", "error"); return; }
+                const sorted = [...combatants].sort((a, b) => b.initiative - a.initiative);
+                setCombatants(sorted);
+                setCombatState({ round: 1, turnIndex: 0, status: 'active' });
+                setViewMode('battlefield');
+                addToLog("--- BATTLE STARTED ---", "turn");
+                showNotification("Battle Started! Initiative Locked.", "success");
+            };
+
+            const endBattle = () => {
+                setCombatState(prev => ({ ...prev, status: 'complete' }));
+                addToLog("--- BATTLE ENDED ---", "turn");
+                setShowVictoryModal(true);
+            };
 
             // --- COMBAT STATE & GAME LOGIC ---
             const handleNextTurn = () => {
-                if (combatants.length === 0) return;
+                if (combatants.length === 0 || combatState.status !== 'active') return;
                 
                 let nextIndex = combatState.turnIndex;
                 let didWrap = false;
@@ -662,7 +740,7 @@
 
                 const nextCombatantName = combatants[nextIndex]?.name || "Unknown";
                 if (didWrap) {
-                     setCombatState(prev => ({ round: prev.round + 1, turnIndex: nextIndex }));
+                     setCombatState(prev => ({ ...prev, round: prev.round + 1, turnIndex: nextIndex }));
                      showNotification(`Round ${combatState.round + 1}!`, 'info');
                      addToLog(`Round ${combatState.round + 1} started. ${nextCombatantName}'s turn.`, 'turn');
                 } else {
@@ -670,21 +748,32 @@
                      addToLog(`Turn passed to ${nextCombatantName}.`, 'turn');
                 }
             };
+
             const updateHealth = useCallback((id, amount) => {
                 setCombatants(prev => {
                      const target = prev.find(c => c.id === id);
                      if (!target) return prev;
                      if (amount < 0) { addToLog(`${target.name} took ${Math.abs(amount)} damage`, 'damage'); } else if (amount > 0) { addToLog(`${target.name} healed ${amount} HP`, 'heal'); }
+                     
                      return prev.map(m => {
                         if (m.id !== id) return m;
                         if (m.type === 'player' && m.maxHp === 0) return m;
+                        
                         const newHp = Math.max(0, Math.min(m.maxHp, m.currentHp + amount));
+                        
+                        // Check for DEFEAT (only if it wasn't already 0)
+                        if (newHp === 0 && m.currentHp > 0 && m.type === 'monster') {
+                            addToLog(`[DEFEATED] ${m.name}`, 'skull');
+                        }
+
                         let newDeathSaves = m.deathSaves;
                         if (m.type === 'player' && m.currentHp === 0 && newHp > 0) { newDeathSaves = { successes: 0, failures: 0 }; }
                         return { ...m, currentHp: newHp, deathSaves: newDeathSaves !== undefined ? newDeathSaves : m.deathSaves };
                     });
                 });
             }, [addToLog]);
+
+            // ... (rest of simple handlers: toggleConcentration, toggleDeathSave, toggleCondition, deleteCombatant etc)
             const toggleConcentration = useCallback((id) => { setCombatants(prev => prev.map(m => m.id !== id ? m : { ...m, isConcentrating: !m.isConcentrating })); }, []);
             const toggleDeathSave = useCallback((id, type, index) => {
                 setCombatants(prev => prev.map(m => { if (m.id !== id) return m; const currentSaves = m.deathSaves || { successes: 0, failures: 0 }; let newVal = index + 1; if (currentSaves[type] === newVal) newVal = index; return { ...m, deathSaves: { ...currentSaves, [type]: newVal } }; }));
@@ -693,8 +782,7 @@
                 setCombatants(prev => prev.map(m => m.id !== id ? m : { ...m, conditions: m.conditions.includes(c) ? m.conditions.filter(i => i !== c) : [...m.conditions, c] }));
             }, []);
             const deleteCombatant = useCallback((id) => { setCombatants(prev => prev.filter(m => m.id !== id)); setNarrations(prev => { const n = {...prev}; delete n[id]; return n; }); }, []);
-            const sortCombatants = () => { setCombatants(prev => [...prev].sort((a, b) => b.initiative - a.initiative)); setCombatState(prev => ({ ...prev, turnIndex: 0 })); };
-            const handleClearAll = () => { if (clearConfirm) { setCombatants([]); setNarrations({}); setCombatState({ round: 1, turnIndex: 0 }); setBattleLogs([]); setClearConfirm(false); showNotification("Cleared", "success"); } else { setClearConfirm(true); setTimeout(() => setClearConfirm(false), 3000); } };
+            const handleClearAll = () => { if (clearConfirm) { setCombatants([]); setNarrations({}); setCombatState({ round: 1, turnIndex: 0, status: 'prep' }); setBattleLogs([]); setClearConfirm(false); showNotification("Cleared", "success"); } else { setClearConfirm(true); setTimeout(() => setClearConfirm(false), 3000); } };
             const handleNarrate = useCallback(async (combatant) => {
                 setNarratingId(combatant.id);
                 const txt = await callGemini(`Write short visceral combat flavor text for ${combatant.name} (HP ${combatant.currentHp}/${combatant.maxHp}). No quotes.`, userApiKey);
@@ -711,18 +799,16 @@
                     setIsRollingInit(false);
                 }, 600);
             };
-            const clearSetupForm = () => { setFormData(INITIAL_FORM); setMonsterDetails(INITIAL_MONSTER_DETAILS); setLastSource(null); showNotification("Setup form cleared", "info"); };
+            const clearSetupForm = () => { setFormData(INITIAL_FORM); setMonsterDetails(INITIAL_MONSTER_DETAILS); showNotification("Setup form cleared", "info"); };
             const handleInputChange = (e) => { const { name, value } = e.target; if (name === 'initiative' && addMode === 'monster') return; setFormData(prev => ({ ...prev, [name]: value })); };
             
             const handleAutoFillStats = async (e) => {
                 e.preventDefault();
                 if (!formData.name) { showNotification("Name required", "error"); return; }
                 setMonsterDetails(INITIAL_MONSTER_DETAILS);
-                
                 const normName = formData.name.trim().toLowerCase();
                 let hb = homebrew.find(h => h.name.trim().toLowerCase() === normName);
                 if (!hb) { hb = homebrew.find(h => h.name.trim().toLowerCase().includes(normName)); }
-
                 if (hb) {
                     const mod = parseInt(hb.initMod) || 0;
                     setFormData(prev => ({ ...prev, hp: hb.hp, ac: hb.ac, initMod: mod, initiative: '' }));
@@ -731,9 +817,7 @@
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                 }
-                
                 if (!userApiKey) { showNotification("Missing API Key", "error"); setShowSettingsModal(true); return; }
-
                 setIsGeneratingStats(true);
                 const prompt = `You are a D&D 5e Rules Expert. Generate a COMPLETE, DETAILED stat block for the monster "${formData.name}". Return a JSON object with: - 'hp' (integer) - 'ac' (integer) - 'initMod' (integer) - 'resistances' (string: list or "None") - 'vulnerabilities' (string: list or "None") - 'actions' (string: concise list of action names and damage dice) - 'statBlockSummary' (string: A full markdown text block including: Ability Scores, Saving Throws, Skills, Senses, Languages, Challenge, Special Traits, Actions, and Legendary Actions if applicable. Use strict markdown headers like **Actions**.) - 'type' (string: e.g. "Aberration", "Beast", "Celestial") Return ONLY valid JSON.`;
                 const txt = await callGemini(prompt, userApiKey);
@@ -755,27 +839,46 @@
                 e.preventDefault();
                 if (!formData.name) { showNotification("Name required", "error"); return; }
                 if (addMode === 'monster' && !formData.hp) { showNotification("HP required", "error"); return; }
-
                 const newC = [];
                 const qty = parseInt(formData.qty) || 1;
                 const mod = parseInt(formData.initMod) || 0;
-                
                 if (addMode === 'player') {
                     let init = parseInt(formData.initiative);
                     if (isNaN(init)) { init = rollInitiative(mod); addToLog(`Rolled Init for ${formData.name}: ${init}`, 'roll'); showNotification(`Rolled Init: ${init}`, 'success'); }
+                    // FORCED TYPE: PLAYER
                     newC.push({ id: generateId(), type: 'player', name: formData.name, maxHp: parseInt(formData.hp)||0, currentHp: parseInt(formData.hp)||0, ac: parseInt(formData.ac)||10, initiative: init, conditions: [], deathSaves: { successes: 0, failures: 0 }, isConcentrating: false });
                     addToLog(`Added player ${formData.name}`, 'info');
                 } else {
                     for (let i=0; i<qty; i++) {
-                        newC.push({ id: generateId(), type: 'monster', name: qty > 1 ? `${formData.name} ${i+1}` : formData.name, maxHp: parseInt(formData.hp), currentHp: parseInt(formData.hp), ac: parseInt(formData.ac)||10, initiative: rollInitiative(mod), conditions: [], isConcentrating: false, ...monsterDetails });
+                        // FORCED TYPE: MONSTER
+                        const { type: specificType, ...restDetails } = monsterDetails;
+                        newC.push({ 
+                            id: generateId(), 
+                            type: 'monster', 
+                            monsterType: specificType, 
+                            name: qty > 1 ? `${formData.name} ${i+1}` : formData.name, 
+                            maxHp: parseInt(formData.hp), 
+                            currentHp: parseInt(formData.hp), 
+                            ac: parseInt(formData.ac)||10, 
+                            initiative: rollInitiative(mod), 
+                            conditions: [], 
+                            isConcentrating: false, 
+                            ...restDetails 
+                        });
                     }
                     showNotification(`Added ${qty} ${formData.name}(s)`, 'success');
                     addToLog(`Added ${qty} x ${formData.name}`, 'info');
                 }
-                setCombatants(prev => [...prev, ...newC].sort((a, b) => b.initiative - a.initiative));
+                setCombatants(prev => {
+                    const updated = [...prev, ...newC];
+                    // Auto-sort if we are in PREP mode
+                    if(combatState.status === 'prep') return updated.sort((a, b) => b.initiative - a.initiative);
+                    return updated;
+                });
                 setFormData(prev => ({ ...INITIAL_FORM, initMod: prev.initMod, qty: prev.qty }));
                 setMonsterDetails(INITIAL_MONSTER_DETAILS);
-                setCombatState(prev => ({ ...prev, turnIndex: 0 })); 
+                // Don't reset turn index if battle is active
+                if(combatState.status === 'prep') setCombatState(prev => ({ ...prev, turnIndex: 0 })); 
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             };
             
@@ -789,10 +892,7 @@
                 setShowFilenameModal(false);
             };
 
-            const handleExportClick = () => {
-                setShowFilenameModal(true);
-            };
-
+            const handleExportClick = () => { setShowFilenameModal(true); };
             const handleImportClick = () => { if (encounterFileInputRef.current) { encounterFileInputRef.current.click(); } };
             const handleFileChange = (e) => {
                 const file = e.target.files[0];
@@ -804,14 +904,12 @@
                         let newCombatants = [];
                         let newCombatState = null;
                         let newLogs = [];
-
                         if (Array.isArray(data)) { newCombatants = data; } 
                         else if (data.combatants && Array.isArray(data.combatants)) {
                             newCombatants = data.combatants;
                             if (data.combatState) newCombatState = data.combatState;
                             if (data.battleLogs) newLogs = data.battleLogs;
                         } else { throw new Error("Invalid file format."); }
-
                         if (confirm("Overwrite current encounter state (Combatants, Logs, State)?")) {
                             setCombatants(newCombatants);
                             if (newCombatState) setCombatState(newCombatState);
@@ -837,8 +935,28 @@
                     {showLogModal && <BattleLogModal logs={battleLogs} onClose={() => setShowLogModal(false)} onClear={() => setBattleLogs([])} />}
                     {showChangelogModal && <ChangelogModal onClose={() => setShowChangelogModal(false)} onMarkViewed={markChangelogViewed} />}
                     
+                    {/* VICTORY MODAL */}
+                    {showVictoryModal && (
+                        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                            <div className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-md rounded-xl border border-yellow-600 p-8 shadow-[0_0_50px_rgba(234,179,8,0.2)] text-center animate-fade-in">
+                                <Flag size={48} className="mx-auto text-yellow-500 mb-4 animate-bounce"/>
+                                <h2 className="text-3xl font-bold text-white mb-2">VICTORY!</h2>
+                                <p className="text-slate-400 mb-6">The battlefield is silent. The threat is vanquished.</p>
+                                <div className="space-y-3">
+                                    <a href="./loot.html" className="block w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
+                                        <Gem size={20}/> Claim Loot Records
+                                    </a>
+                                    <button onClick={() => setShowVictoryModal(false)} className="block w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg transition-colors">
+                                        Remain Here
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="astral-container relative z-10 p-2 sm:p-4">
-                        <FloatingNextTurnButton handleNextTurn={handleNextTurn} combatants={combatants} viewMode={viewMode} />
+                        <FloatingVictoryButton handleVictory={endBattle} combatants={combatants} viewMode={viewMode} status={combatState.status} />
+                        <FloatingNextTurnButton handleNextTurn={handleNextTurn} combatants={combatants} viewMode={viewMode} status={combatState.status} />
                         <FloatingSettingsButton apiKey={userApiKey} setModalVisible={setShowSettingsModal} />
 
                         <header className="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-md -mx-2 sm:-mx-4 -mt-2 sm:-mt-4 px-4 py-3 mb-4">
@@ -853,8 +971,8 @@
                                             <span className="sm:hidden">Tools</span>
                                         </a>
 
-                                        <div className="flex items-center bg-slate-900 rounded px-3 py-1 border border-slate-700">
-                                            <span className="text-xs font-bold text-slate-500 mr-2">ROUND</span>
+                                        <div className={`flex items-center rounded px-3 py-1 border ${combatState.status === 'active' ? 'bg-red-900/30 border-red-500 animate-pulse' : 'bg-slate-900 border-slate-700'}`}>
+                                            <span className={`text-xs font-bold mr-2 ${combatState.status === 'active' ? 'text-red-400' : 'text-slate-500'}`}>{combatState.status === 'active' ? 'COMBAT' : 'PREP'}</span>
                                             <span className="text-white font-mono text-lg">{combatState.round}</span>
                                         </div>
                                     </div>
@@ -892,7 +1010,7 @@
                             {viewMode === 'setup' && (
                                 <div className="animate-fade-in">
                                     <section className="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-md max-w-4xl mx-auto">
-                                        <div className="flex justify-center items-center mb-4">
+                                        <div className="flex justify-between items-center mb-4">
                                             <div className="flex gap-4 p-1 rounded-lg border border-slate-700 bg-slate-900/50">
                                                 <button onClick={() => setAddMode('monster')} 
                                                     className={`px-3 py-1.5 rounded text-sm font-bold flex items-center gap-2 transition-all border ${addMode === 'monster' 
@@ -907,6 +1025,18 @@
                                                     <User size={16}/> Player
                                                 </button>
                                             </div>
+                                            
+                                            {/* START BATTLE BUTTON */}
+                                            {combatants.length > 0 && combatState.status === 'prep' && (
+                                                <button onClick={startBattle} className="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg animate-pulse">
+                                                    <Sword size={18}/> START BATTLE
+                                                </button>
+                                            )}
+                                            {combatState.status === 'active' && (
+                                                <div className="text-xs font-bold text-red-400 bg-red-900/20 px-3 py-2 rounded border border-red-900">
+                                                    BATTLE IN PROGRESS
+                                                </div>
+                                            )}
                                         </div>
                                         <form onSubmit={addCombatant} className="grid grid-cols-4 md:grid-cols-12 gap-3 items-end">
                                             <div className="col-span-4 md:col-span-5">
@@ -958,13 +1088,13 @@
                             )}
 
                             {viewMode === 'battlefield' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in pb-20">
                                     {combatants.length === 0 && <div className="col-span-full text-center py-20 opacity-50"><div className="text-xl font-serif mb-2">The battlefield is silent...</div><p className="text-sm">Go to <strong>Setup</strong> to add combatants.</p></div>}
                                     {combatants.map((c, i) => (
                                         <CombatantCard 
                                             key={c.id} 
                                             combatant={c}
-                                            active={i === combatState.turnIndex}
+                                            active={i === combatState.turnIndex && combatState.status === 'active'}
                                             onUpdateHealth={updateHealth}
                                             onToggleConcentration={toggleConcentration}
                                             onToggleActionDetails={toggleActionDetails}
