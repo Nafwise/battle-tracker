@@ -19,11 +19,6 @@
     <!-- Polyfills & Babel -->
     <script src="https://cdn.jsdelivr.net/npm/core-js-bundle@3.37.1/minified.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
     
     <style>
         /* --- The Astral Plane Palette --- */
@@ -153,30 +148,69 @@
 </head>
 <body class="bg-slate-950 text-slate-100">
     <div id="root"></div>
+    
+    <!-- FIREBASE IMPORTS (Module System) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // Import all Firestore functions needed including addDoc for reports
+        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, setLogLevel, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        window.firebaseApp = null;
+        window.db = null;
+        window.auth = null;
+        window.currentUserId = null;
+        window.isAuthReady = false;
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        if (Object.keys(firebaseConfig).length > 0) {
+            window.firebaseApp = initializeApp(firebaseConfig);
+            window.db = getFirestore(window.firebaseApp);
+            window.auth = getAuth(window.firebaseApp);
+
+            const authInit = async () => {
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(window.auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(window.auth);
+                    }
+                } catch (error) {
+                    console.error("Firebase Auth Error:", error);
+                    await signInAnonymously(window.auth);
+                }
+            };
+            
+            onAuthStateChanged(window.auth, (user) => {
+                if (user) {
+                    window.currentUserId = user.uid;
+                } else {
+                    window.currentUserId = crypto.randomUUID();
+                }
+                window.isAuthReady = true;
+                // Dispatch event to notify React
+                document.dispatchEvent(new CustomEvent('auth-ready'));
+            });
+
+            authInit();
+            
+            // Expose functions to window for React
+            window.firebase = {
+                doc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, getDocs, addDoc 
+            };
+
+        } else {
+            console.error("Firebase config not found.");
+            window.isAuthReady = true;
+            document.dispatchEvent(new CustomEvent('auth-ready'));
+        }
+    </script>
 
     <script type="text/babel">
         const { useState, useEffect, useRef, memo, useCallback } = React;
-
-        // --- FIREBASE SETUP ---
-        // Initialize Firebase variables to null initially
-        let app, auth, db;
-        let appId = 'default-app-id';
-
-        try {
-            if (typeof firebase !== 'undefined' && typeof __firebase_config !== 'undefined') {
-                const firebaseConfig = JSON.parse(__firebase_config);
-                app = firebase.initializeApp(firebaseConfig);
-                auth = firebase.auth();
-                db = firebase.firestore();
-                if (typeof __app_id !== 'undefined') {
-                    appId = __app_id;
-                }
-            } else {
-                console.warn("Firebase config not found. Running in offline/local mode.");
-            }
-        } catch (e) {
-            console.error("Firebase Initialization Error:", e);
-        }
 
         // --- ICONS ---
         const Icon = ({ children, className, ...props }) => (
@@ -200,7 +234,7 @@
         const User = (props) => <Icon {...props}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></Icon>;
         const Download = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></Icon>;
         const Upload = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></Icon>;
-        const Settings = (props) => <Icon {...props}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></Icon>;
+        const Settings = (props) => <Icon {...props}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></Icon>;
         const Key = (props) => <Icon {...props}><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" /></Icon>;
         const ArrowRight = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></Icon>;
         const RotateCcw = (props) => <Icon {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></Icon>;
@@ -273,9 +307,9 @@
         // --- SUBCOMPONENTS & MODALS (BATTLEFIELD) ---
         const ChangelogModal = ({ onClose, onMarkViewed }) => {
             const changes = [
+                { version: "1.2.3", date: "Dec 2025", notes: ["**System Upgrade:** Migrated Akashic Tracker to the robust Module Auth System, matching the stability of Monster Workshop.", "**User ID Fix:** User IDs now display correctly across the entire suite, ensuring data syncing works seamlessly."] },
                 { version: "1.2.2", date: "Dec 2025", notes: ["**New:** Manual 'Force End Battle' button added to the header. Click the 'COMBAT' badge to manually trigger victory and send reports.", "**Fix:** Improved loot reporting robustness for mixed monster types.", "**UX:** Added confirmation dialog to end battle action."] },
-                { version: "1.2.0", date: "Dec 2025", notes: ["**Loot Integration:** Ending a battle now automatically uploads a 'Defeated Enemy Report' to the cloud.", "**Challenge Rating (CR):** Added CR support to monsters to allow the Loot Tracker to determine reward tier (Low/Med/High)."] },
-                { version: "1.1.8", date: "Dec 2025", notes: ["**UI Update:** Replaced HP +/- buttons with a centralized Heal/Damage input field separated by a heart icon.", "**UX Improvement:** Streamlined health adjustments."] }
+                { version: "1.2.0", date: "Dec 2025", notes: ["**Loot Integration:** Ending a battle now automatically uploads a 'Defeated Enemy Report' to the cloud.", "**Challenge Rating (CR):** Added CR support to monsters to allow the Loot Tracker to determine reward tier (Low/Med/High)."] }
             ].sort((a, b) => b.version.localeCompare(a.version));
             
             const handleClose = () => { onMarkViewed(); onClose(); };
@@ -304,7 +338,6 @@
             const acts = combatant.actions ? combatant.actions.split(',').map(a=>a.trim()).filter(a=>a) : [];
             return (<div className="mt-3 space-y-2"><div className="space-y-1">{chips.map(d => <div key={d.l} className="flex items-center gap-2 text-xs font-medium bg-slate-900/50 p-1.5 rounded border border-slate-700">{d.i}<span className={d.c}>{d.l}:</span><span className="text-white flex-1 truncate" title={d.v||'None'}>{d.v||'None'}</span></div>)}</div>{acts.length > 0 && <div className="pt-2 border-t border-slate-700/50"><h5 className="text-xs font-bold text-yellow-400 mb-1 flex items-center gap-1"><Zap size={12}/> Actions:</h5><ul className="space-y-0.5 pl-3 text-white text-xs list-disc list-inside">{acts.map((a,i)=><li key={i} className="pl-1 leading-tight">{a}</li>)}</ul></div>}</div>);
         };
-        // UPDATED: Added Ghost icon for monsters and better conditional styling
         const CombatantCard = memo(({ combatant: c, active, onUpdateHealth, onToggleConcentration, onToggleActionDetails, onNarrate, onDelete, onStatBlock, onToggleCondition, onToggleDeathSave, openActionDetailsId, openConditionId, setOpenConditionId, narration, isNarrating, onUpdateInitiative }) => {
             const [hpInput, setHpInput] = useState('');
             
@@ -439,7 +472,11 @@
                 return { ...loaded, status: loaded.status || 'prep' };
             });
             const [battleLogs, setBattleLogs] = useState(() => safeLoad('dm-tracker-logs', []));
-            const [user, setUser] = useState(null); 
+            
+            // New State for Auth
+            const [db, setDb] = useState(null);
+            const [userId, setUserId] = useState(null);
+            const [appId, setAppId] = useState(null);
             
             const [monsterDetails, setMonsterDetails] = useState(INITIAL_MONSTER_DETAILS);
             const [formData, setFormData] = useState(INITIAL_FORM);
@@ -462,32 +499,44 @@
             const [viewMode, setViewMode] = useState('setup');
             const encounterFileInputRef = useRef(null);
 
+            // AUTH & FIREBASE SYNC - Updated for Module System
             useEffect(() => {
-                if (!auth) return;
-                const initAuth = async () => {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        try { await auth.signInWithCustomToken(__initial_auth_token); } catch(e) { console.error("Auth Error", e); }
-                    } else {
-                        try { await auth.signInAnonymously(); } catch(e) { console.error("Auth Error", e); }
+                const handleAuthReady = () => {
+                    if (window.isAuthReady && window.db && window.currentUserId) {
+                        setDb(window.db);
+                        setUserId(window.currentUserId);
+                        setAppId(typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
                     }
                 };
-                initAuth();
-                const unsubscribe = auth.onAuthStateChanged(setUser);
-                return () => unsubscribe();
+
+                // Listen for custom event dispatch from module script after auth completes
+                document.addEventListener('auth-ready', handleAuthReady);
+                // Also call immediately in case the event fired before this component mounted
+                handleAuthReady(); 
+
+                return () => {
+                    document.removeEventListener('auth-ready', handleAuthReady);
+                };
             }, []);
 
+            // Firestore Sync for Homebrew (Read-Only from this side)
             useEffect(() => {
-                if (!user || !db) return;
-                const hbCollection = db.collection('artifacts').doc(appId).collection('users').doc(user.uid).collection('homebrew');
-                const unsubscribe = hbCollection.onSnapshot(snapshot => {
+                if (!db || !userId) return;
+                
+                // Using the modular syntax via window.firebase
+                const hbCollection = window.firebase.collection(db, 'artifacts', appId, 'users', userId, 'homebrew');
+                const unsubscribe = window.firebase.onSnapshot(hbCollection, (snapshot) => {
                     const fetchedHomebrew = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    // Only update if we actually got data, otherwise keep local cache if offline
                     if (fetchedHomebrew.length > 0 || snapshot.empty) {
                         setHomebrew(fetchedHomebrew);
                         localStorage.setItem('dm-tracker-homebrew', JSON.stringify(fetchedHomebrew));
                     }
-                }, error => { console.error("Error syncing homebrew:", error); });
+                }, error => {
+                    console.error("Error syncing homebrew:", error);
+                });
                 return () => unsubscribe();
-            }, [user]);
+            }, [db, userId, appId]);
 
             const isNewUpdateAvailable = () => {
                 const lastViewedVersion = localStorage.getItem('dm-tracker-last-viewed-version');
@@ -537,11 +586,12 @@
                 setCombatState(prev => ({ ...prev, status: 'complete' }));
                 addToLog("--- BATTLE ENDED ---", "turn");
                 
-                if (user && db) {
+                // Updated Logic for Module System
+                if (userId && db) {
                     const defeated = combatants.filter(c => c.type === 'monster' && c.currentHp === 0);
                     if (defeated.length > 0) {
                         const payload = {
-                            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                            timestamp: window.firebase.serverTimestamp(),
                             enemies: defeated.map(d => ({
                                 name: d.name,
                                 cr: parseFloat(d.cr) || 0,
@@ -549,9 +599,10 @@
                             }))
                         };
                         try {
-                            const collectionRef = db.collection('artifacts').doc(appId).collection('users').doc(user.uid).collection('battles');
-                            console.log("Uploading battle report to:", collectionRef.path); // Added Logging
-                            await collectionRef.add(payload);
+                            // Using Modular Syntax via window.firebase
+                            const collectionRef = window.firebase.collection(db, 'artifacts', appId, 'users', userId, 'battles');
+                            console.log("Uploading battle report to:", userId); 
+                            await window.firebase.addDoc(collectionRef, payload);
                             showNotification(`Report sent: ${defeated.length} enemies looted.`, "success");
                         } catch (e) {
                             console.error("Upload failed", e);
@@ -794,7 +845,7 @@
                                             <a href="./homebrew.html" className="flex items-center gap-2 bg-green-900 hover:bg-green-800 text-white px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-[0_0_15px_rgba(22,163,74,0.5)] border border-green-700 hover:border-green-500 hover:shadow-[0_0_25px_rgba(22,163,74,0.8)] hover:scale-105 active:scale-95 no-underline" title="Open Monster Workshop"><FlaskConical size={14} /><span>Workshop</span></a>
                                             <button onClick={combatState.status === 'active' ? endBattle : null} className={`flex items-center rounded px-3 py-1 border transition-all ${combatState.status === 'active' ? 'bg-red-900/30 border-red-500 animate-pulse hover:bg-red-900/50 cursor-pointer' : 'bg-slate-900 border-slate-700 cursor-default'}`} title={combatState.status === 'active' ? "Click to Force End Battle" : "Battle Status"}><span className={`text-xs font-bold mr-2 ${combatState.status === 'active' ? 'text-red-400' : 'text-slate-500'}`}>{combatState.status === 'active' ? 'COMBAT (END)' : 'PREP'}</span><span className="text-white font-mono text-lg">{combatState.round}</span></button>
                                         </div>
-                                        {user && <div className="text-[10px] text-slate-500 font-mono"><span className="text-indigo-400">User ID:</span> {user.uid.slice(0,8)}...</div>}
+                                        {userId && <div className="text-[10px] text-slate-500 font-mono"><span className="text-indigo-400">User ID:</span> {userId.slice(0,8)}...</div>}
                                     </div>
                                 </div>
                                 <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
