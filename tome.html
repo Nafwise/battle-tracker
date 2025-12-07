@@ -20,7 +20,7 @@
     <script src="https://cdn.jsdelivr.net/npm/core-js-bundle@3.37.1/minified.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Firebase SDKs (v11.6.1) -->
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
@@ -233,7 +233,7 @@
         const INITIAL_FORM = { name: '', hp: '', ac: '', initiative: '', initMod: 0, qty: 1, cr: 0 };
         const INITIAL_MONSTER_DETAILS = { resistances: '', vulnerabilities: '', actions: '', statBlockSummary: '', type: 'Unknown' };
         const HARDCODED_API_KEY = ""; 
-        const CURRENT_VERSION = "1.2.0"; 
+        const CURRENT_VERSION = "1.2.2"; 
         const INPUT_CLASS = "w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 pr-12 focus:outline-none focus:border-indigo-500 text-sm";
         const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
         const rollInitiative = (mod) => Math.floor(Math.random() * 20) + 1 + mod;
@@ -273,6 +273,7 @@
         // --- SUBCOMPONENTS & MODALS (BATTLEFIELD) ---
         const ChangelogModal = ({ onClose, onMarkViewed }) => {
             const changes = [
+                { version: "1.2.2", date: "Dec 2025", notes: ["**New:** Manual 'Force End Battle' button added to the header. Click the 'COMBAT' badge to manually trigger victory and send reports.", "**Fix:** Improved loot reporting robustness for mixed monster types.", "**UX:** Added confirmation dialog to end battle action."] },
                 { version: "1.2.0", date: "Dec 2025", notes: ["**Loot Integration:** Ending a battle now automatically uploads a 'Defeated Enemy Report' to the cloud.", "**Challenge Rating (CR):** Added CR support to monsters to allow the Loot Tracker to determine reward tier (Low/Med/High)."] },
                 { version: "1.1.8", date: "Dec 2025", notes: ["**UI Update:** Replaced HP +/- buttons with a centralized Heal/Damage input field separated by a heart icon.", "**UX Improvement:** Streamlined health adjustments."] }
             ].sort((a, b) => b.version.localeCompare(a.version));
@@ -531,10 +532,11 @@
             };
 
             const endBattle = async () => {
+                if (!confirm("Are you sure you want to end the battle? This will archive defeated enemies to the Loot Cloud.")) return;
+
                 setCombatState(prev => ({ ...prev, status: 'complete' }));
                 addToLog("--- BATTLE ENDED ---", "turn");
                 
-                // --- NEW: UPLOAD BATTLE REPORT TO CLOUD FOR LOOT TRACKER ---
                 if (user && db) {
                     const defeated = combatants.filter(c => c.type === 'monster' && c.currentHp === 0);
                     if (defeated.length > 0) {
@@ -542,17 +544,19 @@
                             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                             enemies: defeated.map(d => ({
                                 name: d.name,
-                                cr: d.cr || 0, // Pass CR so Loot Tracker can determine tier
+                                cr: parseFloat(d.cr) || 0,
                                 type: d.monsterType || 'Unknown'
                             }))
                         };
                         try {
                             await db.collection('artifacts').doc(appId).collection('users').doc(user.uid).collection('battles').add(payload);
-                            showNotification("Battle Report Uploaded to Cloud", "success");
+                            showNotification(`Report sent: ${defeated.length} enemies looted.`, "success");
                         } catch (e) {
-                            console.error("Failed to upload battle report", e);
-                            showNotification("Failed to upload Battle Report", "error");
+                            console.error("Upload failed", e);
+                            showNotification("Cloud Upload Failed. Check console.", "error");
                         }
+                    } else {
+                        showNotification("Battle ended. No enemies defeated to loot.", "info");
                     }
                 }
                 
@@ -785,7 +789,7 @@
                                     <div className="flex items-center gap-3">
                                         <a href="./loot.html" className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 text-white border-2 border-yellow-700 hover:border-yellow-400 px-3 py-1.5 rounded-full text-xs font-bold transition-all no-underline shadow-[0_0_15px_rgba(234,179,8,0.5)] hover:shadow-[0_0_25px_rgba(234,179,8,0.8)] hover:scale-105" title="Open Loot Records"><div className="bg-black/30 rounded-full p-0.5"><Gem size={14} className="text-white" /></div><span className="hidden sm:inline">Loot!</span></a>
                                         <a href="./homebrew.html" className="flex items-center gap-2 bg-green-900 hover:bg-green-800 text-white px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-[0_0_15px_rgba(22,163,74,0.5)] border border-green-700 hover:border-green-500 hover:shadow-[0_0_25px_rgba(22,163,74,0.8)] hover:scale-105 active:scale-95 no-underline" title="Open Monster Workshop"><FlaskConical size={14} /><span>Workshop</span></a>
-                                        <div className={`flex items-center rounded px-3 py-1 border ${combatState.status === 'active' ? 'bg-red-900/30 border-red-500 animate-pulse' : 'bg-slate-900 border-slate-700'}`}><span className={`text-xs font-bold mr-2 ${combatState.status === 'active' ? 'text-red-400' : 'text-slate-500'}`}>{combatState.status === 'active' ? 'COMBAT' : 'PREP'}</span><span className="text-white font-mono text-lg">{combatState.round}</span></div>
+                                        <button onClick={combatState.status === 'active' ? endBattle : null} className={`flex items-center rounded px-3 py-1 border transition-all ${combatState.status === 'active' ? 'bg-red-900/30 border-red-500 animate-pulse hover:bg-red-900/50 cursor-pointer' : 'bg-slate-900 border-slate-700 cursor-default'}`} title={combatState.status === 'active' ? "Click to Force End Battle" : "Battle Status"}><span className={`text-xs font-bold mr-2 ${combatState.status === 'active' ? 'text-red-400' : 'text-slate-500'}`}>{combatState.status === 'active' ? 'COMBAT (END)' : 'PREP'}</span><span className="text-white font-mono text-lg">{combatState.round}</span></button>
                                     </div>
                                 </div>
                                 <div className="flex flex-col sm:flex-row justify-between items-center gap-3">

@@ -255,9 +255,14 @@
                 const items = [];
                 // 1 item per enemy roughly
                 recentBattle.enemies.forEach(enemy => {
-                    // Try to infer CR or strength. If CR is missing, assume low.
+                    // Try to infer CR or strength.
                     const cr = parseFloat(enemy.cr) || 0;
-                    const tier = cr > 2 ? 'med' : 'low';
+                    
+                    // UPDATED TIER LOGIC
+                    let tier = 'low';
+                    if (cr >= 5 && cr <= 10) tier = 'med';
+                    if (cr >= 11) tier = 'high';
+
                     const pool = LOOT_TABLE[tier];
                     const item = pool[Math.floor(Math.random() * pool.length)];
                     items.push({ ...item, id: Math.random() });
