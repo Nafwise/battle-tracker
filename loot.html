@@ -92,19 +92,9 @@
         const RefreshCw = (props) => <Icon {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></Icon>;
         const ArrowLeft = (props) => <Icon {...props}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></Icon>;
         const Archive = (props) => <Icon {...props}><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></Icon>;
-        
-        // --- UPDATED ICONS ---
         const Sword = (props) => <Icon {...props}><path d="M12 2l2 4h-4l2-4z" /><path d="M12 6v7" /><path d="M8 13h8" /><path d="M12 13v6" /><path d="M10 21h4" /></Icon>;
         const Shield = (props) => <Icon {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></Icon>;
-        
-        // REFINED WAND ICON - Thick baton style with a clear star
-        const Wand = (props) => <Icon {...props}>
-            {/* The Wand Shaft (Thick diagonal rectangle) */}
-            <path d="M3 21l12-12l1.5 1.5l-12 12z" />
-            {/* The Star (Floating at the tip) */}
-            <path d="M19 2l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" />
-        </Icon>;
-        
+        const Wand = (props) => <Icon {...props}><path d="M3 21l12-12l1.5 1.5l-12 12z" /><path d="M19 2l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" /></Icon>;
         const Flask = (props) => <Icon {...props}><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" /><path d="M8.5 2h7" /><path d="M7 16h10" /></Icon>;
         const Trash2 = (props) => <Icon {...props}><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></Icon>;
         const Hammer = (props) => <Icon {...props}><path d="M6 5h12v4h-12z" /><path d="M12 9v12" /><path d="M10 21h4" /></Icon>;
@@ -217,15 +207,22 @@
                 try {
                     const BATTLES_PATH = `artifacts/${appId}/users/${user.uid}/battles`;
                     // Fetch latest battle report that hasn't been looted
+                    // CHANGED: Removed orderBy to avoid index issues. Fetch 20, sort locally.
                     const snapshot = await db.collection(BATTLES_PATH)
-                        .orderBy('timestamp', 'desc')
-                        .limit(5) // Check last 5 battles in case one was skipped
+                        .limit(20) 
                         .get();
 
                     let foundBattle = null;
                     if (!snapshot.empty) {
+                        // Sort locally by timestamp (if available) or insertion order (fallback)
+                        const docs = snapshot.docs.sort((a, b) => {
+                            const timeA = a.data().timestamp?.toMillis() || 0;
+                            const timeB = b.data().timestamp?.toMillis() || 0;
+                            return timeB - timeA; // Descending
+                        });
+
                         // Find the first one that isn't in our local looted list
-                        for (const doc of snapshot.docs) {
+                        for (const doc of docs) {
                             if (!lootedBattles.includes(doc.id)) {
                                 const data = doc.data();
                                 foundBattle = {
@@ -460,7 +457,10 @@
                             <div className="bg-slate-900 p-2 rounded-lg border border-yellow-600 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
                                 <Gem className="text-yellow-500 w-6 h-6" />
                             </div>
-                            <h1 className="text-2xl font-bold tracking-tight text-white">Akashic Loot Records</h1>
+                            <div>
+                                <h1 className="text-2xl font-bold tracking-tight text-white">Akashic Loot Records</h1>
+                                {user && <div className="text-[10px] text-slate-500 font-mono mt-1"><span className="text-indigo-400">User ID:</span> {user.uid.slice(0,8)}...</div>}
+                            </div>
                         </div>
                         
                         {/* UPDATED NAVIGATION BUTTONS */}
