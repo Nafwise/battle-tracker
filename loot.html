@@ -20,11 +20,6 @@
     <script src="https://cdn.jsdelivr.net/npm/core-js-bundle@3.37.1/minified.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
-    
     <style>
         :root {
             --loot-bg: #0F172A;
@@ -75,10 +70,68 @@
 <body class="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
     <div id="root"></div>
 
+    <!-- FIREBASE IMPORTS (Module System) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // Import all Firestore functions needed
+        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, query, orderBy, limit, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        window.firebaseApp = null;
+        window.db = null;
+        window.auth = null;
+        window.currentUserId = null;
+        window.isAuthReady = false;
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        if (Object.keys(firebaseConfig).length > 0) {
+            window.firebaseApp = initializeApp(firebaseConfig);
+            window.db = getFirestore(window.firebaseApp);
+            window.auth = getAuth(window.firebaseApp);
+
+            const authInit = async () => {
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(window.auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(window.auth);
+                    }
+                } catch (error) {
+                    console.error("Firebase Auth Error:", error);
+                    await signInAnonymously(window.auth);
+                }
+            };
+            
+            onAuthStateChanged(window.auth, (user) => {
+                if (user) {
+                    window.currentUserId = user.uid;
+                } else {
+                    window.currentUserId = crypto.randomUUID();
+                }
+                window.isAuthReady = true;
+                document.dispatchEvent(new CustomEvent('auth-ready'));
+            });
+
+            authInit();
+            
+            // Expose functions to window for React
+            window.firebase = {
+                doc, setDoc, deleteDoc, onSnapshot, collection, query, orderBy, limit, serverTimestamp, getDocs 
+            };
+
+        } else {
+            console.error("Firebase config not found.");
+            window.isAuthReady = true;
+            document.dispatchEvent(new CustomEvent('auth-ready'));
+        }
+    </script>
+
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
         
-        // Hardcoded API Key for AI generation
         const HARDCODED_API_KEY = ""; 
 
         // --- ICONS ---
@@ -137,21 +190,12 @@
             ]
         };
 
-        // --- FIREBASE INIT ---
-        let app, auth, db;
-        let appId = 'default-app-id';
-        try {
-            if (typeof firebase !== 'undefined' && typeof __firebase_config !== 'undefined') {
-                const config = JSON.parse(__firebase_config);
-                app = firebase.initializeApp(config);
-                auth = firebase.auth();
-                db = firebase.firestore();
-                if (typeof __app_id !== 'undefined') appId = __app_id;
-            }
-        } catch(e) { console.error("Firebase Error", e); }
-
         function App() {
-            const [user, setUser] = useState(null);
+            // New State for Auth
+            const [db, setDb] = useState(null);
+            const [userId, setUserId] = useState(null);
+            const [appId, setAppId] = useState(null);
+
             const [view, setView] = useState('dashboard'); // dashboard, scanner, history, forge
             const [lootHistory, setLootHistory] = useState(() => {
                 const saved = localStorage.getItem('akashic_loot_history');
@@ -179,18 +223,24 @@
             const fileInputRef = useRef(null);
 
 
-            // Auth
+            // AUTH & FIREBASE SYNC - Updated for Module System
             useEffect(() => {
-                if(!auth) return;
-                const initAuth = async () => {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        try { await auth.signInWithCustomToken(__initial_auth_token); } catch(e) {}
-                    } else {
-                        try { await auth.signInAnonymously(); } catch(e) {}
+                const handleAuthReady = () => {
+                    if (window.isAuthReady && window.db && window.currentUserId) {
+                        setDb(window.db);
+                        setUserId(window.currentUserId);
+                        setAppId(typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
                     }
                 };
-                initAuth();
-                return auth.onAuthStateChanged(setUser);
+
+                // Listen for custom event dispatch from module script after auth completes
+                document.addEventListener('auth-ready', handleAuthReady);
+                // Also call immediately in case the event fired before this component mounted
+                handleAuthReady(); 
+
+                return () => {
+                    document.removeEventListener('auth-ready', handleAuthReady);
+                };
             }, []);
 
             // Persistence
@@ -200,17 +250,18 @@
 
             // Fetch Battle Logs (Real Firestore Sync)
             const syncBattlefield = async () => {
-                if (!db || !user) return;
+                if (!db || !userId) return;
                 setIsSyncing(true);
                 setRecentBattle(null);
                 
                 try {
-                    const BATTLES_PATH = `artifacts/${appId}/users/${user.uid}/battles`;
-                    // Fetch latest battle report that hasn't been looted
-                    // CHANGED: Removed orderBy to avoid index issues. Fetch 20, sort locally.
-                    const snapshot = await db.collection(BATTLES_PATH)
-                        .limit(20) 
-                        .get();
+                    // Using Modular Syntax via window.firebase
+                    const battlesCollection = window.firebase.collection(db, 'artifacts', appId, 'users', userId, 'battles');
+                    
+                    // Simple query: Get last 20 docs. IMPORTANT: Do NOT use orderBy yet to avoid index issues on new collections.
+                    const q = window.firebase.query(battlesCollection, window.firebase.limit(20));
+                    
+                    const snapshot = await window.firebase.getDocs(q);
 
                     let foundBattle = null;
                     if (!snapshot.empty) {
@@ -459,7 +510,8 @@
                             </div>
                             <div>
                                 <h1 className="text-2xl font-bold tracking-tight text-white">Akashic Loot Records</h1>
-                                {user && <div className="text-[10px] text-slate-500 font-mono mt-1"><span className="text-indigo-400">User ID:</span> {user.uid.slice(0,8)}...</div>}
+                                {/* ADDED USER ID DISPLAY */}
+                                {userId && <div className="text-[10px] text-slate-500 font-mono mt-1"><span className="text-indigo-400">User ID:</span> {userId.slice(0,8)}...</div>}
                             </div>
                         </div>
                         
