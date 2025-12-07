@@ -66,12 +66,12 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
             
-            <!-- HOMEBREW BANK -->
+            <!-- MONSTER WORKSHOP (Formerly Homebrew Bank) -->
             <a href="./homebrew.html" class="astral-card p-6 rounded-2xl group cursor-pointer text-left relative overflow-hidden flex flex-col h-full no-underline">
                 <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                     <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
                 </div>
-                <h2 class="text-xl font-bold text-amber-500 mb-2 group-hover:text-amber-400">Homebrew Bank</h2>
+                <h2 class="text-xl font-bold text-amber-500 mb-2 group-hover:text-amber-400">Monster Workshop</h2>
                 <p class="text-slate-400 text-xs mb-4 flex-1">Create, edit, and store custom monsters using AI. Syncs to cloud.</p>
                 <span class="inline-flex items-center text-xs font-bold text-indigo-400 group-hover:text-indigo-300">
                     Open Laboratory &rarr;
@@ -81,7 +81,17 @@
             <!-- TRACKER -->
             <a href="./tome.html" class="astral-card p-6 rounded-2xl group cursor-pointer text-left relative overflow-hidden flex flex-col h-full no-underline">
                 <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 17.5 3 22 4.5 10.5"/><path d="M22 3l-7.5 14.5L10 12 3 7l14.5-4.5 4.5 4.5z"/><line x1="8" y1="14" x2="2.5" y2="19.5"/><line x1="16" y1="5" x2="21.5" y2="10.5"/></svg>
+                    <!-- Castle Gate Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21v-8a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v8"/>
+                        <path d="M4 11V7"/>
+                        <path d="M20 11V7"/>
+                        <path d="M2 7h4v4H2z"/>
+                        <path d="M18 7h4v4h-4z"/>
+                        <path d="M4 7l2-4 2 4"/>
+                        <path d="M18 7l2-4 2 4"/>
+                        <path d="M10 21v-4a2 2 0 0 1 4 0v4"/>
+                    </svg>
                 </div>
                 <h2 class="text-xl font-bold text-red-500 mb-2 group-hover:text-red-400">Initiative Tracker</h2>
                 <p class="text-slate-400 text-xs mb-4 flex-1">Manage combat, track HP/Conditions, and run encounters.</p>
@@ -90,7 +100,7 @@
                 </span>
             </a>
 
-            <!-- LOOT RECORDS (LADYBUG STYLE) -->
+            <!-- LOOT RECORDS -->
             <a href="./loot.html" class="astral-card loot-hover p-6 rounded-2xl group cursor-pointer text-left relative overflow-hidden flex flex-col h-full no-underline">
                 <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                     <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg>
@@ -114,7 +124,7 @@
 
         <!-- Footer -->
         <footer class="pt-8 text-slate-600 text-xs font-mono flex flex-col items-center gap-2">
-            <span>v1.2.0 • Connected via Firebase</span>
+            <span>v1.2.1 • Connected via Firebase</span>
             <button onclick="toggleChangelog()" class="text-slate-500 hover:text-white underline decoration-slate-700 hover:decoration-white transition-colors">
                 View Full System Changelog
             </button>
@@ -134,41 +144,27 @@
                 </button>
             </div>
 
-            <!-- Tracker Log -->
             <div class="cl-section">
-                <div class="cl-header text-red-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1"><path d="M14.5 17.5 3 22 4.5 10.5"/><path d="M22 3l-7.5 14.5L10 12 3 7l14.5-4.5 4.5 4.5z"/><line x1="8" y1="14" x2="2.5" y2="19.5"/><line x1="16" y1="5" x2="21.5" y2="10.5"/></svg>
-                    Initiative Tracker (v1.1.8)
-                    <span class="badge-new">UPDATED</span>
-                </div>
-                <div class="cl-item"><strong>UI Update:</strong> Replaced +/- buttons with centralized Heal/Damage input & Heart icon.</div>
-                <div class="cl-item"><strong>Visuals:</strong> Distinct red styling and 'Ghost' icon for Monsters vs Players.</div>
-                <div class="cl-item"><strong>Lifecycle:</strong> Added 'Start/End Battle' flow. Defeated monsters log data for Loot Scanner.</div>
-                <div class="cl-item"><strong>Bugfix:</strong> Fixed manual add logic to strictly enforce Monster/Player types.</div>
+                <div class="cl-header text-indigo-400">System Core (v1.2.1) <span class="badge-new">LATEST</span></div>
+                <div class="cl-item">UI Polish: Unified button styling with glowing borders and solid colors for consistent navigation.</div>
+                <div class="cl-item">Icons: Updated application icons (Castle Gate, Ghost) for better visual distinction across the suite.</div>
             </div>
 
-            <!-- Homebrew Log -->
             <div class="cl-section">
-                <div class="cl-header text-amber-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
-                    Homebrew Bank (v1.1.0)
-                </div>
-                <div class="cl-item"><strong>Persistence:</strong> Implemented auto-restore bridge using LocalStorage for session continuity.</div>
-                <div class="cl-item"><strong>Smart Import:</strong> Importing JSON now merges/updates monsters by name instead of duplicating.</div>
-                <div class="cl-item"><strong>Integration:</strong> Added navigation links to Tracker and Loot Records.</div>
+                <div class="cl-header text-red-400">Initiative Tracker (v1.1.8) <span class="badge-new">UPDATED</span></div>
+                <div class="cl-item">UI Updates: Centralized health, visual updates for Monsters.</div>
+                <div class="cl-item">Lifecycle: Start/End Battle flow.</div>
             </div>
 
-            <!-- Loot Log -->
             <div class="cl-section">
-                <div class="cl-header text-red-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg>
-                    Loot Records (v1.0.0)
-                    <span class="badge-new">NEW APP</span>
-                </div>
-                <div class="cl-item"><strong>Launch:</strong> New dedicated tool for generating and tracking party loot.</div>
-                <div class="cl-item"><strong>The Forge:</strong> AI-powered item generator with Staging Area for DM review.</div>
-                <div class="cl-item"><strong>Scanner:</strong> Reads 'Defeated' logs from Tracker to auto-generate encounter loot.</div>
-                <div class="cl-item"><strong>Vault:</strong> Persistent history of all loot with case-by-case deletion.</div>
+                <div class="cl-header text-amber-500">Monster Workshop (v1.1.0)</div>
+                <div class="cl-item">Rebrand: Formerly Homebrew Bank.</div>
+                <div class="cl-item">Persistence: Firestore sync & local backup.</div>
+            </div>
+
+            <div class="cl-section">
+                <div class="cl-header text-red-500">Loot Records (v1.0.0) <span class="badge-new">NEW APP</span></div>
+                <div class="cl-item">Launch: Item Forge, Scanner, and Vault.</div>
             </div>
 
             <div class="mt-6 text-center">
