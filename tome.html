@@ -20,8 +20,9 @@
     <script src="https://cdn.jsdelivr.net/npm/core-js-bundle@3.37.1/minified.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Three.js (No Loader Needed for Procedural) -->
+    <!-- Three.js & GLTFLoader (For 3D Dice) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     
     <style>
         /* --- The Astral Plane Palette --- */
@@ -188,29 +189,23 @@
             };
             
             onAuthStateChanged(window.auth, (user) => {
-                // --- STICKY AUTH LOGIC START ---
-                // UNIFIED KEY: 'akashic_user_id' used across all apps
-                let finalId = localStorage.getItem('akashic_user_id');
-
-                if (!finalId) {
-                    // No local ID found?
-                    if (user) {
-                        // We have a firebase user, use that UID
-                        finalId = user.uid;
-                    } else {
-                        // No firebase user yet? Generate a placeholder
-                        finalId = crypto.randomUUID();
+                // --- FIXED AUTH LOGIC ---
+                // Priority: Real Firebase User > Local Storage
+                if (user) {
+                    window.currentUserId = user.uid;
+                    // Sync the REAL ID to local storage so other apps can follow the leader
+                    localStorage.setItem('akashic_user_id', user.uid);
+                } else {
+                    // Fallback
+                    let stickyId = localStorage.getItem('akashic_user_id');
+                    if (!stickyId) {
+                        stickyId = crypto.randomUUID();
+                        localStorage.setItem('akashic_user_id', stickyId);
                     }
-                    // Save it immediately so other apps see it
-                    localStorage.setItem('akashic_user_id', finalId);
+                    window.currentUserId = stickyId;
                 }
                 
-                // Note: We prioritize the local storage ID to ensure
-                // the "mailbox" stays the same even if auth rotates.
-                window.currentUserId = finalId;
                 window.isAuthReady = true;
-                // --- STICKY AUTH LOGIC END ---
-
                 document.dispatchEvent(new CustomEvent('auth-ready'));
             });
 

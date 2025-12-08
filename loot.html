@@ -261,50 +261,67 @@
 
             // Fetch Battle Logs (Real Firestore Sync)
             const syncBattlefield = async () => {
-                if (!db || !userId) return;
+                if (!db || !userId) {
+                    setDebugInfo("Error: No Database or User ID available. Try reloading from Hub.");
+                    return;
+                }
+                
                 setIsSyncing(true);
                 setRecentBattle(null);
-                setDebugInfo(`Scanning User: ${userId.slice(0,8)}...`);
                 setFoundBattleIds([]);
+                setDebugInfo(`Scanning User: ${userId.slice(0,8)}...`);
                 
                 try {
                     // Using Modular Syntax via window.firebase
                     const battlesCollection = window.firebase.collection(db, 'artifacts', appId, 'users', userId, 'battles');
                     
-                    // EXPANDED QUERY: No Limit, simple fetch to ensure we see EVERYTHING
-                    const q = window.firebase.query(battlesCollection);
+                    // Simple fetch - get everything (limit 50 is plenty for recent history)
+                    const q = window.firebase.query(battlesCollection, window.firebase.limit(50));
                     
                     const snapshot = await window.firebase.getDocs(q);
                     
-                    const foundIds = snapshot.docs.map(d => d.id);
-                    setFoundBattleIds(foundIds);
-                    setDebugInfo(prev => `${prev}\nFound ${snapshot.size} records in cloud: [${foundIds.map(id => id.slice(0,4)).join(', ')}]`);
+                    if (snapshot.empty) {
+                        setDebugInfo(prev => `${prev}\nNo battle reports found in cloud.`);
+                    } else {
+                        const foundIds = snapshot.docs.map(d => d.id);
+                        setFoundBattleIds(foundIds);
+                        setDebugInfo(prev => `${prev}\nFound ${snapshot.size} records. Checking for unlooted...`);
 
-                    let foundBattle = null;
-                    if (!snapshot.empty) {
+                        let foundBattle = null;
+                        
                         // Sort locally by timestamp (if available) or insertion order (fallback)
-                        const docs = snapshot.docs.sort((a, b) => {
-                            const timeA = a.data().timestamp?.toMillis() || 0;
-                            const timeB = b.data().timestamp?.toMillis() || 0;
-                            return timeB - timeA; // Descending (Newest First)
+                        // Converting to array of data objects for easier handling
+                        const docs = snapshot.docs.map(doc => {
+                            const d = doc.data();
+                            return {
+                                id: doc.id,
+                                ...d,
+                                // Normalize timestamp for sorting
+                                millis: d.timestamp?.toMillis ? d.timestamp.toMillis() : Date.now()
+                            };
                         });
+
+                        // Sort Descending (Newest First)
+                        docs.sort((a, b) => b.millis - a.millis);
 
                         // Find the first one that isn't in our local looted list
                         for (const doc of docs) {
                             if (!lootedBattles.includes(doc.id)) {
-                                const data = doc.data();
                                 foundBattle = {
                                     id: doc.id,
-                                    enemies: data.enemies,
-                                    timestamp: data.timestamp?.toDate().toISOString() || new Date().toISOString()
+                                    enemies: doc.enemies || [],
+                                    timestamp: new Date(doc.millis).toISOString()
                                 };
-                                break;
+                                break; // Stop at the first unlooted battle
                             }
                         }
-                    }
-                    setRecentBattle(foundBattle);
-                    if(!foundBattle && snapshot.size > 0) {
-                         setDebugInfo(prev => `${prev}\nAll battles marked as looted.`);
+                        
+                        if (foundBattle) {
+                            setRecentBattle(foundBattle);
+                            setDebugInfo(prev => `${prev}\nSUCCESS: Found unlooted battle (${foundBattle.enemies.length} enemies).`);
+                        } else {
+                            setDebugInfo(prev => `${prev}\nAll found battles have already been looted.`);
+                        }
                     }
                 } catch(e) {
                     console.error("Failed to sync battlefield:", e);
