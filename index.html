@@ -83,14 +83,19 @@
             
             onAuthStateChanged(auth, (user) => {
                 // --- HUB STICKY AUTH LOGIC ---
+                // UNIFIED KEY: 'akashic_user_id' used across all apps
                 let finalId = localStorage.getItem('akashic_user_id');
 
                 if (!finalId) {
+                    // No local ID found?
                     if (user) {
+                        // We have a firebase user, use that UID
                         finalId = user.uid;
                     } else {
+                        // No firebase user yet? Generate a placeholder
                         finalId = crypto.randomUUID();
                     }
+                    // Save it immediately so other apps see it
                     localStorage.setItem('akashic_user_id', finalId);
                 }
                 
