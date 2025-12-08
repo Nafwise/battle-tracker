@@ -19,6 +19,9 @@
     <!-- Polyfills & Babel -->
     <script src="https://cdn.jsdelivr.net/npm/core-js-bundle@3.37.1/minified.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Three.js (No Loader Needed for Procedural) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <style>
         /* --- The Astral Plane Palette --- */
@@ -57,7 +60,7 @@
             margin: 20px auto;
             max-width: 1200px;
             min-height: 95vh;
-            position: relative;
+            position: relative; /* Added for floating buttons to constrain */
         }
         
         @media (max-width: 640px) {
@@ -77,7 +80,9 @@
         .bg-slate-900, .bg-gray-900 { background-color: var(--astral-input) !important; border-color: var(--border-color) !important; }
         .bg-slate-800, .bg-gray-800 { background-color: var(--astral-card) !important; border-color: var(--border-color) !important; }
         .border-slate-600, .border-slate-700 { border-color: var(--border-color) !important; }
+        /* Adjusted positioning to be relative to astral-container */
         .floating-button { z-index: 90; position: absolute; bottom: 20px; right: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        /* Removed active:scale-95 to prevent jutter/jump on click */
         .floating-turn-button { 
             z-index: 90; 
             position: absolute; 
@@ -87,30 +92,32 @@
             padding-top: 1rem; 
             padding-bottom: 1rem; 
             box-shadow: 0 4px 20px rgba(0,0,0,0.5); 
-            transition: all 0.1s; 
+            transition: all 0.1s; /* Keep transition for color changes */
         }
         input, textarea, select { background-color: var(--astral-input) !important; border-color: var(--border-color) !important; color: var(--text-primary) !important; font-size: 16px !important; }
         input:focus, textarea:focus { border-color: var(--accent-cyan) !important; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important; outline: none !important; }
         
+        /* Custom style for the inner button within the input group */
         .input-inline-btn {
             position: absolute;
-            right: 4px;
+            right: 4px; /* Slightly inward from the edge */
             top: 50%;
             transform: translateY(-50%);
-            padding: 4px 8px;
+            padding: 4px 8px; /* Added horizontal padding for touch targets */
             height: calc(100% - 8px);
-            background-color: transparent;
-            border: 1px solid var(--border-color);
+            background-color: transparent; /* Hollow look */
+            border: 1px solid var(--border-color); /* Subtle border */
             border-radius: 6px;
             color: var(--accent-cyan);
             transition: all 0.2s;
-            z-index: 10;
+            z-index: 10; /* Ensure it floats over the input field's body */
         }
         .input-inline-btn:hover {
-            background-color: var(--astral-card);
+            background-color: var(--astral-card); /* Hover fills the hollow space */
             border-color: var(--accent-cyan);
         }
 
+        /* Small input fields for initiative/AC on card */
         .card-inline-input {
             width: 40px;
             height: 20px;
@@ -123,10 +130,23 @@
             line-height: 1;
         }
         
+        /* Animation Utility */
         @keyframes spin-die { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .animate-spin-fast { animation: spin-die 0.6s ease-in-out infinite; }
-        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.5); } 50% { box-shadow: 0 0 0 4px rgba(56, 189, 248, 0); } }
-        .animate-pulse-glow { animation: pulse-glow 2s infinite cubic-bezier(0.4, 0, 0.6, 1); border-color: var(--accent-cyan) !important; }
+
+        /* Glowing Pulse for new updates */
+        @keyframes pulse-glow {
+          0%, 100% {
+            box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.5);
+          }
+          50% {
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0);
+          }
+        }
+        .animate-pulse-glow {
+            animation: pulse-glow 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+            border-color: var(--accent-cyan) !important;
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100">
@@ -136,6 +156,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // Import all Firestore functions needed including addDoc for reports
         import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, setLogLevel, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         window.firebaseApp = null;
@@ -167,26 +188,35 @@
             };
             
             onAuthStateChanged(window.auth, (user) => {
-                // STICKY AUTH LOGIC
-                let finalId;
-                const storedId = localStorage.getItem('akashic_user_id');
+                // --- STICKY AUTH LOGIC START ---
+                // UNIFIED KEY: 'akashic_user_id' used across all apps
+                let finalId = localStorage.getItem('akashic_user_id');
 
-                if (storedId) {
-                    finalId = storedId;
-                } else if (user) {
-                    finalId = user.uid;
+                if (!finalId) {
+                    // No local ID found?
+                    if (user) {
+                        // We have a firebase user, use that UID
+                        finalId = user.uid;
+                    } else {
+                        // No firebase user yet? Generate a placeholder
+                        finalId = crypto.randomUUID();
+                    }
+                    // Save it immediately so other apps see it
                     localStorage.setItem('akashic_user_id', finalId);
-                } else {
-                    finalId = crypto.randomUUID(); // Should rare, but fallback
                 }
-
+                
+                // Note: We prioritize the local storage ID to ensure
+                // the "mailbox" stays the same even if auth rotates.
                 window.currentUserId = finalId;
                 window.isAuthReady = true;
+                // --- STICKY AUTH LOGIC END ---
+
                 document.dispatchEvent(new CustomEvent('auth-ready'));
             });
 
             authInit();
             
+            // Expose functions to window for React
             window.firebase = {
                 doc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, getDocs, addDoc 
             };
@@ -202,7 +232,9 @@
         const { useState, useEffect, useRef, memo, useCallback } = React;
 
         // --- ICONS ---
-        const Icon = ({ children, className, ...props }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>);
+        const Icon = ({ children, className, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>
+        );
         const Sword = (props) => <Icon {...props}><polyline points="14.5 17.5 3 22 4.5 10.5" /><path d="M22 3l-7.5 14.5L10 12 3 7l14.5-4.5 4.5 4.5z" /><line x1="8" y1="14" x2="2.5" y2="19.5" /><line x1="16" y1="5" x2="21.5" y2="10.5" /></Icon>;
         const Shield = (props) => <Icon {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></Icon>;
         const Trash2 = (props) => <Icon {...props}><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></Icon>;
@@ -325,6 +357,13 @@
             const acts = combatant.actions ? combatant.actions.split(',').map(a=>a.trim()).filter(a=>a) : [];
             return (<div className="mt-3 space-y-2"><div className="space-y-1">{chips.map(d => <div key={d.l} className="flex items-center gap-2 text-xs font-medium bg-slate-900/50 p-1.5 rounded border border-slate-700">{d.i}<span className={d.c}>{d.l}:</span><span className="text-white flex-1 truncate" title={d.v||'None'}>{d.v||'None'}</span></div>)}</div>{acts.length > 0 && <div className="pt-2 border-t border-slate-700/50"><h5 className="text-xs font-bold text-yellow-400 mb-1 flex items-center gap-1"><Zap size={12}/> Actions:</h5><ul className="space-y-0.5 pl-3 text-white text-xs list-disc list-inside">{acts.map((a,i)=><li key={i} className="pl-1 leading-tight">{a}</li>)}</ul></div>}</div>);
         };
+        
+        const BattleLogModal = ({ logs, onClose, onClear }) => {
+            const bottomRef = useRef(null);
+            useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [logs]);
+            return (<div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"><div className="bg-gray-900 w-full max-w-lg rounded-xl shadow-2xl border border-gray-700 flex flex-col h-[70vh]"><div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl"><h2 className="text-xl font-bold text-white flex items-center gap-2"><ScrollText className="text-indigo-400" /> Battle Log</h2><button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button></div><div className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-900/50">{logs.length === 0 ? <p className="text-slate-500 text-center text-sm italic py-4">The chronicles are empty...</p> : logs.map((log, i) => (<div key={i} className={`text-sm p-2 rounded border-l-2 ${log.type==='damage'?'border-red-500 bg-red-900/10 text-red-200': log.type==='heal'?'border-green-500 bg-green-900/10 text-green-200': log.type==='turn'?'border-yellow-500 bg-yellow-900/10 text-yellow-200': log.type==='skull'?'border-slate-500 bg-black/30 text-gray-400': 'border-slate-500 bg-slate-800 text-slate-300'}`}><span className="text-[10px] text-slate-500 block mb-0.5 uppercase tracking-wider">{new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</span>{log.message}</div>))}<div ref={bottomRef} /></div><div className="p-3 border-t border-gray-700 bg-gray-800 rounded-b-xl flex justify-between"><button onClick={onClear} className="text-xs text-red-400 hover:text-red-300">Clear Log</button><button onClick={onClose} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-bold">Close</button></div></div></div>);
+        };
+
         const CombatantCard = memo(({ combatant: c, active, onUpdateHealth, onToggleConcentration, onToggleActionDetails, onNarrate, onDelete, onStatBlock, onToggleCondition, onToggleDeathSave, openActionDetailsId, openConditionId, setOpenConditionId, narration, isNarrating, onUpdateInitiative }) => {
             const [hpInput, setHpInput] = useState('');
             
@@ -381,23 +420,392 @@
                 </div>
             );
         });
-        const BattleLogModal = ({ logs, onClose, onClear }) => {
-            const bottomRef = useRef(null);
-            useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [logs]);
-            return (<div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"><div className="bg-gray-900 w-full max-w-lg rounded-xl shadow-2xl border border-gray-700 flex flex-col h-[70vh]"><div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl"><h2 className="text-xl font-bold text-white flex items-center gap-2"><ScrollText className="text-indigo-400" /> Battle Log</h2><button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button></div><div className="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-900/50">{logs.length === 0 ? <p className="text-slate-500 text-center text-sm italic py-4">The chronicles are empty...</p> : logs.map((log, i) => (<div key={i} className={`text-sm p-2 rounded border-l-2 ${log.type==='damage'?'border-red-500 bg-red-900/10 text-red-200': log.type==='heal'?'border-green-500 bg-green-900/10 text-green-200': log.type==='turn'?'border-yellow-500 bg-yellow-900/10 text-yellow-200': log.type==='skull'?'border-slate-500 bg-black/30 text-gray-400': 'border-slate-500 bg-slate-800 text-slate-300'}`}><span className="text-[10px] text-slate-500 block mb-0.5 uppercase tracking-wider">{new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</span>{log.message}</div>))}<div ref={bottomRef} /></div><div className="p-3 border-t border-gray-700 bg-gray-800 rounded-b-xl flex justify-between"><button onClick={onClear} className="text-xs text-red-400 hover:text-red-300">Clear Log</button><button onClick={onClose} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-bold">Close</button></div></div></div>);
+
+        // Texture Generator for Numbers
+        const createDieTexture = (text, bgColorHex) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            // Background
+            ctx.fillStyle = '#' + new THREE.Color(bgColorHex).getHexString();
+            ctx.fillRect(0, 0, 256, 256);
+            
+            // Border/Detail
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 10;
+            ctx.strokeRect(10, 10, 236, 236);
+
+            // Number - REDUCED SIZE for better fit
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 80px Arial'; // Changed from 140px
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            // Add shadow for better visibility
+            ctx.shadowColor = "rgba(0,0,0,0.5)";
+            ctx.shadowBlur = 10;
+            ctx.fillText(text, 128, 128);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            return texture;
         };
-        const DiceRollerModal = ({ onClose, addToLog }) => {
-            const [history, setHistory] = useState([]); const [mod, setMod] = useState(0); const [count, setCount] = useState(1); const [selectedDie, setSelectedDie] = useState(20); 
-            const roll = () => {
-                const sides = selectedDie; const n = Math.max(1, parseInt(count) || 1); const m = parseInt(mod) || 0; let totalRaw = 0; let rolls = [];
-                for(let i=0; i<n; i++) { const r = Math.floor(Math.random() * sides) + 1; rolls.push(r); totalRaw += r; }
-                const total = totalRaw + m; const rollStr = `[${rolls.join(', ')}]`; const diceStr = `${n}d${sides}`; const modStr = m !== 0 ? (m > 0 ? `+${m}` : m) : '';
-                const result = { desc: `${diceStr}${modStr}`, detail: `${rollStr} ${modStr} = `, total: total, isCrit: (sides === 20 && n === 1 && rolls[0] === 20), isFail: (sides === 20 && n === 1 && rolls[0] === 1), id: Date.now() };
-                setHistory(prev => [result, ...prev].slice(0, 20));
-                addToLog(`Rolled ${result.desc}: ${rollStr}${modStr} = ${total}`, 'roll');
+
+        const spawnDie = (type, color, value, isCrit, isFail) => {
+            let mesh;
+            
+            // --- PROCEDURAL BRANCH (Fallback) ---
+            let geometry;
+            switch (type) {
+                case 4: geometry = new THREE.TetrahedronGeometry(0.6); break;
+                case 6: geometry = new THREE.BoxGeometry(0.9, 0.9, 0.9); break;
+                case 8: geometry = new THREE.OctahedronGeometry(0.6); break;
+                case 10: geometry = new THREE.OctahedronGeometry(0.7); break; 
+                case 12: geometry = new THREE.DodecahedronGeometry(0.6); break;
+                case 20: geometry = new THREE.IcosahedronGeometry(0.6); break;
+                default: geometry = new THREE.SphereGeometry(0.6, 16, 16);
+            }
+
+            const texture = createDieTexture(value.toString(), color);
+            const materialConfig = { 
+                map: texture,
+                roughness: 0.2,
+                metalness: 0.1
             };
-            return (<div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"><div className="bg-gray-900 w-full max-w-sm rounded-xl shadow-2xl border border-gray-700 flex flex-col max-h-[90vh]"><div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl shrink-0"><h2 className="text-xl font-bold text-white flex items-center gap-2"><D20Icon className="text-green-400 w-6 h-6" /> Dice Roller</h2><button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button></div><div className="p-5 space-y-5 overflow-y-auto flex-1"><div><label className="block text-xs font-bold text-slate-400 uppercase mb-2">Select Die</label><div className="flex flex-wrap gap-2 justify-center">{[4,6,8,10,12,20,100].map(d => (<button key={d} onClick={() => setSelectedDie(d)} className={`w-10 h-10 rounded font-bold font-mono transition-all ${selectedDie === d ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 scale-110' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'}`}>d{d}</button>))}</div></div><div className="grid grid-cols-2 gap-4"><div><label className="block text-xs font-bold text-slate-300 uppercase mb-1">Count</label><div className="flex items-center"><button onClick={() => setCount(Math.max(1, count - 1))} className="bg-slate-800 text-slate-300 p-2 rounded-l border border-slate-600 border-r-0 hover:bg-slate-700 hover:text-white"><Minus size={14}/></button><input type="number" value={count} onChange={(e)=>setCount(Math.max(1, parseInt(e.target.value)||1))} className="w-full bg-slate-900 border border-slate-600 py-2 text-center font-bold text-white focus:outline-none" /><button onClick={() => setCount(count + 1)} className="bg-slate-800 text-slate-300 p-2 rounded-r border border-slate-600 border-l-0 hover:bg-slate-700 hover:text-white"><Plus size={14}/></button></div></div><div><label className="block text-xs font-bold text-slate-300 uppercase mb-1">Modifier</label><div className="flex items-center"><button onClick={() => setMod(mod - 1)} className="bg-slate-800 text-slate-300 p-2 rounded-l border border-slate-600 border-r-0 hover:bg-slate-700 hover:text-white"><Minus size={14}/></button><input type="number" value={mod} onChange={(e)=>setMod(parseInt(e.target.value)||0)} className="w-full bg-slate-900 border border-slate-600 py-2 text-center font-bold text-white focus:outline-none" /><button onClick={() => setMod(mod + 1)} className="bg-slate-800 text-slate-300 p-2 rounded-r border border-slate-600 border-l-0 hover:bg-slate-700 hover:text-white"><Plus size={14}/></button></div></div></div><button onClick={roll} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 text-lg"><D20Icon className="w-6 h-6 animate-spin-slow" /> ROLL {count}d{selectedDie} {mod !== 0 && (mod > 0 ? `+${mod}` : mod)}</button><div className="bg-slate-950 rounded p-3 h-40 overflow-y-auto border border-slate-800 relative"><div className="flex justify-between items-center mb-2 sticky top-0 bg-slate-950/95 backdrop-blur-sm pb-2 border-b border-slate-800 z-10"><h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">History</h4>{history.length > 0 && <button onClick={() => setHistory([])} className="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase border border-red-900/50 px-2 py-0.5 rounded bg-red-900/10 hover:bg-red-900/30 transition-colors">Clear Log</button>}</div>{history.length === 0 && <div className="text-center text-slate-600 text-xs mt-12 italic">Ready to roll...</div>}<div className="space-y-1.5">{history.map(h => (<div key={h.id} className="flex justify-between items-center text-sm border-b border-slate-800/50 pb-1.5 last:border-0 animate-fade-in"><div className="flex flex-col"><span className="text-slate-400 text-xs font-mono">{h.desc}</span><span className="text-slate-500 text-[10px] truncate max-w-[140px]">{h.detail}</span></div><span className={`font-mono font-bold text-lg ${h.isCrit ? 'text-green-400 drop-shadow-md' : h.isFail ? 'text-red-500' : 'text-white'}`}>{h.total}</span></div>))}</div></div></div></div></div>);
+
+            if (isCrit) {
+                materialConfig.emissive = 0x22c55e;
+                materialConfig.emissiveIntensity = 0.8;
+                materialConfig.color = 0x22c55e;
+            } else if (isFail) {
+                materialConfig.emissive = 0xef4444;
+                materialConfig.emissiveIntensity = 0.8;
+                materialConfig.color = 0xef4444;
+            } else {
+                materialConfig.color = 0xffffff;
+            }
+
+            const material = new THREE.MeshStandardMaterial(materialConfig);
+            
+            if (type === 6) {
+                const materials = [material, material, material, material, material, material];
+                mesh = new THREE.Mesh(geometry, materials);
+            } else {
+                mesh = new THREE.Mesh(geometry, material);
+            }
+            
+            // Start High & Random Position
+            mesh.position.set((Math.random() - 0.5) * 5, 6 + Math.random(), (Math.random() - 0.5) * 3);
+            // Random Rotation
+            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+            
+            return mesh;
         };
+
+        const DiceRollerModal = ({ onClose, addToLog }) => {
+            const mountRef = useRef(null);
+            const [history, setHistory] = useState([]);
+            const [mod, setMod] = useState(0);
+            const [count, setCount] = useState(1);
+            const [selectedDie, setSelectedDie] = useState(20);
+            const [rolling, setRolling] = useState(false);
+            const [lastResult, setLastResult] = useState(null);
+
+            // Three.js refs
+            const sceneRef = useRef(null);
+            const cameraRef = useRef(null);
+            const rendererRef = useRef(null);
+            const diceMeshesRef = useRef([]);
+            const animationFrameRef = useRef(null);
+            const resizeObserverRef = useRef(null);
+
+            // Initialize Three.js scene
+            useEffect(() => {
+                if (!mountRef.current) return;
+
+
+                // Scene setup
+                const scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x020617); // Darker background (Slate-950)
+                
+                // Enhanced Lighting
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                scene.add(ambientLight);
+                
+                const pointLight = new THREE.PointLight(0xffffff, 1);
+                pointLight.position.set(5, 10, 7);
+                pointLight.castShadow = true;
+                scene.add(pointLight);
+                
+                const rimLight = new THREE.PointLight(0x6366f1, 0.8); // Indigo rim light
+                rimLight.position.set(-5, 5, -5);
+                scene.add(rimLight);
+
+                const width = mountRef.current.clientWidth || 600; 
+                const height = 400; 
+                const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
+                camera.position.set(0, 9, 6); // High angle
+                camera.lookAt(0, 0, 0);
+
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setSize(width, height);
+                renderer.shadowMap.enabled = true;
+                renderer.domElement.style.width = "100%";
+                renderer.domElement.style.height = "100%";
+                mountRef.current.appendChild(renderer.domElement);
+
+                // Add a "tray" floor
+                const geometry = new THREE.PlaneGeometry(30, 30); 
+                const material = new THREE.MeshStandardMaterial({ color: 0x0f172a, side: THREE.DoubleSide, roughness: 0.8 });
+                const plane = new THREE.Mesh(geometry, material);
+                plane.rotation.x = -Math.PI / 2;
+                plane.receiveShadow = true;
+                scene.add(plane);
+                
+                // Invisible Walls for Physics
+                // (Visual walls removed for cleaner look, physics boundaries kept in logic)
+
+                sceneRef.current = scene;
+                cameraRef.current = camera;
+                rendererRef.current = renderer;
+
+                // Animation Loop
+                const animate = () => {
+                    animationFrameRef.current = requestAnimationFrame(animate);
+                    
+                    // Update dice physics (simple simulation)
+                    diceMeshesRef.current.forEach((dieObj, index) => {
+                        if (dieObj.active) {
+                            dieObj.mesh.rotation.x += dieObj.rotVel.x;
+                            dieObj.mesh.rotation.y += dieObj.rotVel.y;
+                            dieObj.mesh.rotation.z += dieObj.rotVel.z;
+                            
+                            dieObj.mesh.position.add(dieObj.vel);
+                            dieObj.vel.y -= 0.02; // Gravity
+
+                            // Floor collision (simple bounce)
+                            if (dieObj.mesh.position.y < 0.5) {
+                                dieObj.mesh.position.y = 0.5;
+                                dieObj.vel.y *= -0.5; // Bounce damping
+                                dieObj.vel.x *= 0.9;  // Friction
+                                dieObj.vel.z *= 0.9;
+                                
+                                // Spin damping on bounce
+                                dieObj.rotVel.multiplyScalar(0.9);
+                            }
+                            
+                            // Wall collisions (approximate) - widened for larger tray
+                            if (Math.abs(dieObj.mesh.position.x) > 8) dieObj.vel.x *= -0.6;
+                            if (Math.abs(dieObj.mesh.position.z) > 5) dieObj.vel.z *= -0.6;
+
+                            // Stop condition
+                            if (dieObj.vel.length() < 0.01 && dieObj.mesh.position.y <= 0.6) {
+                                dieObj.active = false;
+                            }
+                        } else {
+                             // Idle float
+                             dieObj.mesh.position.y = 0.5 + Math.sin(Date.now() * 0.002 + index) * 0.1;
+                             dieObj.mesh.rotation.y += 0.005;
+                        }
+                    });
+
+                    renderer.render(scene, camera);
+                };
+                animate();
+
+                // Robust Resize Handler using ResizeObserver
+                const handleResize = () => {
+                    if (!mountRef.current || !cameraRef.current || !rendererRef.current) return;
+                    const newWidth = mountRef.current.clientWidth;
+                    const newHeight = 400; // Fixed container height
+                    
+                    cameraRef.current.aspect = newWidth / newHeight;
+                    cameraRef.current.updateProjectionMatrix();
+                    rendererRef.current.setSize(newWidth, newHeight);
+                };
+
+                resizeObserverRef.current = new ResizeObserver(handleResize);
+                resizeObserverRef.current.observe(mountRef.current);
+
+                // Initial trigger to ensure fit
+                setTimeout(handleResize, 100);
+
+                return () => {
+                    if (resizeObserverRef.current) resizeObserverRef.current.disconnect();
+                    cancelAnimationFrame(animationFrameRef.current);
+                    if (renderer.domElement && mountRef.current) {
+                        mountRef.current.removeChild(renderer.domElement);
+                    }
+                    renderer.dispose();
+                };
+            }, []);
+
+            const roll = () => {
+                if (!sceneRef.current) return;
+
+                // Clear old dice
+                diceMeshesRef.current.forEach(d => sceneRef.current.remove(d.mesh));
+                diceMeshesRef.current = [];
+                setLastResult(null);
+                setRolling(true);
+
+                const n = Math.max(1, parseInt(count) || 1);
+                const m = parseInt(mod) || 0;
+                const sides = selectedDie;
+                let totalRaw = 0;
+                const rolls = [];
+
+                // Logic Part
+                for(let i=0; i<n; i++) {
+                    const r = Math.floor(Math.random() * sides) + 1;
+                    rolls.push(r);
+                    totalRaw += r;
+
+                    // 2. Check for Crits
+                    const isCrit = (sides === 20 && r === 20);
+                    const isFail = (sides === 20 && r === 1);
+                    
+                    // 3. Determine Color
+                    let baseColor = i % 2 === 0 ? 0x4f46e5 : 0x0ea5e9; // Indigo/Sky
+
+                    // 4. Create Visual Die
+                    // Pass the loaded model reference
+                    const mesh = spawnDie(sides, baseColor, r, isCrit, isFail, null);
+                    sceneRef.current.add(mesh);
+                    
+                    // Add physics state
+                    diceMeshesRef.current.push({
+                        mesh: mesh,
+                        vel: new THREE.Vector3((Math.random()-0.5)*0.8, Math.random() * -0.5, (Math.random()-0.5)*0.8),
+                        rotVel: new THREE.Vector3(Math.random()*0.3, Math.random()*0.3, Math.random()*0.3),
+                        active: true
+                    });
+                }
+
+                const total = totalRaw + m;
+                const rollStr = `[${rolls.join(', ')}]`;
+                const diceStr = `${n}d${sides}`;
+                const modStr = m !== 0 ? (m > 0 ? `+${m}` : m) : '';
+                
+                const resultObj = { 
+                    desc: `${diceStr}${modStr}`, 
+                    detail: `${rollStr} ${modStr} = `, 
+                    total: total, 
+                    isCrit: (sides === 20 && rolls.includes(20)), 
+                    isFail: (sides === 20 && rolls.includes(1) && !rolls.includes(20)), 
+                    id: Date.now() 
+                };
+
+                setTimeout(() => {
+                    setRolling(false);
+                    setLastResult(resultObj);
+                    setHistory(prev => [resultObj, ...prev].slice(0, 20));
+                    addToLog(`Rolled ${resultObj.desc}: ${rollStr}${modStr} = ${total}`, 'roll');
+                }, 1500);
+            };
+
+            return (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div className="bg-gray-900 w-full max-w-3xl rounded-xl shadow-2xl border border-gray-700 flex flex-col max-h-[90vh] overflow-hidden">
+                        {/* Header */}
+                        <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl shrink-0">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <D20Icon className="text-green-400 w-6 h-6" /> Dice Tray
+                            </h2>
+                            <button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button>
+                        </div>
+                        
+                        {/* 3D Canvas Container */}
+                        <div className="relative bg-black w-full border-b border-slate-800" style={{ height: '400px' }}>
+                            <div ref={mountRef} className="w-full h-full" />
+                            
+                            {/* Credits Overlay */}
+                            <div className="absolute bottom-2 right-2 text-[10px] text-slate-500 opacity-50 pointer-events-none">
+                                Models by JayDesigns3D (Sketchfab)
+                            </div>
+                            
+                            {/* Overlay Result */}
+                            {lastResult && !rolling && (
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <div className="bg-black/60 backdrop-blur-md p-6 rounded-2xl border border-white/20 text-center animate-fade-in shadow-2xl transform scale-110">
+                                        <div className="text-sm text-slate-300 uppercase font-bold mb-2 tracking-widest">{lastResult.desc}</div>
+                                        <div className={`text-7xl font-black ${lastResult.isCrit ? 'text-green-400 drop-shadow-[0_0_25px_rgba(74,222,128,0.8)]' : lastResult.isFail ? 'text-red-500 drop-shadow-[0_0_25px_rgba(239,68,68,0.8)]' : 'text-white drop-shadow-md'}`}>
+                                            {lastResult.total}
+                                        </div>
+                                        <div className="text-sm text-slate-400 mt-2 font-mono">{lastResult.detail}</div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Controls */}
+                        <div className="p-5 space-y-5 overflow-y-auto flex-1 bg-slate-900">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Select Die</label>
+                                <div className="flex flex-wrap gap-2 justify-center">
+                                    {[4,6,8,10,12,20,100].map(d => (
+                                        <button 
+                                            key={d} 
+                                            onClick={() => setSelectedDie(d)} 
+                                            className={`w-10 h-10 rounded font-bold font-mono transition-all ${selectedDie === d ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 scale-110 shadow-lg' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+                                        >
+                                            d{d}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Count</label>
+                                    <div className="flex items-center">
+                                        <button onClick={() => setCount(Math.max(1, count - 1))} className="bg-slate-800 text-slate-300 p-2 rounded-l border border-slate-600 border-r-0 hover:bg-slate-700 hover:text-white"><Minus size={14}/></button>
+                                        <input 
+                                            type="number" 
+                                            value={count} 
+                                            onChange={(e)=>setCount(Math.max(1, parseInt(e.target.value)||1))} 
+                                            className="w-full bg-slate-900 border border-slate-600 py-2 text-center font-bold text-white focus:outline-none" 
+                                        />
+                                        <button onClick={() => setCount(count + 1)} className="bg-slate-800 text-slate-300 p-2 rounded-r border border-slate-600 border-l-0 hover:bg-slate-700 hover:text-white"><Plus size={14}/></button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Modifier</label>
+                                    <div className="flex items-center">
+                                        <button onClick={() => setMod(mod - 1)} className="bg-slate-800 text-slate-300 p-2 rounded-l border border-slate-600 border-r-0 hover:bg-slate-700 hover:text-white"><Minus size={14}/></button>
+                                        <input 
+                                            type="number" 
+                                            value={mod} 
+                                            onChange={(e)=>setMod(parseInt(e.target.value)||0)} 
+                                            className="w-full bg-slate-900 border border-slate-600 py-2 text-center font-bold text-white focus:outline-none" 
+                                        />
+                                        <button onClick={() => setMod(mod + 1)} className="bg-slate-800 text-slate-300 p-2 rounded-r border border-slate-600 border-l-0 hover:bg-slate-700 hover:text-white"><Plus size={14}/></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={roll} 
+                                disabled={rolling}
+                                className={`w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 text-lg ${rolling ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                <D20Icon className={`w-6 h-6 ${rolling ? 'animate-spin' : ''}`} /> 
+                                {rolling ? 'ROLLING...' : `ROLL ${count}d${selectedDie} ${mod !== 0 ? (mod > 0 ? `+${mod}` : mod) : ''}`}
+                            </button>
+                            
+                            <div className="bg-slate-950 rounded p-3 h-40 overflow-y-auto border border-slate-800 relative">
+                                <div className="flex justify-between items-center mb-2 sticky top-0 bg-slate-950/95 backdrop-blur-sm pb-2 border-b border-slate-800 z-10">
+                                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">History</h4>
+                                    {history.length > 0 && <button onClick={() => setHistory([])} className="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase border border-red-900/50 px-2 py-0.5 rounded bg-red-900/10 hover:bg-red-900/30 transition-colors">Clear Log</button>}
+                                </div>
+                                {history.length === 0 && <div className="text-center text-slate-600 text-xs mt-12 italic">Ready to roll...</div>}
+                                <div className="space-y-1.5">
+                                    {history.map(h => (
+                                        <div key={h.id} className="flex justify-between items-center text-sm border-b border-slate-800/50 pb-1.5 last:border-0 animate-fade-in">
+                                            <div className="flex flex-col">
+                                                <span className="text-slate-400 text-xs font-mono">{h.desc}</span><span className="text-slate-500 text-[10px] truncate max-w-[140px]">{h.detail}</span></div><span className={`font-mono font-bold text-lg ${h.isCrit ? 'text-green-400 drop-shadow-md' : h.isFail ? 'text-red-500' : 'text-white'}`}>{h.total}</span></div>))}</div></div></div></div></div>);
+        };
+
         const MonsterStatBlockModal = ({ combatant, onClose }) => {
              if (!combatant?.statBlockSummary) return null;
              const escapeHtml = (unsafe) => { return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
