@@ -153,76 +153,37 @@
     <div id="root"></div>
     
     <!-- FIREBASE IMPORTS (Module System) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // Import all Firestore functions needed including addDoc for reports
-        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, setLogLevel, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+   <script type="module">
+    // Import everything we need from our new config file
+    import { db, auth, initAuth, doc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, getDocs, addDoc } from "./firebase-config.js";
 
-        window.firebaseApp = null;
-        window.db = null;
-        window.auth = null;
-        window.currentUserId = null;
-        window.isAuthReady = false;
+    // Initialize global variables for React
+    window.db = db;
+    window.auth = auth;
+    window.currentUserId = null;
+    window.isAuthReady = false;
 
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    // Expose Firestore functions to window so React can use them
+    window.firebase = {
+        doc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, getDocs, addDoc
+    };
 
-        if (Object.keys(firebaseConfig).length > 0) {
-            window.firebaseApp = initializeApp(firebaseConfig);
-            window.db = getFirestore(window.firebaseApp);
-            window.auth = getAuth(window.firebaseApp);
-
-            const authInit = async () => {
-                try {
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(window.auth, initialAuthToken);
-                    } else {
-                        await signInAnonymously(window.auth);
-                    }
-                } catch (error) {
-                    console.error("Firebase Auth Error:", error);
-                    await signInAnonymously(window.auth);
-                }
-            };
+    // Initialize Auth and set the User ID
+    initAuth().then((user) => {
+        if (user) {
+            console.log("Tracker Connected as:", user.uid);
+            window.currentUserId = user.uid;
             
-            onAuthStateChanged(window.auth, (user) => {
-                // --- FIXED AUTH LOGIC ---
-                // Priority: Real Firebase User > Local Storage
-                // If we are authenticated by Firebase, we MUST use that UID for security rules to work.
-                if (user) {
-                    window.currentUserId = user.uid;
-                    // Sync the REAL ID to local storage so other apps can follow the leader
-                    localStorage.setItem('akashic_user_id', user.uid);
-                } else {
-                    // Fallback (Only if not authenticated yet)
-                    let stickyId = localStorage.getItem('akashic_user_id');
-                    if (!stickyId) {
-                        stickyId = crypto.randomUUID();
-                        localStorage.setItem('akashic_user_id', stickyId);
-                    }
-                    window.currentUserId = stickyId;
-                }
-                
-                window.isAuthReady = true;
-                // Dispatch event to notify React
-                document.dispatchEvent(new CustomEvent('auth-ready'));
-            });
+            // Sync ID to local storage to keep apps in sync
+            if (!localStorage.getItem('akashic_user_id')) {
+                localStorage.setItem('akashic_user_id', user.uid);
+            }
 
-            authInit();
-            
-            // Expose functions to window for React
-            window.firebase = {
-                doc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, getDocs, addDoc 
-            };
-
-        } else {
-            console.error("Firebase config not found.");
             window.isAuthReady = true;
             document.dispatchEvent(new CustomEvent('auth-ready'));
         }
-    </script>
+    });
+</script>
 
     <script type="text/babel">
         const { useState, useEffect, useRef, memo, useCallback } = React;
