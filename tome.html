@@ -20,9 +20,8 @@
     <script src="https://cdn.jsdelivr.net/npm/core-js-bundle@3.37.1/minified.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Three.js & GLTFLoader (For 3D Dice) -->
+    <!-- Three.js (No Loader Needed for Procedural) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     
     <style>
         /* --- The Astral Plane Palette --- */
@@ -191,12 +190,13 @@
             onAuthStateChanged(window.auth, (user) => {
                 // --- FIXED AUTH LOGIC ---
                 // Priority: Real Firebase User > Local Storage
+                // If we are authenticated by Firebase, we MUST use that UID for security rules to work.
                 if (user) {
                     window.currentUserId = user.uid;
                     // Sync the REAL ID to local storage so other apps can follow the leader
                     localStorage.setItem('akashic_user_id', user.uid);
                 } else {
-                    // Fallback
+                    // Fallback (Only if not authenticated yet)
                     let stickyId = localStorage.getItem('akashic_user_id');
                     if (!stickyId) {
                         stickyId = crypto.randomUUID();
@@ -206,6 +206,7 @@
                 }
                 
                 window.isAuthReady = true;
+                // Dispatch event to notify React
                 document.dispatchEvent(new CustomEvent('auth-ready'));
             });
 
