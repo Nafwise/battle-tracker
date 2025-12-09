@@ -147,8 +147,11 @@
                     
                     // Specific Feedback for Domain Blocking
                     if (user.authIssue === 'domain_blocked') {
-                        statusText = 'Offline (Domain Blocked - Check Firebase Console)';
+                        statusText = 'Offline (Config Required)';
                         statusDot = 'text-orange-500';
+                        // Auto-open help modal
+                        const modal = document.getElementById('auth-help-modal');
+                        if (modal) modal.classList.add('open');
                     }
                     
                     idDisplay.innerHTML = `<span class="${statusDot}">●</span> <span class="${statusClass}">${statusText}</span> as <span class="font-mono text-indigo-400">${finalId.slice(0,8)}...</span>`;
@@ -235,6 +238,37 @@
                 View Full System Changelog
             </button>
         </footer>
+    </div>
+
+    <!-- AUTH HELP MODAL -->
+    <div id="auth-help-modal" class="modal-overlay">
+        <div class="modal-content border-orange-700/50">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
+                <h2 class="text-xl font-bold text-orange-500 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                    Setup Required
+                </h2>
+            </div>
+            
+            <p class="text-slate-300 text-sm mb-4">
+                Your database connection was blocked by Firebase security rules. This is normal for new GitHub deployments.
+            </p>
+            
+            <div class="bg-black/50 p-3 rounded text-xs font-mono text-orange-300 mb-4 border border-orange-900/50">
+                Error: auth/requests-from-referer-blocked
+            </div>
+
+            <ol class="list-decimal list-inside text-slate-400 text-sm space-y-2 mb-6 pl-2">
+                <li>Go to <a href="https://console.firebase.google.com/" target="_blank" class="text-indigo-400 underline hover:text-indigo-300">Firebase Console</a> and open project <strong>battletracker-51502</strong>.</li>
+                <li>Navigate to <strong>Authentication</strong> &rarr; <strong>Settings</strong> tab.</li>
+                <li>Scroll down to <strong>Authorized Domains</strong>.</li>
+                <li>Click <strong>Add Domain</strong> and enter: <span class="text-white font-mono bg-slate-800 px-1 rounded">nafwise.github.io</span></li>
+            </ol>
+
+            <div class="mt-6 text-center">
+                <button onclick="document.getElementById('auth-help-modal').classList.remove('open')" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-sm transition-colors">I've Added It, Close This</button>
+            </div>
+        </div>
     </div>
 
     <!-- CHANGELOG MODAL -->
