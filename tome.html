@@ -20,21 +20,21 @@
     <script src="https://cdn.jsdelivr.net/npm/core-js-bundle@3.37.1/minified.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Three.js (No Loader Needed for Procedural) -->
+    <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <style>
         /* --- The Astral Plane Palette --- */
         :root {
-            --astral-bg: #0F172A;       /* Deep Midnight Midnight Blue (The Void) */
-            --astral-card: #1E293B;     /* Lighter Slate Blue */
-            --astral-input: #020617;    /* Almost Black for depth */
-            --text-primary: #F8FAFC;    /* Starlight White */
-            --text-secondary: #94A3B8;  /* Nebula Grey */
-            --accent-cyan: #38BDF8;     /* Cyan/Ether (Active) */
-            --accent-purple: #A855F7;   /* Mystic Purple (Magic) */
-            --accent-red: #F43F5E;      /* Rose Red (Danger) */
-            --border-color: #334155;    /* Slate border */
+            --astral-bg: #0F172A;       
+            --astral-card: #1E293B;     
+            --astral-input: #020617;    
+            --text-primary: #F8FAFC;    
+            --text-secondary: #94A3B8;  
+            --accent-cyan: #38BDF8;     
+            --accent-purple: #A855F7;   
+            --accent-red: #F43F5E;      
+            --border-color: #334155;    
         }
 
         body {
@@ -60,7 +60,7 @@
             margin: 20px auto;
             max-width: 1200px;
             min-height: 95vh;
-            position: relative; /* Added for floating buttons to constrain */
+            position: relative;
         }
         
         @media (max-width: 640px) {
@@ -80,9 +80,7 @@
         .bg-slate-900, .bg-gray-900 { background-color: var(--astral-input) !important; border-color: var(--border-color) !important; }
         .bg-slate-800, .bg-gray-800 { background-color: var(--astral-card) !important; border-color: var(--border-color) !important; }
         .border-slate-600, .border-slate-700 { border-color: var(--border-color) !important; }
-        /* Adjusted positioning to be relative to astral-container */
         .floating-button { z-index: 90; position: absolute; bottom: 20px; right: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-        /* Removed active:scale-95 to prevent jutter/jump on click */
         .floating-turn-button { 
             z-index: 90; 
             position: absolute; 
@@ -92,32 +90,30 @@
             padding-top: 1rem; 
             padding-bottom: 1rem; 
             box-shadow: 0 4px 20px rgba(0,0,0,0.5); 
-            transition: all 0.1s; /* Keep transition for color changes */
+            transition: all 0.1s;
         }
         input, textarea, select { background-color: var(--astral-input) !important; border-color: var(--border-color) !important; color: var(--text-primary) !important; font-size: 16px !important; }
         input:focus, textarea:focus { border-color: var(--accent-cyan) !important; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important; outline: none !important; }
         
-        /* Custom style for the inner button within the input group */
         .input-inline-btn {
             position: absolute;
-            right: 4px; /* Slightly inward from the edge */
+            right: 4px; 
             top: 50%;
             transform: translateY(-50%);
-            padding: 4px 8px; /* Added horizontal padding for touch targets */
+            padding: 4px 8px; 
             height: calc(100% - 8px);
-            background-color: transparent; /* Hollow look */
-            border: 1px solid var(--border-color); /* Subtle border */
+            background-color: transparent; 
+            border: 1px solid var(--border-color);
             border-radius: 6px;
             color: var(--accent-cyan);
             transition: all 0.2s;
-            z-index: 10; /* Ensure it floats over the input field's body */
+            z-index: 10;
         }
         .input-inline-btn:hover {
-            background-color: var(--astral-card); /* Hover fills the hollow space */
+            background-color: var(--astral-card);
             border-color: var(--accent-cyan);
         }
 
-        /* Small input fields for initiative/AC on card */
         .card-inline-input {
             width: 40px;
             height: 20px;
@@ -130,25 +126,18 @@
             line-height: 1;
         }
         
-        /* Animation Utility */
         @keyframes spin-die { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .animate-spin-fast { animation: spin-die 0.6s ease-in-out infinite; }
 
-        /* Glowing Pulse for new updates */
         @keyframes pulse-glow {
-          0%, 100% {
-            box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.5);
-          }
-          50% {
-            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0);
-          }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.5); }
+          50% { box-shadow: 0 0 0 4px rgba(56, 189, 248, 0); }
         }
         .animate-pulse-glow {
             animation: pulse-glow 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
             border-color: var(--accent-cyan) !important;
         }
         
-        /* Animation classes */
         .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -156,106 +145,14 @@
 <body class="bg-slate-950 text-slate-100">
     <div id="root"></div>
     
-    <!-- FIREBASE CONFIG & INITIALIZATION (MERGED & ROBUST) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, getDoc, setDoc, addDoc, deleteDoc, query, where, orderBy, onSnapshot, serverTimestamp, getDocs, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- FIREBASE CONFIGURATION ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyAdlWWNWbpizo_Dx2xJikTDKHdj4AJ0VSY",
-            authDomain: "battletracker-51502.firebaseapp.com",
-            projectId: "battletracker-51502",
-            storageBucket: "battletracker-51502.firebasestorage.app",
-            messagingSenderId: "717377728252",
-            appId: "1:717377728252:web:652210dc6904fef7ce7179"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // Global instances for React
-        window.db = db;
-        window.auth = auth;
-        window.currentUserId = null;
-        window.isAuthReady = false;
-        window.isOffline = false; // Offline Flag
-
-        // Expose Firestore functions to window so React can use them
-        window.firebase = {
-            doc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, getDocs, addDoc
-        };
-
-        // Initialize Auth Helper (Robust with Fallback)
-        async function initAuth() {
-            console.log("[Firebase Config] Initializing Auth...");
-            const localId = localStorage.getItem('akashic_user_id');
-            
-            // Priority: Try Custom Token (Environment injected)
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                 try {
-                     await signInWithCustomToken(auth, __initial_auth_token);
-                     console.log("[Firebase Config] Signed in with Custom Token");
-                     return auth.currentUser;
-                 } catch (e) {
-                     console.warn("[Firebase Config] Custom token failed, attempting fallback...", e);
-                 }
-            }
-
-            return new Promise((resolve) => {
-                const unsubscribe = onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        console.log("[Firebase Config] User Logged In:", user.uid);
-                        if (!localId) localStorage.setItem('akashic_user_id', user.uid);
-                        unsubscribe();
-                        resolve(user);
-                    } else {
-                        console.log("[Firebase Config] Attempting Anonymous Sign-in...");
-                        signInAnonymously(auth).then((userCredential) => {
-                             unsubscribe();
-                             resolve(userCredential.user);
-                        }).catch((error) => {
-                            // --- CRITICAL FIX: OFFLINE FALLBACK ---
-                            console.warn("[Firebase Config] Auth Failed. Entering Offline Mode.", error);
-                            window.isOffline = true;
-                            // Generate a purely local ID if we don't have one to prevent null errors
-                            window.currentUserId = localId || 'offline_user_' + Date.now();
-                            unsubscribe();
-                            resolve({ uid: window.currentUserId, isAnonymous: true }); 
-                        });
-                    }
-                });
-            });
-        }
-
-        // Expose initAuth to window just in case
-        window.initAuth = initAuth;
-
-        // Kickoff Auth Flow
-        initAuth().then((user) => {
-            if (user && !window.isOffline) {
-                console.log("Tracker Connected as:", user.uid);
-                window.currentUserId = user.uid;
-            } else {
-                console.log("Tracker Initialized in Offline/Fallback Mode");
-            }
-            
-            // Mark ready REGARDLESS of success so app renders
-            window.isAuthReady = true;
-            document.dispatchEvent(new CustomEvent('auth-ready'));
-        });
-    </script>
-
     <script type="text/babel">
         const { useState, useEffect, useRef, memo, useCallback } = React;
         // --- ICONS ---
         const Icon = ({ children, className, ...props }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>
         );
-        const Sword = (props) => <Icon {...props}><polyline points="14.5 17.5 3 22 4.5 10.5" /><path d="M22 3l-7.5 14.5L10 12 3 7l14.5-4.5 4.5 4.5z" /><line x1="8" y1="14" x2="2.5" y2="19.5" /><line x1="16" y1="5" x2="21.5" y2="10.5" /></Icon>;
+        // UPDATED: Sword Icon (Exact User Request)
+        const Sword = (props) => <Icon {...props}><path d="M12 2l2 4h-4l2-4z" /><path d="M12 6v7" /><path d="M8 13h8" /><path d="M12 13v6" /><path d="M10 21h4" /></Icon>;
         const Shield = (props) => <Icon {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></Icon>;
         const Trash2 = (props) => <Icon {...props}><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></Icon>;
         const Plus = (props) => <Icon {...props}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></Icon>;
@@ -273,25 +170,22 @@
         const User = (props) => <Icon {...props}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></Icon>;
         const Download = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></Icon>;
         const Upload = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></Icon>;
-        const Settings = (props) => <Icon {...props}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></Icon>;
+        // UPDATED: Settings Icon (Simplified 6-tooth gear for uniformity)
+        const Settings = (props) => <Icon {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></Icon>;
         const Key = (props) => <Icon {...props}><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" /></Icon>;
         const ArrowRight = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></Icon>;
         const RotateCcw = (props) => <Icon {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></Icon>;
         const Droplet = (props) => <Icon {...props}><path d="M12 2a10 10 0 0 0-3.54 19.34l-1.09-1.9A8 8 0 0 1 12 4a8 8 0 0 1 4.63 1.34l1.09-1.9A10 10 0 0 0 12 2z" /></Icon>;
         const Brain = (props) => <Icon {...props}><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" /><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" /></Icon>;
         const CastleGate = (props) => (<Icon {...props}><path d="M19 21v-8a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v8"/><path d="M4 11V7"/><path d="M20 11V7"/><path d="M2 7h4v4H2z"/><path d="M18 7h4v4h-4z"/><path d="M4 7l2-4 2 4"/><path d="M18 7l2-4 2 4"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/></Icon>);
-        const ArrowDownUp = (props) => (<Icon {...props}><path d="m3 16 4 4 4-4" /><path d="M7 20V4" /><path d="m21 8-4-4-4 4" /><path d="M17 4v16" /></Icon>);
-        const Dices = (props) => (<Icon {...props}><path d="m21 16-5.87-4.4a1 1 0 0 0-1.12-.08L9 15"/><path d="M11.5 11 9 15l-2.43 1.82a1 1 0 0 0 .09 1.63L12 21l4.58-2.32a1 1 0 0 0 .5-1.12z"/><path d="M15 9l-3.07-2.3a1 1 0 0 0-1.21-.08L6 10l-1.38 3a1 1 0 0 0 .09 1.07l2.25 3L9 15l2.5-4"/><path d="M2 12h5"/><path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6z"/></Icon>);
         const D20Icon = (props) => <Icon {...props}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 7v10l10 5 10-5V7" /><path d="M12 22V12" /></Icon>;
         const ScrollText = (props) => <Icon {...props}><path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/></Icon>;
         const History = (props) => (<Icon {...props}><path d="M12 7v5l2 2"/><path d="M22 12A10 10 0 0 1 12 2v0a10 10 0 0 1 10 10z"/><path d="M2 12A10 10 0 0 0 12 2v0a10 10 0 0 0-10 10z"/></Icon>);
         const FlaskConical = (props) => <Icon {...props}><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" /><path d="M8.5 2h7" /><path d="M7 16h10" /></Icon>;
-        const Gamepad2 = (props) => <Icon {...props}><line x1="6" x2="10" y1="12" y2="12" /><line x1="8" x2="8" y1="10" y2="14" /><line x1="15" x2="15.01" y1="13" y2="13" /><line x1="18" x2="18.01" y1="11" y2="11" /><rect width="20" height="12" x="2" y="6" rx="2" /></Icon>;
         const Skull = (props) => <Icon {...props}><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></Icon>;
         const Flag = (props) => <Icon {...props}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></Icon>;
         const Heart = (props) => <Icon {...props}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></Icon>;
         const Gem = (props) => <Icon {...props}><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></Icon>;
-        const Cloud = (props) => <Icon {...props}><path d="M17.5 19c0-1.7-1.3-3-3-3h-11c-1.7 0-3 1.3-3 3s1.3 3 3 3h11c1.7 0 3-1.3 3-3z"/><path d="M17.5 19c1.9 0 3.5-1.6 3.5-3.5 0-1.7-1.2-3-2.8-3.4"/><path d="M5.5 19c-1.9 0-3.5-1.6-3.5-3.5 0-1.7 1.2-3 2.8-3.4"/><path d="M14.5 9a4.5 4.5 0 0 0-9 0"/></Icon>;
 
         // --- CONSTANTS & UTILITIES (SHARED) ---
         const MONSTER_TYPES = [
@@ -307,10 +201,8 @@
         const INITIAL_FORM = { name: '', hp: '', ac: '', initiative: '', initMod: 0, qty: 1, cr: 0 };
         const INITIAL_MONSTER_DETAILS = { resistances: '', vulnerabilities: '', actions: '', statBlockSummary: '', type: 'Unknown' };
         
-        // --- BAKED IN KEY ---
-        const HARDCODED_API_KEY = "AIzaSyB1Xn3Wq0UXF92lmS6zWOjFJ3SXGj2pSrk"; 
-        
-        const CURRENT_VERSION = "1.2.3"; 
+        // NO HARDCODED KEY - User must provide their own via settings
+        const CURRENT_VERSION = "1.3.1"; 
         const INPUT_CLASS = "w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 pr-12 focus:outline-none focus:border-indigo-500 text-sm";
         const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
         const rollInitiative = (mod) => Math.floor(Math.random() * 20) + 1 + mod;
@@ -334,24 +226,39 @@
             return 'Unknown';
         };
 
-        const callGemini = async (prompt, userApiKey) => {
+        const callGemini = async (prompt, userApiKey, isJson = false) => {
             let attempt = 0;
             if (!userApiKey) return null;
+            
+            const generationConfig = isJson ? { responseMimeType: "application/json" } : undefined;
+
             while (attempt < 3) {
                 try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ 
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: generationConfig
+                        }) 
+                    });
+                    
                     if (!res.ok) throw new Error("API Error");
                     const data = await res.json();
                     return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-                } catch (e) { attempt++; await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 1000)); }
+                } catch (e) { 
+                    attempt++; 
+                    await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 1000)); 
+                }
             }
+            return null;
         };
 
-        // --- SUBCOMPONENTS & MODALS (BATTLEFIELD) ---
+        // --- SUBCOMPONENTS ---
         const ChangelogModal = ({ onClose, onMarkViewed }) => {
             const changes = [
-                { version: "1.2.3", date: "Dec 2025", notes: ["**Smart Looting:** You can now trigger a 'Loot & Clear' action directly from the PREP state. No need to start a battle just to loot some goblins.", "**Cloud Status:** Added a visual indicator (colored dot) to show connection status.", "**System Upgrade:** Migrated Akashic Tracker to the robust Module Auth System, matching the stability of Monster Workshop."] },
-                { version: "1.2.2", date: "Dec 2025", notes: ["**New:** Manual 'Force End Battle' button added to the header. Click the 'COMBAT' badge to manually trigger victory and send reports.", "**Fix:** Improved loot reporting robustness for mixed monster types."] }
+                 { version: "1.3.1", date: "Dec 2025", notes: ["**AI Fixes:** Improved stability of monster generation using strict JSON mode.", "**Cleanup:** Removed deprecated API keys/dependencies."] },
+                { version: "1.3.0", date: "Dec 2025", notes: ["**Offline Mode:** Akashic Tome is now purely local. No more accounts, no more login checks.", "**Local Loot:** Ending a battle no longer uploads to cloud. It saves your kills locally for the Loot app to find.", "**Stability:** Removed all external database dependencies."] },
             ].sort((a, b) => b.version.localeCompare(a.version));
             
             const handleClose = () => { onMarkViewed(); onClose(); };
@@ -444,388 +351,6 @@
             );
         });
 
-        // Texture Generator for Numbers
-        const createDieTexture = (text, bgColorHex) => {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 256;
-            const ctx = canvas.getContext('2d');
-            
-            // Background
-            ctx.fillStyle = '#' + new THREE.Color(bgColorHex).getHexString();
-            ctx.fillRect(0, 0, 256, 256);
-            
-            // Border/Detail
-            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-            ctx.lineWidth = 10;
-            ctx.strokeRect(10, 10, 236, 236);
-
-            // Number - REDUCED SIZE for better fit
-            ctx.fillStyle = 'white';
-            ctx.font = 'bold 80px Arial'; // Changed from 140px
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            // Add shadow for better visibility
-            ctx.shadowColor = "rgba(0,0,0,0.5)";
-            ctx.shadowBlur = 10;
-            ctx.fillText(text, 128, 128);
-
-            const texture = new THREE.CanvasTexture(canvas);
-            return texture;
-        };
-
-        const spawnDie = (type, color, value, isCrit, isFail) => {
-            let geometry;
-            switch (type) {
-                case 4: geometry = new THREE.TetrahedronGeometry(0.6); break;
-                case 6: geometry = new THREE.BoxGeometry(0.9, 0.9, 0.9); break;
-                case 8: geometry = new THREE.OctahedronGeometry(0.6); break;
-                case 10: geometry = new THREE.OctahedronGeometry(0.7); break; 
-                case 12: geometry = new THREE.DodecahedronGeometry(0.6); break;
-                case 20: geometry = new THREE.IcosahedronGeometry(0.6); break;
-                default: geometry = new THREE.SphereGeometry(0.6, 16, 16);
-            }
-
-            const texture = createDieTexture(value.toString(), color);
-            const materialConfig = { 
-                map: texture,
-                roughness: 0.2,
-                metalness: 0.1
-            };
-
-            if (isCrit) {
-                materialConfig.emissive = 0x22c55e;
-                materialConfig.emissiveIntensity = 0.8;
-                materialConfig.color = 0x22c55e;
-            } else if (isFail) {
-                materialConfig.emissive = 0xef4444;
-                materialConfig.emissiveIntensity = 0.8;
-                materialConfig.color = 0xef4444;
-            } else {
-                materialConfig.color = 0xffffff;
-            }
-
-            const material = new THREE.MeshStandardMaterial(materialConfig);
-            let mesh;
-            if (type === 6) {
-                const materials = [material, material, material, material, material, material];
-                mesh = new THREE.Mesh(geometry, materials);
-            } else {
-                mesh = new THREE.Mesh(geometry, material);
-            }
-            
-            // Start High & Random Position
-            mesh.position.set((Math.random() - 0.5) * 5, 6 + Math.random(), (Math.random() - 0.5) * 3);
-            // Random Rotation
-            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-            
-            return mesh;
-        };
-
-        const DiceRollerModal = ({ onClose, addToLog }) => {
-            const mountRef = useRef(null);
-            const [history, setHistory] = useState([]);
-            const [mod, setMod] = useState(0);
-            const [count, setCount] = useState(1);
-            const [selectedDie, setSelectedDie] = useState(20);
-            const [rolling, setRolling] = useState(false);
-            const [lastResult, setLastResult] = useState(null);
-
-            // Three.js refs
-            const sceneRef = useRef(null);
-            const cameraRef = useRef(null);
-            const rendererRef = useRef(null);
-            const diceMeshesRef = useRef([]);
-            const animationFrameRef = useRef(null);
-            const resizeObserverRef = useRef(null);
-
-            // Initialize Three.js scene
-            useEffect(() => {
-                if (!mountRef.current) return;
-
-
-                // Scene setup
-                const scene = new THREE.Scene();
-                scene.background = new THREE.Color(0x020617); // Darker background (Slate-950)
-                
-                // Enhanced Lighting
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-                scene.add(ambientLight);
-                
-                const pointLight = new THREE.PointLight(0xffffff, 1);
-                pointLight.position.set(5, 10, 7);
-                pointLight.castShadow = true;
-                scene.add(pointLight);
-                
-                const rimLight = new THREE.PointLight(0x6366f1, 0.8); // Indigo rim light
-                rimLight.position.set(-5, 5, -5);
-                scene.add(rimLight);
-
-                const width = mountRef.current.clientWidth || 600; 
-                const height = 400; 
-                const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
-                camera.position.set(0, 9, 6); // High angle
-                camera.lookAt(0, 0, 0);
-
-                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-                renderer.setSize(width, height);
-                renderer.shadowMap.enabled = true;
-                renderer.domElement.style.width = "100%";
-                renderer.domElement.style.height = "100%";
-                mountRef.current.appendChild(renderer.domElement);
-
-                // Add a "tray" floor
-                const geometry = new THREE.PlaneGeometry(30, 30); 
-                const material = new THREE.MeshStandardMaterial({ color: 0x0f172a, side: THREE.DoubleSide, roughness: 0.8 });
-                const plane = new THREE.Mesh(geometry, material);
-                plane.rotation.x = -Math.PI / 2;
-                plane.receiveShadow = true;
-                scene.add(plane);
-                
-                // Invisible Walls for Physics
-                // (Visual walls removed for cleaner look, physics boundaries kept in logic)
-
-                sceneRef.current = scene;
-                cameraRef.current = camera;
-                rendererRef.current = renderer;
-
-                // Animation Loop
-                const animate = () => {
-                    animationFrameRef.current = requestAnimationFrame(animate);
-                    
-                    // Update dice physics (simple simulation)
-                    diceMeshesRef.current.forEach((dieObj, index) => {
-                        if (dieObj.active) {
-                            dieObj.mesh.rotation.x += dieObj.rotVel.x;
-                            dieObj.mesh.rotation.y += dieObj.rotVel.y;
-                            dieObj.mesh.rotation.z += dieObj.rotVel.z;
-                            
-                            dieObj.mesh.position.add(dieObj.vel);
-                            dieObj.vel.y -= 0.02; // Gravity
-
-                            // Floor collision (simple bounce)
-                            if (dieObj.mesh.position.y < 0.5) {
-                                dieObj.mesh.position.y = 0.5;
-                                dieObj.vel.y *= -0.5; // Bounce damping
-                                dieObj.vel.x *= 0.9;  // Friction
-                                dieObj.vel.z *= 0.9;
-                                
-                                // Spin damping on bounce
-                                dieObj.rotVel.multiplyScalar(0.9);
-                            }
-                            
-                            // Wall collisions (approximate) - widened for larger tray
-                            if (Math.abs(dieObj.mesh.position.x) > 8) dieObj.vel.x *= -0.6;
-                            if (Math.abs(dieObj.mesh.position.z) > 5) dieObj.vel.z *= -0.6;
-
-                            // Stop condition
-                            if (dieObj.vel.length() < 0.01 && dieObj.mesh.position.y <= 0.6) {
-                                dieObj.active = false;
-                            }
-                        } else {
-                             // Idle float
-                             dieObj.mesh.position.y = 0.5 + Math.sin(Date.now() * 0.002 + index) * 0.1;
-                             dieObj.mesh.rotation.y += 0.005;
-                        }
-                    });
-
-                    renderer.render(scene, camera);
-                };
-                animate();
-
-                // Robust Resize Handler using ResizeObserver
-                const handleResize = () => {
-                    if (!mountRef.current || !cameraRef.current || !rendererRef.current) return;
-                    const newWidth = mountRef.current.clientWidth;
-                    const newHeight = 400; // Fixed container height
-                    
-                    cameraRef.current.aspect = newWidth / newHeight;
-                    cameraRef.current.updateProjectionMatrix();
-                    rendererRef.current.setSize(newWidth, newHeight);
-                };
-
-                resizeObserverRef.current = new ResizeObserver(handleResize);
-                resizeObserverRef.current.observe(mountRef.current);
-
-                // Initial trigger to ensure fit
-                setTimeout(handleResize, 100);
-
-                return () => {
-                    if (resizeObserverRef.current) resizeObserverRef.current.disconnect();
-                    cancelAnimationFrame(animationFrameRef.current);
-                    if (renderer.domElement && mountRef.current) {
-                        mountRef.current.removeChild(renderer.domElement);
-                    }
-                    renderer.dispose();
-                };
-            }, []);
-
-            const roll = () => {
-                if (!sceneRef.current) return;
-
-                // Clear old dice
-                diceMeshesRef.current.forEach(d => sceneRef.current.remove(d.mesh));
-                diceMeshesRef.current = [];
-                setLastResult(null);
-                setRolling(true);
-
-                const n = Math.max(1, parseInt(count) || 1);
-                const m = parseInt(mod) || 0;
-                const sides = selectedDie;
-                let totalRaw = 0;
-                const rolls = [];
-
-                // Logic Part
-                for(let i=0; i<n; i++) {
-                    const r = Math.floor(Math.random() * sides) + 1;
-                    rolls.push(r);
-                    totalRaw += r;
-
-                    // 2. Check for Crits
-                    const isCrit = (sides === 20 && r === 20);
-                    const isFail = (sides === 20 && r === 1);
-                    
-                    // 3. Determine Color
-                    let baseColor = i % 2 === 0 ? 0x4f46e5 : 0x0ea5e9; // Indigo/Sky
-
-                    // 4. Create Visual Die
-                    // Pass the loaded model reference
-                    const mesh = spawnDie(sides, baseColor, r, isCrit, isFail, null);
-                    sceneRef.current.add(mesh);
-                    
-                    // Add physics state
-                    diceMeshesRef.current.push({
-                        mesh: mesh,
-                        vel: new THREE.Vector3((Math.random()-0.5)*0.8, Math.random() * -0.5, (Math.random()-0.5)*0.8),
-                        rotVel: new THREE.Vector3(Math.random()*0.3, Math.random()*0.3, Math.random()*0.3),
-                        active: true
-                    });
-                }
-
-                const total = totalRaw + m;
-                const rollStr = `[${rolls.join(', ')}]`;
-                const diceStr = `${n}d${sides}`;
-                const modStr = m !== 0 ? (m > 0 ? `+${m}` : m) : '';
-                
-                const resultObj = { 
-                    desc: `${diceStr}${modStr}`, 
-                    detail: `${rollStr} ${modStr} = `, 
-                    total: total, 
-                    isCrit: (sides === 20 && rolls.includes(20)), 
-                    isFail: (sides === 20 && rolls.includes(1) && !rolls.includes(20)), 
-                    id: Date.now() 
-                };
-
-                setTimeout(() => {
-                    setRolling(false);
-                    setLastResult(resultObj);
-                    setHistory(prev => [resultObj, ...prev].slice(0, 20));
-                    addToLog(`Rolled ${resultObj.desc}: ${rollStr}${modStr} = ${total}`, 'roll');
-                }, 1500);
-            };
-
-            return (
-                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-                    {/* UPDATED: Added overflow-hidden to clip the canvas */}
-                    <div className="bg-gray-900 w-full max-w-3xl rounded-xl shadow-2xl border border-gray-700 flex flex-col max-h-[90vh] overflow-hidden">
-                        {/* Header */}
-                        <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800 rounded-t-xl shrink-0">
-                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                <D20Icon className="text-green-400 w-6 h-6" /> Dice Tray
-                            </h2>
-                            <button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button>
-                        </div>
-                        
-                        {/* 3D Canvas Container - Updated Height to 400px */}
-                        <div className="relative bg-black w-full border-b border-slate-800" style={{ height: '400px' }}>
-                            <div ref={mountRef} className="w-full h-full" />
-                            
-                            {/* Credits Overlay */}
-                            <div className="absolute bottom-2 right-2 text-[10px] text-slate-500 opacity-50 pointer-events-none">
-                                Models by JayDesigns3D (Sketchfab)
-                            </div>
-                            
-                            {/* Overlay Result */}
-                            {lastResult && !rolling && (
-                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <div className="bg-black/60 backdrop-blur-md p-6 rounded-2xl border border-white/20 text-center animate-fade-in shadow-2xl transform scale-110">
-                                        <div className="text-sm text-slate-300 uppercase font-bold mb-2 tracking-widest">{lastResult.desc}</div>
-                                        <div className={`text-7xl font-black ${lastResult.isCrit ? 'text-green-400 drop-shadow-[0_0_25px_rgba(74,222,128,0.8)]' : lastResult.isFail ? 'text-red-500 drop-shadow-[0_0_25px_rgba(239,68,68,0.8)]' : 'text-white drop-shadow-md'}`}>
-                                            {lastResult.total}
-                                        </div>
-                                        <div className="text-sm text-slate-400 mt-2 font-mono">{lastResult.detail}</div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Controls */}
-                        <div className="p-5 space-y-5 overflow-y-auto flex-1 bg-slate-900">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Select Die</label>
-                                <div className="flex flex-wrap gap-2 justify-center">
-                                    {[4,6,8,10,12,20,100].map(d => (
-                                        <button 
-                                            key={d} 
-                                            onClick={() => setSelectedDie(d)} 
-                                            className={`w-10 h-10 rounded font-bold font-mono transition-all ${selectedDie === d ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 scale-110 shadow-lg' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'}`}
-                                        >
-                                            d{d}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Count</label>
-                                    <div className="flex items-center">
-                                        <button onClick={() => setCount(Math.max(1, count - 1))} className="bg-slate-800 text-slate-300 p-2 rounded-l border border-slate-600 border-r-0 hover:bg-slate-700 hover:text-white"><Minus size={14}/></button>
-                                        <input 
-                                            type="number" 
-                                            value={count} 
-                                            onChange={(e)=>setCount(Math.max(1, parseInt(e.target.value)||1))} 
-                                            className="w-full bg-slate-900 border border-slate-600 py-2 text-center font-bold text-white focus:outline-none" 
-                                        />
-                                        <button onClick={() => setCount(count + 1)} className="bg-slate-800 text-slate-300 p-2 rounded-r border border-slate-600 border-l-0 hover:bg-slate-700 hover:text-white"><Plus size={14}/></button>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Modifier</label>
-                                    <div className="flex items-center">
-                                        <button onClick={() => setMod(mod - 1)} className="bg-slate-800 text-slate-300 p-2 rounded-l border border-slate-600 border-r-0 hover:bg-slate-700 hover:text-white"><Minus size={14}/></button>
-                                        <input 
-                                            type="number" 
-                                            value={mod} 
-                                            onChange={(e)=>setMod(parseInt(e.target.value)||0)} 
-                                            className="w-full bg-slate-900 border border-slate-600 py-2 text-center font-bold text-white focus:outline-none" 
-                                        />
-                                        <button onClick={() => setMod(mod + 1)} className="bg-slate-800 text-slate-300 p-2 rounded-r border border-slate-600 border-l-0 hover:bg-slate-700 hover:text-white"><Plus size={14}/></button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button 
-                                onClick={roll} 
-                                disabled={rolling}
-                                className={`w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 text-lg ${rolling ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                <D20Icon className={`w-6 h-6 ${rolling ? 'animate-spin' : ''}`} /> 
-                                {rolling ? 'ROLLING...' : `ROLL ${count}d${selectedDie} ${mod !== 0 ? (mod > 0 ? `+${mod}` : mod) : ''}`}
-                            </button>
-                            
-                            <div className="bg-slate-950 rounded p-3 h-40 overflow-y-auto border border-slate-800 relative">
-                                <div className="flex justify-between items-center mb-2 sticky top-0 bg-slate-950/95 backdrop-blur-sm pb-2 border-b border-slate-800 z-10">
-                                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">History</h4>
-                                    {history.length > 0 && <button onClick={() => setHistory([])} className="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase border border-red-900/50 px-2 py-0.5 rounded bg-red-900/10 hover:bg-red-900/30 transition-colors">Clear Log</button>}
-                                </div>
-                                {history.length === 0 && <div className="text-center text-slate-600 text-xs mt-12 italic">Ready to roll...</div>}
-                                <div className="space-y-1.5">
-                                    {history.map(h => (
-                                        <div key={h.id} className="flex justify-between items-center text-sm border-b border-slate-800/50 pb-1.5 last:border-0 animate-fade-in">
-                                            <div className="flex flex-col">
-                                                <span className="text-slate-400 text-xs font-mono">{h.desc}</span><span className="text-slate-500 text-[10px] truncate max-w-[140px]">{h.detail}</span></div><span className={`font-mono font-bold text-lg ${h.isCrit ? 'text-green-400 drop-shadow-md' : h.isFail ? 'text-red-500' : 'text-white'}`}>{h.total}</span></div>))}</div></div></div></div></div>);
-        };
         const MonsterStatBlockModal = ({ combatant, onClose }) => {
              if (!combatant?.statBlockSummary) return null;
              const escapeHtml = (unsafe) => { return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
@@ -879,8 +404,9 @@
         
         function App() {
             const [combatants, setCombatants] = useState(() => safeLoad('dm-tracker-monsters', []));
+            // Read-only access to local Homebrew library
             const [homebrew, setHomebrew] = useState(() => safeLoad('dm-tracker-homebrew', [])); 
-            const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('dm-tracker-api-key') || HARDCODED_API_KEY);
+            const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('dm-tracker-api-key') || "");
             const [exportFileName, setExportFileName] = useState(() => localStorage.getItem('dm-tracker-filename') || 'encounter_data');
             const [combatState, setCombatState] = useState(() => {
                 const loaded = safeLoad('dm-tracker-combat-state', { round: 1, turnIndex: 0, status: 'prep' });
@@ -888,14 +414,6 @@
             });
             const [battleLogs, setBattleLogs] = useState(() => safeLoad('dm-tracker-logs', []));
             
-            // New State for Auth
-            const [db, setDb] = useState(null);
-            const [userId, setUserId] = useState(null);
-            const [appId, setAppId] = useState(null);
-            
-            // New State for Uploading Spinner
-            const [isUploading, setIsUploading] = useState(false); // ADDED THIS LINE
-
             const [monsterDetails, setMonsterDetails] = useState(INITIAL_MONSTER_DETAILS);
             const [formData, setFormData] = useState(INITIAL_FORM);
             const [isGeneratingStats, setIsGeneratingStats] = useState(false);
@@ -904,7 +422,6 @@
             const [narrations, setNarrations] = useState({}); 
             const [showSettingsModal, setShowSettingsModal] = useState(false);
             const [showFilenameModal, setShowFilenameModal] = useState(false);
-            const [showDiceModal, setShowDiceModal] = useState(false);
             const [showLogModal, setShowLogModal] = useState(false);
             const [showChangelogModal, setShowChangelogModal] = useState(false); 
             const [viewStatBlockMonster, setViewStatBlockMonster] = useState(null);
@@ -916,50 +433,6 @@
             const [openConditionId, setOpenConditionId] = useState(null); 
             const [viewMode, setViewMode] = useState('setup');
             const encounterFileInputRef = useRef(null);
-
-            // AUTH & FIREBASE SYNC - Updated for Module System
-            useEffect(() => {
-                const handleAuthReady = () => {
-                    if (window.isAuthReady && window.db && window.currentUserId) {
-                        setDb(window.db);
-                        setUserId(window.currentUserId);
-                        setAppId(typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
-                    }
-                };
-
-                // Listen for custom event dispatch from module script after auth completes
-                document.addEventListener('auth-ready', handleAuthReady);
-                // Also call immediately in case the event fired before this component mounted
-                handleAuthReady(); 
-
-                return () => {
-                    document.removeEventListener('auth-ready', handleAuthReady);
-                };
-            }, []);
-
-            // Firestore Sync for Homebrew (Read-Only from this side)
-            useEffect(() => {
-                if (!db || !userId) return;
-                
-                // SKIPPED IF OFFLINE: Relies on localStorage cache initialized in useState above
-                if (window.isOffline) {
-                    return; 
-                }
-
-                // Using the modular syntax via window.firebase
-                const hbCollection = window.firebase.collection(db, 'artifacts', appId, 'users', userId, 'homebrew');
-                const unsubscribe = window.firebase.onSnapshot(hbCollection, (snapshot) => {
-                    const fetchedHomebrew = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    // Only update if we actually got data, otherwise keep local cache if offline
-                    if (fetchedHomebrew.length > 0 || snapshot.empty) {
-                        setHomebrew(fetchedHomebrew);
-                        localStorage.setItem('dm-tracker-homebrew', JSON.stringify(fetchedHomebrew));
-                    }
-                }, error => {
-                    console.error("Error syncing homebrew:", error);
-                });
-                return () => unsubscribe();
-            }, [db, userId, appId]);
 
             const isNewUpdateAvailable = () => {
                 const lastViewedVersion = localStorage.getItem('dm-tracker-last-viewed-version');
@@ -989,7 +462,6 @@
 
             const showNotification = (message, type = 'info') => { 
                 setNotification({ message, type }); 
-                // Increased timeout to 8 seconds for errors so you can read them
                 const timeout = type === 'error' ? 8000 : 3000;
                 setTimeout(() => setNotification(null), timeout); 
             };
@@ -1009,77 +481,19 @@
             };
 
             const endBattle = async () => {
-                // Modified Confirmation to be clearer
                 const actionName = combatState.status === 'active' ? "End Battle" : "Clear Board";
-                if (!confirm(`Are you sure you want to ${actionName}? This will archive any defeated enemies to the Loot Cloud.`)) return;
-
-                setIsUploading(true); // START SPINNER
+                if (!confirm(`Are you sure you want to ${actionName}?`)) return;
 
                 setCombatState(prev => ({ ...prev, status: 'complete' }));
                 addToLog("--- BATTLE ENDED ---", "turn");
                 
-                // OFFLINE CHECK - Prevent Upload
-                if (window.isOffline) {
-                    showNotification("Offline Mode: Battle ended locally. Loot report skipped.", "info");
-                    setIsUploading(false);
-                    setShowVictoryModal(true);
-                    return;
-                }
-
-                // Updated Logic for Module System - Report Upload Logic
-                if (userId && db) {
-                    // Filter for ANY monster with 0 HP, regardless of Combat Status
-                    const defeated = combatants.filter(c => c.type === 'monster' && c.currentHp === 0);
-                    
-                    if (defeated.length > 0) {
-                        // CLEAN PAYLOAD: Ensure no undefined values which crash Firestore
-                        const cleanEnemies = defeated.map(d => ({
-                            name: d.name || "Unknown Enemy",
-                            cr: (typeof d.cr === 'number' && !isNaN(d.cr)) ? d.cr : 0,
-                            type: d.monsterType || 'Unknown'
-                        }));
-
-                        const payload = {
-                            timestamp: window.firebase.serverTimestamp(),
-                            enemies: cleanEnemies
-                        };
-                        
-                        // TIMEOUT WRAPPER: Prevents infinite spinning
-                        const uploadPromise = new Promise(async (resolve, reject) => {
-                            const timeout = setTimeout(() => reject(new Error("Network timed out (5s)")), 5000);
-                            try {
-                                // Using Modular Syntax via window.firebase
-                                const collectionRef = window.firebase.collection(db, 'artifacts', appId, 'users', userId, 'battles');
-                                console.log(`[Tome] Uploading to: artifacts/${appId}/users/${userId}/battles`, payload); 
-                                
-                                await window.firebase.addDoc(collectionRef, payload);
-                                
-                                clearTimeout(timeout);
-                                console.log("[Tome] Upload Success!");
-                                resolve();
-                            } catch (e) {
-                                clearTimeout(timeout);
-                                console.error("[Tome] Upload Error:", e);
-                                reject(e);
-                            }
-                        });
-
-                        try {
-                            await uploadPromise;
-                            showNotification(`Report sent: ${defeated.length} enemies looted.`, "success");
-                        } catch (e) {
-                            console.error("Upload failed final catch:", e);
-                            showNotification("Cloud Upload Failed: " + e.message, "error");
-                        }
-                    } else {
-                        showNotification("Battle ended. No enemies defeated to loot.", "info");
-                    }
+                const defeated = combatants.filter(c => c.type === 'monster' && c.currentHp === 0);
+                if (defeated.length > 0) {
+                    showNotification(`${defeated.length} enemies defeated. Ready for loot scan.`, "success");
                 } else {
-                    console.warn("[Tome] Upload skipped: No User ID or DB connection.");
-                    showNotification("Not connected to cloud. Loot report skipped.", "error");
+                    showNotification("Battle ended.", "info");
                 }
                 
-                setIsUploading(false); // STOP SPINNER ALWAYS
                 setShowVictoryModal(true);
             };
 
@@ -1132,7 +546,7 @@
             const handleClearAll = () => { if (clearConfirm) { setCombatants([]); setNarrations({}); setCombatState({ round: 1, turnIndex: 0, status: 'prep' }); setBattleLogs([]); setClearConfirm(false); showNotification("Cleared", "success"); } else { setClearConfirm(true); setTimeout(() => setClearConfirm(false), 3000); } };
             const handleNarrate = useCallback(async (combatant) => {
                 setNarratingId(combatant.id);
-                const txt = await callGemini(`Write short visceral combat flavor text for ${combatant.name} (HP ${combatant.currentHp}/${combatant.maxHp}). No quotes.`, userApiKey);
+                const txt = await callGemini(`Write short visceral combat flavor text for ${combatant.name} (HP ${combatant.currentHp}/${combatant.maxHp}). No quotes.`, userApiKey, false);
                 if (txt) setNarrations(prev => ({ ...prev, [combatant.id]: txt.trim() }));
                 setNarratingId(null);
             }, [userApiKey]);
@@ -1158,7 +572,6 @@
                 if (!hb) { hb = homebrew.find(h => h.name.trim().toLowerCase().includes(normName)); }
                 if (hb) {
                     const mod = parseInt(hb.initMod) || 0;
-                    // Note: Homebrew monsters might not have CR saved if they are old. Default to 0.
                     setFormData(prev => ({ ...prev, hp: hb.hp, ac: hb.ac, initMod: mod, initiative: '', cr: hb.cr || 0 }));
                     setMonsterDetails({ resistances: hb.resistances||'', vulnerabilities: hb.vulnerabilities||'', actions: hb.actions||'', statBlockSummary: hb.statBlockSummary||'Not saved.', type: hb.type || 'Unknown' });
                     showNotification("Stats loaded from Homebrew.", 'info');
@@ -1167,19 +580,26 @@
                 }
                 if (!userApiKey) { showNotification("Missing API Key", "error"); setShowSettingsModal(true); return; }
                 setIsGeneratingStats(true);
-                // Updated Prompt to include CR
                 const prompt = `You are a D&D 5e Rules Expert. Generate a COMPLETE, DETAILED stat block for the monster "${formData.name}". Return a JSON object with: - 'hp' (integer) - 'ac' (integer) - 'initMod' (integer) - 'cr' (number, e.g. 0.25, 2, 15) - 'resistances' (string: list or "None") - 'vulnerabilities' (string: list or "None") - 'actions' (string: concise list of action names and damage dice) - 'statBlockSummary' (string: A full markdown text block including: Ability Scores, Saving Throws, Skills, Senses, Languages, Challenge, Special Traits, Actions, and Legendary Actions if applicable. Use strict markdown headers like **Actions**.) - 'type' (string: e.g. "Aberration", "Beast", "Celestial") Return ONLY valid JSON.`;
-                const txt = await callGemini(prompt, userApiKey);
+                
+                // Call with isJson = true for stricter output
+                const txt = await callGemini(prompt, userApiKey, true);
+                
                 if (txt) {
                     try {
-                        const json = JSON.parse(txt.replace(/```json|```/g, '').trim());
+                        // The isJson flag helps, but we still handle potential parsing issues gracefully
+                        const json = JSON.parse(txt);
+                        
                         let monsterType = json.type || 'Unknown';
                         if (monsterType === 'Unknown' && json.statBlockSummary) { monsterType = inferTypeFromStatBlock(json.statBlockSummary); }
                         setFormData(prev => ({ ...prev, hp: json.hp, ac: json.ac, initMod: parseInt(json.initMod)||0, initiative: '', cr: parseFloat(json.cr) || 0 }));
                         setMonsterDetails({ resistances: json.resistances||'', vulnerabilities: json.vulnerabilities||'', actions: json.actions||'', statBlockSummary: json.statBlockSummary||'', type: monsterType });
                         showNotification("Stats generated by AI.", 'info');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
-                    } catch (e) { showNotification("AI Parse Error", "error"); }
+                    } catch (e) { 
+                        console.error("JSON Parse Error:", e);
+                        showNotification("AI Parse Error - Try again", "error"); 
+                    }
                 }
                 setIsGeneratingStats(false);
             };
@@ -1207,7 +627,7 @@
                             maxHp: parseInt(formData.hp), 
                             currentHp: parseInt(formData.hp), 
                             ac: parseInt(formData.ac)||10, 
-                            cr: parseFloat(formData.cr) || 0, // Store CR
+                            cr: parseFloat(formData.cr) || 0, 
                             initiative: rollInitiative(mod), 
                             conditions: [], 
                             isConcentrating: false, 
@@ -1275,7 +695,6 @@
                     {notification && <div className={`fixed top-4 right-4 z-[120] px-4 py-3 rounded shadow-xl flex items-center gap-2 animate-fade-in ${notification.type==='error'?'bg-red-600 text-white':'bg-green-600 text-white'}`}>{notification.type==='error'?<AlertTriangle size={18}/>:<CheckCircle size={18}/>}<span>{notification.message}</span></div>}
                     {viewStatBlockMonster && <MonsterStatBlockModal combatant={viewStatBlockMonster} onClose={() => setViewStatBlockMonster(null)} />}
                     {showFilenameModal && <FilenameModal fileName={exportFileName} setFileName={setExportFileName} onClose={() => setShowFilenameModal(false)} onDownload={performExport} />}
-                    {showDiceModal && <DiceRollerModal onClose={() => setShowDiceModal(false)} addToLog={addToLog} />}
                     {showLogModal && <BattleLogModal logs={battleLogs} onClose={() => setShowLogModal(false)} onClear={() => setBattleLogs([])} />}
                     {showChangelogModal && <ChangelogModal onClose={() => setShowChangelogModal(false)} onMarkViewed={markChangelogViewed} />}
                     
@@ -1284,7 +703,7 @@
                             <div className="bg-gradient-to-b from-slate-900 to-slate-950 w-full max-w-md rounded-xl border border-yellow-600 p-8 shadow-[0_0_50px_rgba(234,179,8,0.2)] text-center animate-fade-in">
                                 <Flag size={48} className="mx-auto text-yellow-500 mb-4 animate-bounce"/>
                                 <h2 className="text-3xl font-bold text-white mb-2">VICTORY!</h2>
-                                <p className="text-slate-400 mb-6">The battlefield is silent. The threat is vanquished.<br/><span className="text-xs text-indigo-400">Battle report uploaded to cloud.</span></p>
+                                <p className="text-slate-400 mb-6">The battlefield is silent. The threat is vanquished.<br/><span className="text-xs text-indigo-400">Battle state saved locally.</span></p>
                                 <div className="space-y-3">
                                     <a href="./loot.html" className="block w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
                                         <Gem size={20}/> Claim Loot Records
@@ -1309,12 +728,11 @@
                                     <div className="flex items-center gap-3">
                                         <a href="./loot.html" className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 text-white border-2 border-yellow-700 hover:border-yellow-400 px-3 py-1.5 rounded-full text-xs font-bold transition-all no-underline shadow-[0_0_15px_rgba(234,179,8,0.5)] hover:shadow-[0_0_25px_rgba(234,179,8,0.8)] hover:scale-105" title="Open Loot Records"><div className="bg-black/30 rounded-full p-0.5"><Gem size={14} className="text-white" /></div><span className="hidden sm:inline">Loot!</span></a>
                                         <a href="./homebrew.html" className="flex items-center gap-2 bg-green-900 hover:bg-green-800 text-white px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-[0_0_15px_rgba(22,163,74,0.5)] border border-green-700 hover:border-green-500 hover:shadow-[0_0_25px_rgba(22,163,74,0.8)] hover:scale-105 active:scale-95 no-underline" title="Open Monster Workshop"><FlaskConical size={14} /><span>Workshop</span></a>
-                                        {/* Updated Header Button: Now always clickable */}
-                                        <button onClick={endBattle} disabled={isUploading} className={`flex items-center rounded px-3 py-1 border transition-all ${combatState.status === 'active' ? 'bg-red-900/30 border-red-500 animate-pulse hover:bg-red-900/50 cursor-pointer' : 'bg-slate-900 border-slate-700 hover:bg-slate-800 cursor-pointer'}`} title={combatState.status === 'active' ? "Click to Force End Battle" : "Click to Clear Board / Loot"}>
+                                        <button onClick={endBattle} className={`flex items-center rounded px-3 py-1 border transition-all ${combatState.status === 'active' ? 'bg-red-900/30 border-red-500 animate-pulse hover:bg-red-900/50 cursor-pointer' : 'bg-slate-900 border-slate-700 hover:bg-slate-800 cursor-pointer'}`} title={combatState.status === 'active' ? "Click to Force End Battle" : "Click to Clear Board / Loot"}>
                                             <span className={`text-xs font-bold mr-2 ${combatState.status === 'active' ? 'text-red-400' : 'text-slate-500'}`}>
-                                                {isUploading ? <Loader2 className="w-4 h-4 animate-spin text-white"/> : (combatState.status === 'active' ? 'COMBAT (END)' : 'PREP')}
+                                                {combatState.status === 'active' ? 'COMBAT (END)' : 'PREP'}
                                             </span>
-                                            {!isUploading && <span className="text-white font-mono text-lg">{combatState.round}</span>}
+                                            <span className="text-white font-mono text-lg">{combatState.round}</span>
                                         </button>
                                     </div>
                                 </div>
@@ -1323,7 +741,6 @@
                                     <div className="flex w-full sm:w-auto gap-2 justify-end">
                                         <div className="flex bg-slate-900 rounded-lg p-1 border border-slate-700 flex-1 sm:flex-none justify-center">
                                             <button onClick={() => setShowLogModal(true)} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Battle Log"><ScrollText size={18}/></button>
-                                            <button onClick={() => setShowDiceModal(true)} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Dice Roller"><D20Icon className="w-5 h-5"/></button>
                                             <div className="w-px bg-slate-700 mx-1"></div>
                                             <button onClick={() => setShowChangelogModal(true)} className={`p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center transition-all ${newUpdateGlow ? 'animate-pulse-glow' : ''}`} title="Changelog"><History size={18}/></button>
                                             <div className="w-px bg-slate-700 mx-1"></div>
@@ -1332,12 +749,6 @@
                                             <button onClick={handleExportClick} className="p-2 hover:bg-slate-700 rounded text-slate-400 hover:text-white flex items-center justify-center" title="Export Full Encounter Data"><Download size={18}/></button>
                                         </div>
                                         <button onClick={handleClearAll} className={`px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider border transition-colors ${clearConfirm ? 'bg-red-600 text-white border-red-500' : 'bg-slate-900 text-red-400 border-slate-700 hover:bg-slate-800'}`}>{clearConfirm ? "Sure?" : "Clear"}</button>
-                                        
-                                        {/* Status Dot & User ID */}
-                                        <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded px-2 py-1">
-                                            {userId && <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">{userId.slice(0,6)}...</span>}
-                                            <div className={`w-2 h-2 rounded-full ${userId ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.8)]' : 'bg-red-500'}`} title={userId ? `Connected: ${userId}` : "Offline"}></div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1407,17 +818,8 @@
             );
         }
 
-        window.onload = function() {
-            setTimeout(() => {
-                try {
-                    const rootElement = document.getElementById('root');
-                    if (rootElement) {
-                         const root = ReactDOM.createRoot(rootElement);
-                         root.render(<ErrorBoundary><App /></ErrorBoundary>);
-                    } else { throw new Error("Root element not found."); }
-                } catch (e) { console.error("React Mounting Failed:", e); document.getElementById('root').innerHTML = `<div class="text-white text-center mt-20">Failed to load app. Check console.</div>`; }
-            }, 100); 
-        };
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ErrorBoundary><App /></ErrorBoundary>);
     </script>
 </body>
 </html>

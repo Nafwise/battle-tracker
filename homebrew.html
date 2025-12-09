@@ -91,99 +91,6 @@
 <body class="bg-slate-950 text-slate-100">
     <div id="root"></div>
 
-   <!-- FIREBASE CONFIG & INITIALIZATION (MERGED) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, getDoc, setDoc, addDoc, deleteDoc, query, where, orderBy, onSnapshot, serverTimestamp, getDocs, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- FIREBASE CONFIGURATION ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyAdlWWNWbpizo_Dx2xJikTDKHdj4AJ0VSY",
-            authDomain: "battletracker-51502.firebaseapp.com",
-            projectId: "battletracker-51502",
-            storageBucket: "battletracker-51502.firebasestorage.app",
-            messagingSenderId: "717377728252",
-            appId: "1:717377728252:web:652210dc6904fef7ce7179"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // Global instances for React
-        window.db = db;
-        window.auth = auth;
-        window.currentUserId = null;
-        window.isAuthReady = false;
-        window.isOffline = false; // NEW FLAG
-
-        // Expose Firestore functions to window so React can see them
-        window.firebase = {
-            doc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, getDocs, limit, orderBy, where, addDoc, deleteDoc
-        };
-
-        // Initialize Auth Helper
-        async function initAuth() {
-            console.log("[Firebase Config] Initializing Auth...");
-            const localId = localStorage.getItem('akashic_user_id');
-            
-            // Priority: Try Custom Token (Environment injected)
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                 try {
-                     await signInWithCustomToken(auth, __initial_auth_token);
-                     console.log("[Firebase Config] Signed in with Custom Token");
-                     return auth.currentUser;
-                 } catch (e) {
-                     console.warn("[Firebase Config] Custom token failed, attempting fallback...", e);
-                 }
-            }
-
-            return new Promise((resolve) => {
-                const unsubscribe = onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        console.log("[Firebase Config] User Logged In:", user.uid);
-                        if (!localId) localStorage.setItem('akashic_user_id', user.uid);
-                        unsubscribe();
-                        resolve(user);
-                    } else {
-                        console.log("[Firebase Config] Attempting Anonymous Sign-in...");
-                        signInAnonymously(auth).then((userCredential) => {
-                             unsubscribe();
-                             resolve(userCredential.user);
-                        }).catch((error) => {
-                            // --- CRITICAL FIX: OFFLINE FALLBACK ---
-                            console.warn("[Firebase Config] Auth Failed. Entering Offline Mode.", error);
-                            window.isOffline = true;
-                            // Generate a purely local ID if we don't have one
-                            window.currentUserId = localId || 'offline_user_' + Date.now();
-                            unsubscribe();
-                            resolve({ uid: window.currentUserId, isAnonymous: true }); 
-                        });
-                    }
-                });
-            });
-        }
-
-        // Expose initAuth to window just in case
-        window.initAuth = initAuth;
-
-        // Kickoff Auth Flow
-        initAuth().then((user) => {
-            if (user && !window.isOffline) {
-                console.log("Connected as:", user.uid);
-                window.currentUserId = user.uid;
-            } else {
-                console.log("Initialized in Offline/Fallback Mode");
-            }
-            
-            // Mark ready REGARDLESS of success so app renders
-            window.isAuthReady = true;
-            document.dispatchEvent(new CustomEvent('auth-ready'));
-        });
-    </script>
-
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback } = React;
 
@@ -204,7 +111,6 @@
         const CircleHelp = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></Icon>;
         const CheckCircle = (props) => <Icon {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></Icon>;
         const AlertTriangle = (props) => <Icon {...props}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></Icon>;
-        const Settings = (props) => <Icon {...props}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></Icon>;
         const Key = (props) => <Icon {...props}><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" /></Icon>;
         const Database = (props) => <Icon {...props}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></Icon>;
         const Download = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></Icon>;
@@ -219,6 +125,8 @@
         const Gem = (props) => <Icon {...props}><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></Icon>;
         const Home = (props) => <Icon {...props}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
         const Pencil = (props) => <Icon {...props}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></Icon>;
+        // UPDATED: Settings Icon (Simplified 6-tooth gear)
+        const Settings = (props) => <Icon {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></Icon>;
 
 
         // --- CONSTANTS & UTILITIES (SHARED) ---
@@ -229,23 +137,18 @@
         const INITIAL_MONSTER_DETAILS = { resistances: '', vulnerabilities: '', actions: '', statBlockSummary: '', type: 'Unknown' };
         const LAST_ACKNOWLEDGED_VERSION_KEY = 'dm-tools-acknowledged-version';
         
-        // --- BAKED IN KEY ---
-        const HARDCODED_API_KEY = "AIzaSyB1Xn3Wq0UXF92lmS6zWOjFJ3SXGj2pSrk"; 
-        
-        const CURRENT_VERSION = "1.1.0"; 
+        // NO HARDCODED KEY - User must provide their own via settings
+        const CURRENT_VERSION = "1.2.0"; 
         const INPUT_CLASS = "w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:border-indigo-500 text-sm";
         
-        // This generateId is used for *new* monsters before they are saved to Firestore, where Firestore assigns the final ID.
-        // It's also used for import/export uniqueness.
+        // This generateId is used for *new* monsters
         const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
         
-        // Removed safeLoad utility as we are now using Firestore
         const sanitizeHtml = (str) => { if (!str) return ''; return str.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gm, "").replace(/on\w+="[^"]*"/g, ""); };
         const handleInputBlur = () => { setTimeout(() => { if (document.activeElement === document.body) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 150); };
         
         // DM SCREEN CONTENT - COMPREHENSIVE (Only needed here)
         const RULES_DATA = [
-            // ... (Included same content as previous but truncated here for brevity in response display, FULL CONTENT IN FILE)
             { category: "Conditions & Exhaustion", items: [ 
                 { title: "Blinded", text: "A blinded creature can't see and automatically fails any ability check requiring sight. Attack rolls against the creature have advantage, and the creature's Attack rolls have disadvantage." }, 
                 { title: "Charmed", text: "A charmed creature can't Attack the charmer or target the charmer with harmful Abilities or magical Effects. The charmer has advantage on any ability check to Interact socially with the creature." }, 
@@ -419,18 +322,14 @@
             );
         };
         const ChangelogModal = ({ onClose, currentVersion, lastAcknowledged }) => {
-            // UPDATED CHANGELOG: Reflects the split from the main app at V1.1.0
             const CHANGELOG_DATA = [
                 { 
-                    version: currentVersion, 
-                    date: "Official Launch", 
+                    version: "1.2.0", 
+                    date: "Dec 2025", 
                     changes: [
-                        "**CR Support:** Added Challenge Rating (CR) field to homebrew monsters. This enables accurate loot generation tiers in the Loot Tracker app.",
-                        "**AI Upgrade:** The 'Brew Monster' AI now intelligently assigns a CR based on the monster's description and stats.",
-                        "**Cloud Sync:** Homebrew monsters now sync their CR data to the cloud, ensuring full compatibility across the Akashic Suite.",
-                        "**Stand Alone App (Integrated):** The Monster Workshop now operates as a dedicated, persistent application. It is fully decoupled from the Tracker logic but remains seamlessly integrated via the new Launch/Return navigation.",
-                        "**DB Persistence:** Implemented a robust 'Bridge' system. Your Homebrew Bank is now backed by Firestore with an automatic LocalStorage failsafe. If your session ID rotates, the app detects your local backup and instantly restores your database.",
-                        "**Smart Import:** The import system now performs a 'Smart Merge'. It detects monsters by name to update existing stats rather than creating duplicates, keeping your bank clean."
+                        "**Offline First:** Removed all cloud database dependencies. Your Homebrew Bank is now entirely local and fast.",
+                        "**AI Upgraded:** Updated to the latest Gemini model for better monster generation.",
+                        "**Stability:** Fixed issues with generation keys and data persistence."
                     ] 
                 }
             ];
@@ -468,7 +367,7 @@
                             <label className="block text-xs font-bold text-slate-400 mb-1 uppercase">Export Filename Base</label>
                             {/* Uses localStorage for user preference, which is acceptable */}
                             <input className={INPUT_CLASS} value={fileName} onChange={(e) => setFileName(e.target.value)} onBlur={handleInputBlur} placeholder="homebrew_bank" />
-                            <p className="text-xs text-slate-500 mt-1">Used for Homebrew Backup (e.g., `<span className="text-amber-500">{fileName}</span>_HB-Backup.json`).</p>
+                            <p className="text-xs text-slate-500 mt-1">Used for Homebrew Backup (e.g., `<span className="text-amber-500">{fileName}</span>.json`).</p>
                         </div>
                         <div className="flex justify-end gap-2"><button onClick={onClose} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-bold">Done</button></div>
                     </div>
@@ -497,22 +396,32 @@
             return 'Unknown';
         };
 
-        const callGemini = async (prompt, userApiKey) => {
+        // UPDATED: AI Call to use strict JSON
+        const callGemini = async (prompt, userApiKey, isJson = false) => {
             let attempt = 0;
             if (!userApiKey) return null;
+            
+            const generationConfig = isJson ? { responseMimeType: "application/json" } : undefined;
+
             while (attempt < 3) {
                 try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ 
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: generationConfig
+                        }) 
+                    });
+                    
                     if (!res.ok) throw new Error("API Error");
                     const data = await res.json();
                     return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
                 } catch (e) { 
-                    console.warn(`Gemini API attempt ${attempt + 1} failed. Retrying...`, e);
                     attempt++; 
                     await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 1000)); 
                 }
             }
-            console.error("Gemini API failed after 3 attempts.");
             return null;
         };
 
@@ -529,7 +438,7 @@
 
             handleReset = () => { 
                 this.setState({ showResetConfirm: false });
-                console.warn("Performing Ritual of Restoration: Clearing local storage (non-Firestore data only) and reloading.");
+                console.warn("Performing Ritual of Restoration: Clearing local storage and reloading.");
                 // Clear only user preferences and API key stored in localStorage
                 localStorage.removeItem('dm-tracker-api-key');
                 localStorage.removeItem('dm-tracker-filename');
@@ -544,7 +453,7 @@
                                 <ConfirmationModal 
                                     isOpen={true}
                                     title="System Reset Warning"
-                                    message="The application has crashed. A reset will clear local preferences (API key, filename) and reload the app. Your Homebrew monsters stored in Firestore will be preserved."
+                                    message="The application has crashed. A reset will clear local preferences (API key, filename) and reload the app."
                                     onConfirm={this.handleReset}
                                     onCancel={() => this.setState({ showResetConfirm: false })}
                                     confirmText="Reset App"
@@ -565,12 +474,6 @@
 
         // --- MAIN APP ---
         function App() {
-            // Firestore/Auth state
-            const [db, setDb] = useState(null);
-            const [userId, setUserId] = useState(null);
-            const [appId, setAppId] = useState(null);
-            const [isInitialAuthCheckComplete, setIsInitialAuthCheckComplete] = useState(false);
-            
             // App State - INITIALIZE FROM LOCALSTORAGE IF AVAILABLE
             const [homebrew, setHomebrew] = useState(() => {
                 try {
@@ -585,7 +488,7 @@
             const showGlow = isNewVersionAvailable(CURRENT_VERSION, lastAcknowledgedVersion);
 
             // API Key and filename still use localStorage for *user preference/config*
-            const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('dm-tracker-api-key') || HARDCODED_API_KEY);
+            const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('dm-tracker-api-key') || "");
             const [exportFileName, setExportFileName] = useState(() => localStorage.getItem('dm-tracker-filename') || 'homebrew_bank');
             const [notification, setNotification] = useState(null);
             const [viewStatBlockMonster, setViewStatBlockMonster] = useState(null);
@@ -614,56 +517,11 @@
                 return initial;
             });
 
-            // Authentication and Firestore Initialization Effect
-            useEffect(() => {
-                const handleAuthReady = () => {
-                    if (window.isAuthReady && window.db && window.currentUserId) {
-                        setDb(window.db);
-                        setUserId(window.currentUserId);
-                        setAppId(typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
-                        setIsInitialAuthCheckComplete(true);
-                    }
-                };
-
-                // Check immediately in case it's already ready
-                if (window.isAuthReady) {
-                    handleAuthReady();
-                }
-
-                document.addEventListener('auth-ready', handleAuthReady);
-                
-                return () => {
-                    document.removeEventListener('auth-ready', handleAuthReady);
-                };
-            }, []);
-
-            // Firestore Data Listener Effect - SKIPPED IF OFFLINE
-            useEffect(() => {
-                if (!db || !userId || !appId || !isInitialAuthCheckComplete) {
-                    return;
-                }
-
-                if (window.isOffline) {
-                    showNotification("Offline Mode: Saving locally.", "info");
-                    return; 
-                }
-
-                // Using Modular Syntax via window.firebase
-                const hbCollection = window.firebase.collection(db, 'artifacts', appId, 'users', userId, 'homebrew');
-                const unsubscribe = window.firebase.onSnapshot(hbCollection, (snapshot) => {
-                    const fetchedHomebrew = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    if (fetchedHomebrew.length > 0 || snapshot.empty) {
-                        setHomebrew(fetchedHomebrew);
-                        localStorage.setItem('dm-tracker-homebrew', JSON.stringify(fetchedHomebrew));
-                    }
-                }, error => {
-                    console.error("Error syncing homebrew:", error);
-                    // Don't show error to user if we have local data
-                });
-                return () => unsubscribe();
-            }, [db, userId, appId, isInitialAuthCheckComplete]);
-
-            // Local Storage Effects (for non-critical user preferences)
+            // Local Storage Effects
+            useEffect(() => { 
+                localStorage.setItem('dm-tracker-homebrew', JSON.stringify(homebrew)); 
+            }, [homebrew]);
+            
             useEffect(() => { 
                 if (userApiKey && userApiKey !== localStorage.getItem('dm-tracker-api-key')) {
                     localStorage.setItem('dm-tracker-api-key', userApiKey);
@@ -713,28 +571,14 @@
                 showNotification(`Loaded ${monster.name} for editing.`, "info");
             };
 
-            // Firestore Operations - UPDATED FOR OFFLINE SUPPORT
-            const deleteHomebrew = async (id) => {
-                // Optimistic UI update for Offline Mode
-                if (window.isOffline) {
-                    const updated = homebrew.filter(h => h.id !== id);
-                    setHomebrew(updated);
-                    localStorage.setItem('dm-tracker-homebrew', JSON.stringify(updated));
-                    showNotification("Deleted (Local Only)", "info");
-                    return;
-                }
-
-                if (!db || !userId || !appId) { showNotification("Database not ready.", "error"); return; }
-                try {
-                    await window.firebase.deleteDoc(window.firebase.doc(db, 'artifacts', appId, 'users', userId, 'homebrew', id));
-                    showNotification("Monster deleted.", "info");
-                } catch (e) {
-                    console.error("Error deleting document:", e);
-                    showNotification("Failed to delete monster. Permission denied.", "error");
-                }
+            // Operations - UPDATED FOR OFFLINE SUPPORT
+            const deleteHomebrew = (id) => {
+                const updated = homebrew.filter(h => h.id !== id);
+                setHomebrew(updated);
+                showNotification("Deleted monster.", "info");
             };
             
-            const saveHomebrewMonster = async (e) => {
+            const saveHomebrewMonster = (e) => {
                 e.preventDefault();
                 if (!homebrewForm.name || !homebrewForm.hp) { showNotification("Name/HP required", "error"); return; }
                 
@@ -746,49 +590,23 @@
                     type: homebrewForm.type || 'Unknown', 
                     cr: parseFloat(homebrewForm.cr) || 0, // Ensure CR is saved
                     ...monsterDetails,
-                    createdAt: window.isOffline ? new Date().toISOString() : window.firebase.serverTimestamp() // Timestamp handling
+                    createdAt: new Date().toISOString()
                 };
 
                 const existingIndex = homebrew.findIndex(h => h.name.toLowerCase() === homebrewForm.name.toLowerCase());
                 const existing = existingIndex >= 0 ? homebrew[existingIndex] : null;
                 
                 // OFFLINE SAVE
-                if (window.isOffline) {
-                    let updatedList = [...homebrew];
-                    if (existing) {
-                        updatedList[existingIndex] = { ...existing, ...newMonsterData };
-                        showNotification("Updated (Local Only)", "info");
-                    } else {
-                        updatedList.push({ ...newMonsterData, id: generateId() });
-                        showNotification("Saved (Local Only)", "success");
-                    }
-                    setHomebrew(updatedList);
-                    localStorage.setItem('dm-tracker-homebrew', JSON.stringify(updatedList));
-                    clearHomebrewForm();
-                    return;
+                let updatedList = [...homebrew];
+                if (existing) {
+                    updatedList[existingIndex] = { ...existing, ...newMonsterData };
+                    showNotification(`Updated: ${homebrewForm.name}`, "info");
+                } else {
+                    updatedList.push({ ...newMonsterData, id: generateId() });
+                    showNotification("Saved to Bank", "success");
                 }
-
-                // ONLINE SAVE
-                if (!db || !userId || !appId) { showNotification("Database not ready.", "error"); return; }
-                try {
-                    if (existing) {
-                        // Update existing monster
-                        const docRef = window.firebase.doc(db, 'artifacts', appId, 'users', userId, 'homebrew', existing.id);
-                        await window.firebase.setDoc(docRef, newMonsterData, { merge: true });
-                        showNotification(`Updated existing monster: ${homebrewForm.name}`, "info");
-                    } else {
-                        // Add new monster
-                        const collectionRef = window.firebase.collection(db, 'artifacts', appId, 'users', userId, 'homebrew');
-                        // Use addDoc or creating a doc ref with auto-id and setDoc
-                        const docRef = window.firebase.doc(collectionRef);
-                        await window.firebase.setDoc(docRef, newMonsterData);
-                        showNotification("Saved to Bank", "success");
-                    }
-                    clearHomebrewForm();
-                } catch (e) {
-                    console.error("Error saving document:", e);
-                    showNotification("Failed to save monster. Permission denied.", "error");
-                }
+                setHomebrew(updatedList);
+                clearHomebrewForm();
             };
 
             const handleBrewMonster = async () => {
@@ -798,10 +616,11 @@
                 // Updated Prompt to request CR
                 const prompt = `You are a D&D 5e Rules Expert. Create a BALANCED, COMPLETE monster stat block based on this concept: "${labInput}". Return a JSON object with: 'name' (string), 'hp' (integer), 'ac' (integer), 'initMod' (integer), 'cr' (number, e.g. 0.25, 2, 15), 'resistances' (string), 'vulnerabilities' (string), 'actions' (string: concise list of action names and damage dice), 'statBlockSummary' (string: A full markdown text block including: Ability Scores, Saving Throws, Skills, Senses, Languages, Challenge, Special Traits, Actions, and Legendary Actions if applicable. Use strict markdown headers like **Actions**.) 'type' (string: e.g. "Aberration", "Beast", "Celestial") Return ONLY valid JSON.`;
 
-                const txt = await callGemini(prompt, userApiKey);
+                // Use new JSON mode
+                const txt = await callGemini(prompt, userApiKey, true);
                 if (txt) {
                      try {
-                        const json = JSON.parse(txt.replace(/```json|```/g, '').trim());
+                        const json = JSON.parse(txt);
                         let monsterType = json.type || 'Unknown';
                         if (monsterType === 'Unknown' && json.statBlockSummary) { monsterType = inferTypeFromStatBlock(json.statBlockSummary); }
                         // Populate CR here
@@ -823,7 +642,7 @@
             };
 
             const handleExportHomebrew = () => {
-                // Export the current state of homebrew loaded from Firestore
+                // Export the current state of homebrew
                 const blob = new Blob([JSON.stringify(homebrew, null, 2)], { type: "application/json" });
                 const href = URL.createObjectURL(blob);
                 const baseName = exportFileName.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') || `homebrew_bank`;
@@ -849,7 +668,7 @@
                 reader.readAsText(file);
             };
 
-            const handleHomebrewConfirm = async (strategy) => {
+            const handleHomebrewConfirm = (strategy) => {
                 const { data: importedMonsters } = showHomebrewImportModal;
                 const processedImports = importedMonsters.map(m => { 
                     const cleanedMonster = { ...m };
@@ -862,56 +681,20 @@
                 }).filter(m => m.name && m.hp);
 
                 // OFFLINE IMPORT
-                if (window.isOffline) {
-                    let next = [...homebrew];
-                    if (strategy === 'overwrite') {
-                        next = processedImports.map(m => ({...m, id: generateId()}));
-                    } else {
-                         const existingNames = new Set(next.map(m => m.name.toLowerCase()));
-                         processedImports.forEach(m => { 
-                             if (!existingNames.has(m.name.toLowerCase())) {
-                                 next.push({...m, id: generateId()}); 
-                             }
-                         });
-                    }
-                    setHomebrew(next);
-                    localStorage.setItem('dm-tracker-homebrew', JSON.stringify(next));
-                    setShowHomebrewImportModal(null);
-                    showNotification("Imported (Local Only)", "success");
-                    return;
-                }
-
-                // ONLINE IMPORT
-                if (!db || !userId || !appId) { showNotification("Database not ready.", "error"); setShowHomebrewImportModal(null); return; }
-
-                let monstersToWrite = [];
-                let existingMonsters = homebrew;
-
+                let next = [...homebrew];
                 if (strategy === 'overwrite') {
-                    // 1. Delete all existing documents first
-                    // Use Promise.all to delete in parallel
-                    const deletePromises = existingMonsters.map(m => 
-                        window.firebase.deleteDoc(window.firebase.doc(db, 'artifacts', appId, 'users', userId, 'homebrew', m.id))
-                    );
-                    await Promise.all(deletePromises);
-                    monstersToWrite = processedImports;
-                    showNotification(`Overwrote Homebrew Bank with ${monstersToWrite.length} entries.`, "success");
-
-                } else if (strategy === 'merge') {
-                    const existingNames = new Set(existingMonsters.map(m => m.name.toLowerCase()));
-                    monstersToWrite = processedImports.filter(m => !existingNames.has(m.name.toLowerCase()));
-                    showNotification(`Merged: Added ${monstersToWrite.length} new entries to Homebrew Bank.`, "success");
+                    next = processedImports.map(m => ({...m, id: generateId()}));
+                } else {
+                        const existingNames = new Set(next.map(m => m.name.toLowerCase()));
+                        processedImports.forEach(m => { 
+                            if (!existingNames.has(m.name.toLowerCase())) {
+                                next.push({...m, id: generateId()}); 
+                            }
+                        });
                 }
-                
-                // 2. Write new/merged documents
-                const writePromises = monstersToWrite.map(m => {
-                    const collectionRef = window.firebase.collection(db, 'artifacts', appId, 'users', userId, 'homebrew');
-                    const docRef = window.firebase.doc(collectionRef);
-                    return window.firebase.setDoc(docRef, { ...m, createdAt: window.firebase.serverTimestamp() });
-                });
-                await Promise.all(writePromises);
-
+                setHomebrew(next);
                 setShowHomebrewImportModal(null);
+                showNotification("Imported successfully.", "success");
             };
 
 
@@ -970,9 +753,6 @@
                                                 <span>Tracker</span>
                                             </a>
                                         </div>
-                                        {/* OFFLINE INDICATOR */}
-                                        {window.isOffline && <div className="bg-red-900/50 border border-red-500/50 text-red-200 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse flex items-center gap-1"><AlertTriangle size={10}/> Offline Mode</div>}
-                                        {userId && !window.isOffline && <div className="text-[10px] text-slate-500 font-mono break-all leading-tight"><span className="text-amber-400">User ID:</span> {userId.slice(0,8)}...</div>}
                                     </div>
                                 </div>
                                 <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
@@ -1006,8 +786,6 @@
                         </header>
 
                         <main className="max-w-6xl mx-auto">
-                            {/* Removed Setup and Battlefield views for brevity in this response */}
-
                             {viewMode === 'homebrew' && (
                                 <div className="animate-fade-in">
                                     <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 mb-6">
@@ -1160,8 +938,8 @@
                                             })}
                                         </div>
                                     </div>
-                                    <div class={`flex-1 bg-slate-800/50 border border-slate-700 rounded-xl p-4 md:p-6 overflow-y-auto flex-col items-start shadow-inner ${selectedRule ? 'flex' : 'hidden md:flex'}`}>
-                                        {selectedRule ? (<div class="w-full animate-fade-in"><button onClick={() => setSelectedRule(null)} class="md:hidden mb-4 flex items-center gap-2 text-xs font-bold text-indigo-300 bg-slate-900/80 px-3 py-2 rounded-lg border border-slate-700 w-full justify-center">Back to Index</button><div class="inline-block px-3 py-1 bg-indigo-900/50 text-indigo-300 text-[10px] font-bold uppercase tracking-widest rounded-full mb-3 border border-indigo-500/30">Rule Details</div><h2 class="text-2xl md:text-3xl font-bold text-white mb-4 border-b border-slate-700 pb-4">{selectedRule.title}</h2><div class="prose prose-invert max-w-none text-slate-300 leading-loose text-base md:text-lg whitespace-pre-wrap">{selectedRule.text}</div></div>) : (<div class="w-full h-full flex flex-col items-center justify-center text-slate-600 opacity-50 select-none"><Grid size={64} strokeWidth={1} class="mb-4 text-slate-700"/><p class="text-xl font-serif italic text-center">Select a rule from the index<br/>to view details.</p></div>)}
+                                    <div className={`flex-1 bg-slate-800/50 border border-slate-700 rounded-xl p-4 md:p-6 overflow-y-auto flex-col items-start shadow-inner ${selectedRule ? 'flex' : 'hidden md:flex'}`}>
+                                        {selectedRule ? (<div className="w-full animate-fade-in"><button onClick={() => setSelectedRule(null)} className="md:hidden mb-4 flex items-center gap-2 text-xs font-bold text-indigo-300 bg-slate-900/80 px-3 py-2 rounded-lg border border-slate-700 w-full justify-center">Back to Index</button><div className="inline-block px-3 py-1 bg-indigo-900/50 text-indigo-300 text-[10px] font-bold uppercase tracking-widest rounded-full mb-3 border border-indigo-500/30">Rule Details</div><h2 className="text-2xl md:text-3xl font-bold text-white mb-4 border-b border-slate-700 pb-4">{selectedRule.title}</h2><div className="prose prose-invert max-w-none text-slate-300 leading-loose text-base md:text-lg whitespace-pre-wrap">{selectedRule.text}</div></div>) : (<div className="w-full h-full flex flex-col items-center justify-center text-slate-600 opacity-50 select-none"><Grid size={64} strokeWidth={1} className="mb-4 text-slate-700"/><p className="text-xl font-serif italic text-center">Select a rule from the index<br/>to view details.</p></div>)}
                                     </div>
                                 </div>
                             )}
@@ -1173,47 +951,9 @@
                 </div>
             );
         }
-        
-        // --- Global Root variable for the one-time root creation ---
-        let reactRoot = null;
 
-        window.onload = function() {
-            const renderApp = () => {
-                try {
-                    const rootElement = document.getElementById('root');
-                    if (rootElement) {
-                         // Check if window.firebase is available before rendering App
-                         if (window.db && window.firebase && window.firebase.collection) {
-                             if (!reactRoot) {
-                                 // Create root only once
-                                 reactRoot = ReactDOM.createRoot(rootElement);
-                             }
-                             // Render/update the app on the existing root
-                             reactRoot.render(<ErrorBoundary><App /></ErrorBoundary>);
-                         } else {
-                             // This path indicates Firebase setup failed or the module script didn't run properly.
-                             console.error("Firebase functions not exposed to window.firebase object. Cannot initialize App.");
-                             rootElement.innerHTML = `<div class="p-8 text-center"><h2 class="text-xl font-bold text-red-500">Initialization Error</h2><p class="text-slate-400 mt-2">The database connection failed to start. Please check the console for details.</p></div>`;
-                         }
-                    } else { throw new Error("Root element not found."); }
-                } catch (e) { console.error("React Mounting Failed:", e); document.getElementById('root').innerHTML = `<div class="text-white text-center mt-20">Failed to load app. Check console.</div>`; }
-            };
-            
-            // Wait for the DOM and then start the rendering process
-            document.addEventListener('auth-ready', () => {
-                // Ensure rendering logic runs after the Firebase/Auth setup is complete
-                renderApp();
-            });
-
-            // Initial render call in case 'auth-ready' fires too quickly, 
-            // but rely on 'auth-ready' for subsequent state updates.
-            // A small timeout helps ensure Firebase script has executed initially.
-            setTimeout(() => {
-                if (window.isAuthReady) {
-                    renderApp();
-                }
-            }, 100);
-        };
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ErrorBoundary><App /></ErrorBoundary>);
     </script>
 </body>
 

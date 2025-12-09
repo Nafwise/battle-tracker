@@ -56,127 +56,23 @@
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
     
-<!-- FIREBASE AUTH INIT (SELF-CONTAINED) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-
-        // --- FIREBASE CONFIGURATION ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyAdlWWNWbpizo_Dx2xJikTDKHdj4AJ0VSY",
-            authDomain: "battletracker-51502.firebaseapp.com",
-            projectId: "battletracker-51502",
-            storageBucket: "battletracker-51502.firebasestorage.app",
-            messagingSenderId: "717377728252",
-            appId: "1:717377728252:web:652210dc6904fef7ce7179"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-
-        // Global instances
-        window.auth = auth;
-
-        // Initialize Auth Helper (Robust)
-        async function initAuth() {
-            console.log("[Hub Auth] Initializing...");
-            const localId = localStorage.getItem('akashic_user_id');
-            
-            // Priority: Try Custom Token (Environment injected)
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                 try {
-                     await signInWithCustomToken(auth, __initial_auth_token);
-                     console.log("[Hub Auth] Signed in with Custom Token");
-                     return auth.currentUser;
-                 } catch (e) {
-                     console.warn("[Hub Auth] Custom token failed, attempting fallback...", e);
-                 }
-            }
-
-            return new Promise((resolve) => {
-                const unsubscribe = onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        console.log("[Hub Auth] User Logged In:", user.uid);
-                        if (!localId) localStorage.setItem('akashic_user_id', user.uid);
-                        unsubscribe();
-                        resolve(user);
-                    } else {
-                        console.log("[Hub Auth] Attempting Anonymous Sign-in...");
-                        signInAnonymously(auth).then((userCredential) => {
-                             unsubscribe();
-                             resolve(userCredential.user);
-                        }).catch((error) => {
-                            console.warn("[Hub Auth] Auth Failed. Entering Offline Mode.", error);
-                            
-                            // SMART ERROR DETECTION
-                            let issue = null;
-                            if (error.message && error.message.includes('requests-from-referer')) {
-                                issue = 'domain_blocked';
-                            }
-
-                            // Fallback to local ID if auth fails to ensure app continuity
-                            const fallbackId = localId || 'offline_user_' + Date.now();
-                            if (!localId) localStorage.setItem('akashic_user_id', fallbackId);
-                            unsubscribe();
-                            resolve({ uid: fallbackId, isAnonymous: true, isOffline: true, authIssue: issue }); 
-                        });
-                    }
-                });
-            });
-        }
-
-        // Wait for auth to settle and update UI
-        initAuth().then((user) => {
-            if (user) {
-                // UNIFIED KEY: 'akashic_user_id' used across all apps
-                let finalId = localStorage.getItem('akashic_user_id');
-
-                if (!finalId) {
-                    finalId = user.uid;
-                    localStorage.setItem('akashic_user_id', finalId);
-                }
-                
-                // Update Footer UI with ID and Status
-                const idDisplay = document.getElementById('user-id-display');
-                if(idDisplay) {
-                    const isOffline = user.isOffline || user.uid.startsWith('offline_');
-                    let statusDot = isOffline ? 'text-red-500' : 'text-green-500';
-                    let statusText = isOffline ? 'Offline Mode' : 'Connected';
-                    let statusClass = isOffline ? 'text-red-400' : 'text-slate-500';
-                    
-                    // Specific Feedback for Domain Blocking
-                    if (user.authIssue === 'domain_blocked') {
-                        statusText = 'Offline (Config Required)';
-                        statusDot = 'text-orange-500';
-                        // Auto-open help modal
-                        const modal = document.getElementById('auth-help-modal');
-                        if (modal) modal.classList.add('open');
-                    }
-                    
-                    idDisplay.innerHTML = `<span class="${statusDot}">●</span> <span class="${statusClass}">${statusText}</span> as <span class="font-mono text-indigo-400">${finalId.slice(0,8)}...</span>`;
-                }
-            }
-        });
-    </script>
-
     <div class="max-w-5xl w-full text-center space-y-8 animate-fade-in">
         <div class="space-y-2">
             <h1 class="text-4xl md:text-6xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
                 The Akashic Tome
             </h1>
-            <p class="text-slate-400 text-lg">Dungeon Master's Digital Suite</p>
+            <p class="text-slate-400 text-lg">Dungeon Master's Local Digital Suite</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
             
-            <!-- MONSTER WORKSHOP (Formerly Homebrew Bank) -->
+            <!-- MONSTER WORKSHOP -->
             <a href="./homebrew.html" class="astral-card p-6 rounded-2xl group cursor-pointer text-left relative overflow-hidden flex flex-col h-full no-underline">
                 <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                     <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
                 </div>
                 <h2 class="text-xl font-bold text-amber-500 mb-2 group-hover:text-amber-400">Monster Workshop</h2>
-                <p class="text-slate-400 text-xs mb-4 flex-1">Create, edit, and store custom monsters using AI. Syncs to cloud.</p>
+                <p class="text-slate-400 text-xs mb-4 flex-1">Create, edit, and store custom monsters using AI. Saved locally.</p>
                 <span class="inline-flex items-center text-xs font-bold text-indigo-400 group-hover:text-indigo-300">
                     Open Laboratory &rarr;
                 </span>
@@ -210,7 +106,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg>
                 </div>
                 <h2 class="text-xl font-bold text-red-500 mb-2 group-hover:text-red-400">Loot Records</h2>
-                <p class="text-slate-400 text-xs mb-4 flex-1">Parse battlefield data for scavenge rolls or generate random treasure hoards.</p>
+                <p class="text-slate-400 text-xs mb-4 flex-1">Parse battlefield data from the Tracker or generate random treasure hoards.</p>
                 <span class="inline-flex items-center text-xs font-bold text-indigo-400 group-hover:text-indigo-300">
                     Open Vault &rarr;
                 </span>
@@ -221,54 +117,22 @@
         <!-- Welcome Message Block -->
         <div class="mt-12 p-6 bg-slate-900/80 rounded-xl border border-slate-700 shadow-lg max-w-2xl mx-auto backdrop-blur-sm">
             <p class="text-slate-300 text-sm leading-relaxed italic">
-                "Hi there all! Thank you so much for taking the time to try the Akashic Tome! If you have any problems, notice a bug, or anything else, do not hesitate to email me an error log at <a href="mailto:Nathan.cook91@outlook.com" class="text-indigo-400 hover:text-indigo-300 font-bold underline decoration-indigo-500/30 hover:decoration-indigo-300 transition-all">Nathan.cook91@outlook.com</a>! Thank you for trying!" 
+                "Welcome to the Akashic Tome. This suite is now fully offline-capable, storing your data safely in your browser. No internet connection required to run your games!" 
             </p>
-            <p class="text-right text-indigo-400 text-xs font-bold mt-2">— Nafwise</p>
         </div>
 
         <!-- Footer -->
         <footer class="pt-8 text-slate-600 text-xs font-mono flex flex-col items-center gap-2">
             <!-- ID Display Target -->
             <div id="user-id-display" class="mb-2 flex items-center gap-2">
-                <span class="text-slate-600 animate-pulse">Initializing Identity...</span>
+                <span class="text-green-500">●</span> <span class="text-slate-500">Local Storage Mode</span>
             </div>
             
-            <span>v1.2.2 • Connected via Firebase</span>
+            <span>v1.3.0 • Offline Ready</span>
             <button onclick="toggleChangelog()" class="text-slate-500 hover:text-white underline decoration-slate-700 hover:decoration-white transition-colors">
-                View Full System Changelog
+                View System Changelog
             </button>
         </footer>
-    </div>
-
-    <!-- AUTH HELP MODAL -->
-    <div id="auth-help-modal" class="modal-overlay">
-        <div class="modal-content border-orange-700/50">
-            <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
-                <h2 class="text-xl font-bold text-orange-500 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-                    Setup Required
-                </h2>
-            </div>
-            
-            <p class="text-slate-300 text-sm mb-4">
-                Your database connection was blocked by Firebase security rules. This is normal for new GitHub deployments.
-            </p>
-            
-            <div class="bg-black/50 p-3 rounded text-xs font-mono text-orange-300 mb-4 border border-orange-900/50">
-                Error: auth/requests-from-referer-blocked
-            </div>
-
-            <ol class="list-decimal list-inside text-slate-400 text-sm space-y-2 mb-6 pl-2">
-                <li>Go to <a href="https://console.firebase.google.com/" target="_blank" class="text-indigo-400 underline hover:text-indigo-300">Firebase Console</a> and open project <strong>battletracker-51502</strong>.</li>
-                <li>Navigate to <strong>Authentication</strong> &rarr; <strong>Settings</strong> tab.</li>
-                <li>Scroll down to <strong>Authorized Domains</strong>.</li>
-                <li>Click <strong>Add Domain</strong> and enter: <span class="text-white font-mono bg-slate-800 px-1 rounded">nafwise.github.io</span></li>
-            </ol>
-
-            <div class="mt-6 text-center">
-                <button onclick="document.getElementById('auth-help-modal').classList.remove('open')" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold text-sm transition-colors">I've Added It, Close This</button>
-            </div>
-        </div>
     </div>
 
     <!-- CHANGELOG MODAL -->
@@ -285,32 +149,14 @@
             </div>
             
             <div class="cl-section">
-                <div class="cl-header text-indigo-400">System Core (v1.2.2) <span class="badge-new">LATEST</span></div>
-                <div class="cl-item">Hub Logic: The Homepage now acts as the central Authentication Hub with Offline Resilience.</div>
-                <div class="cl-item">Sticky Identity: Visiting the Hub synchronizes your User ID across all apps, even without internet.</div>
+                <div class="cl-header text-indigo-400">System Core (v1.3.0) <span class="badge-new">LATEST</span></div>
+                <div class="cl-item">Offline Architecture: Removed Firebase dependencies. All data is now persisted via LocalStorage.</div>
+                <div class="cl-item">Local Sync: Tracker, Loot, and Workshop now share data instantly via browser memory.</div>
             </div>
 
             <div class="cl-section">
-                <div class="cl-header text-indigo-400">System Core (v1.2.1)</div>
-                <div class="cl-item">UI Polish: Unified button styling with glowing borders and solid colors for consistent navigation.</div>
-                <div class="cl-item">Icons: Updated application icons (Castle Gate, Ghost) for better visual distinction across the suite.</div>
-            </div>
-
-            <div class="cl-section">
-                <div class="cl-header text-red-400">Initiative Tracker (v1.1.8)</div>
-                <div class="cl-item">UI Updates: Centralized health, visual updates for Monsters.</div>
-                <div class="cl-item">Lifecycle: Start/End Battle flow.</div>
-            </div>
-
-            <div class="cl-section">
-                <div class="cl-header text-amber-500">Monster Workshop (v1.1.0)</div>
-                <div class="cl-item">Rebrand: Formerly Homebrew Bank.</div>
-                <div class="cl-item">Persistence: Firestore sync & local backup.</div>
-            </div>
-
-            <div class="cl-section">
-                <div class="cl-header text-red-500">Loot Records (v1.0.0)</div>
-                <div class="cl-item">Launch: Item Forge, Scanner, and Vault.</div>
+                <div class="cl-header text-indigo-400">System Core (v1.2.2)</div>
+                <div class="cl-item">Hub Logic: The Homepage acts as the central navigation hub.</div>
             </div>
 
             <div class="mt-6 text-center">
