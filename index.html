@@ -18,10 +18,9 @@
             transform: translateY(-2px);
         }
         /* Special hover for the Loot card - Ladybug Style */
-        .loot-hover:hover {
-            border-color: #EF4444; /* Red-500 */
-            box-shadow: 0 0 25px rgba(239, 68, 68, 0.4); /* Red Glow */
-        }
+        .loot-hover:hover { border-color: #EF4444; box-shadow: 0 0 25px rgba(239, 68, 68, 0.4); }
+        /* Special hover for the Map card - Cyan Style */
+        .map-hover:hover { border-color: #06B6D4; box-shadow: 0 0 25px rgba(6, 182, 212, 0.4); }
         
         /* Modal Styles */
         .modal-overlay {
@@ -56,7 +55,7 @@
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
     
-    <div class="max-w-5xl w-full text-center space-y-8 animate-fade-in">
+    <div class="max-w-6xl w-full text-center space-y-8 animate-fade-in">
         <div class="space-y-2">
             <h1 class="text-4xl md:text-6xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
                 The Akashic Tome
@@ -64,52 +63,47 @@
             <p class="text-slate-400 text-lg">Dungeon Master's Local Digital Suite</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+        <!-- UPDATED GRID: Added Map Card -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12 text-left">
             
+            <!-- TRACKER -->
+            <a href="./tome.html" class="astral-card p-6 rounded-2xl group cursor-pointer relative overflow-hidden flex flex-col h-full no-underline">
+                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-8a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v8"/><path d="M4 11V7"/><path d="M20 11V7"/><path d="M2 7h4v4H2z"/><path d="M18 7h4v4h-4z"/><path d="M4 7l2-4 2 4"/><path d="M18 7l2-4 2 4"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/></svg>
+                </div>
+                <h2 class="text-xl font-bold text-red-500 mb-2 group-hover:text-red-400">Initiative Tracker</h2>
+                <p class="text-slate-400 text-xs mb-4 flex-1">Manage combat, track HP/Conditions, and run encounters.</p>
+                <span class="inline-flex items-center text-xs font-bold text-indigo-400 group-hover:text-indigo-300">Enter Battlefield &rarr;</span>
+            </a>
+
+            <!-- MAP (NEW) -->
+            <a href="./map.html" class="astral-card map-hover p-6 rounded-2xl group cursor-pointer relative overflow-hidden flex flex-col h-full no-underline">
+                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+                </div>
+                <h2 class="text-xl font-bold text-cyan-400 mb-2 group-hover:text-cyan-300">Akashic Atlas</h2>
+                <p class="text-slate-400 text-xs mb-4 flex-1">3D Tactical Map. Visualise positions and syncs with Tracker.</p>
+                <span class="inline-flex items-center text-xs font-bold text-indigo-400 group-hover:text-indigo-300">Open Map &rarr;</span>
+            </a>
+
             <!-- MONSTER WORKSHOP -->
-            <a href="./homebrew.html" class="astral-card p-6 rounded-2xl group cursor-pointer text-left relative overflow-hidden flex flex-col h-full no-underline">
+            <a href="./homebrew.html" class="astral-card p-6 rounded-2xl group cursor-pointer relative overflow-hidden flex flex-col h-full no-underline">
                 <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                     <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
                 </div>
                 <h2 class="text-xl font-bold text-amber-500 mb-2 group-hover:text-amber-400">Monster Workshop</h2>
-                <p class="text-slate-400 text-xs mb-4 flex-1">Create, edit, and store custom monsters using AI. Saved locally.</p>
-                <span class="inline-flex items-center text-xs font-bold text-indigo-400 group-hover:text-indigo-300">
-                    Open Laboratory &rarr;
-                </span>
-            </a>
-
-            <!-- TRACKER -->
-            <a href="./tome.html" class="astral-card p-6 rounded-2xl group cursor-pointer text-left relative overflow-hidden flex flex-col h-full no-underline">
-                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <!-- Castle Gate Icon -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 21v-8a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v8"/>
-                        <path d="M4 11V7"/>
-                        <path d="M20 11V7"/>
-                        <path d="M2 7h4v4H2z"/>
-                        <path d="M18 7h4v4h-4z"/>
-                        <path d="M4 7l2-4 2 4"/>
-                        <path d="M18 7l2-4 2 4"/>
-                        <path d="M10 21v-4a2 2 0 0 1 4 0v4"/>
-                    </svg>
-                </div>
-                <h2 class="text-xl font-bold text-red-500 mb-2 group-hover:text-red-400">Initiative Tracker</h2>
-                <p class="text-slate-400 text-xs mb-4 flex-1">Manage combat, track HP/Conditions, and run encounters.</p>
-                <span class="inline-flex items-center text-xs font-bold text-indigo-400 group-hover:text-indigo-300">
-                    Enter Battlefield &rarr;
-                </span>
+                <p class="text-slate-400 text-xs mb-4 flex-1">Create, edit, and store custom monsters using AI.</p>
+                <span class="inline-flex items-center text-xs font-bold text-indigo-400 group-hover:text-indigo-300">Open Laboratory &rarr;</span>
             </a>
 
             <!-- LOOT RECORDS -->
-            <a href="./loot.html" class="astral-card loot-hover p-6 rounded-2xl group cursor-pointer text-left relative overflow-hidden flex flex-col h-full no-underline">
+            <a href="./loot.html" class="astral-card loot-hover p-6 rounded-2xl group cursor-pointer relative overflow-hidden flex flex-col h-full no-underline">
                 <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                     <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg>
                 </div>
                 <h2 class="text-xl font-bold text-red-500 mb-2 group-hover:text-red-400">Loot Records</h2>
-                <p class="text-slate-400 text-xs mb-4 flex-1">Parse battlefield data from the Tracker or generate random treasure hoards.</p>
-                <span class="inline-flex items-center text-xs font-bold text-indigo-400 group-hover:text-indigo-300">
-                    Open Vault &rarr;
-                </span>
+                <p class="text-slate-400 text-xs mb-4 flex-1">Parse battlefield data or generate treasure hoards.</p>
+                <span class="inline-flex items-center text-xs font-bold text-indigo-400 group-hover:text-indigo-300">Open Vault &rarr;</span>
             </a>
 
         </div>
@@ -123,12 +117,10 @@
 
         <!-- Footer -->
         <footer class="pt-8 text-slate-600 text-xs font-mono flex flex-col items-center gap-2">
-            <!-- ID Display Target -->
             <div id="user-id-display" class="mb-2 flex items-center gap-2">
                 <span class="text-green-500">●</span> <span class="text-slate-500">Local Storage Mode</span>
             </div>
-            
-            <span>v1.3.0 • Offline Ready</span>
+            <span>v1.3.5 • Offline Ready</span>
             <button onclick="toggleChangelog()" class="text-slate-500 hover:text-white underline decoration-slate-700 hover:decoration-white transition-colors">
                 View System Changelog
             </button>
@@ -149,14 +141,16 @@
             </div>
             
             <div class="cl-section">
-                <div class="cl-header text-indigo-400">System Core (v1.3.0) <span class="badge-new">LATEST</span></div>
-                <div class="cl-item">Offline Architecture: Removed Firebase dependencies. All data is now persisted via LocalStorage.</div>
-                <div class="cl-item">Local Sync: Tracker, Loot, and Workshop now share data instantly via browser memory.</div>
+                <div class="cl-header text-cyan-400">Expansion: The Atlas (v1.3.5) <span class="badge-new">NEW</span></div>
+                <div class="cl-item">New App: <strong>Akashic Atlas</strong> added to the suite.</div>
+                <div class="cl-item">3D Visualization: View your current tracker combatants on a tactical 3D grid.</div>
+                <div class="cl-item">Position Sync: Drag tokens to save their position locally.</div>
             </div>
 
             <div class="cl-section">
-                <div class="cl-header text-indigo-400">System Core (v1.2.2)</div>
-                <div class="cl-item">Hub Logic: The Homepage acts as the central navigation hub.</div>
+                <div class="cl-header text-indigo-400">System Core (v1.3.0)</div>
+                <div class="cl-item">Offline Architecture: Removed Firebase dependencies. All data is now persisted via LocalStorage.</div>
+                <div class="cl-item">Local Sync: Tracker, Loot, and Workshop now share data instantly via browser memory.</div>
             </div>
 
             <div class="mt-6 text-center">
