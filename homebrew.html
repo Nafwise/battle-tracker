@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><script src="./firebase-config.js"></script>
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Monster Workshop</title>
@@ -82,44 +82,107 @@
         .masonry-grid { column-count: 1; column-gap: 1rem; }
         @media (min-width: 640px) { .masonry-grid { column-count: 2; } }
         @media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
+        
+        /* Animation classes */
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100">
     <div id="root"></div>
 
-    <!-- FIREBASE IMPORTS -->
-   <script type="module">
-    // Import from our centralized file
-    import { db, auth, initAuth, doc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, getDocs } from "./firebase-config.js";
+   <!-- FIREBASE CONFIG & INITIALIZATION (MERGED) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, setDoc, addDoc, deleteDoc, query, where, orderBy, onSnapshot, serverTimestamp, getDocs, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Global Firebase instances for React
-    window.db = db;
-    window.auth = auth;
-    window.currentUserId = null;
-    window.isAuthReady = false;
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAdlWWNWbpizo_Dx2xJikTDKHdj4AJ0VSY",
+            authDomain: "battletracker-51502.firebaseapp.com",
+            projectId: "battletracker-51502",
+            storageBucket: "battletracker-51502.firebasestorage.app",
+            messagingSenderId: "717377728252",
+            appId: "1:717377728252:web:652210dc6904fef7ce7179"
+        };
 
-    // Expose Firestore functions to window so React can see them
-    window.firebase = {
-        doc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, getDocs
-    };
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-    // Initialize Auth
-    initAuth().then((user) => {
-        if (user) {
-            console.log("Connected as:", user.uid);
-            window.currentUserId = user.uid;
+        // Global instances for React
+        window.db = db;
+        window.auth = auth;
+        window.currentUserId = null;
+        window.isAuthReady = false;
+        window.isOffline = false; // NEW FLAG
+
+        // Expose Firestore functions to window so React can see them
+        window.firebase = {
+            doc, setDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, getDocs, limit, orderBy, where, addDoc, deleteDoc
+        };
+
+        // Initialize Auth Helper
+        async function initAuth() {
+            console.log("[Firebase Config] Initializing Auth...");
+            const localId = localStorage.getItem('akashic_user_id');
             
-            // Ensure we don't overwrite the ID if it exists, to prevent "deletion"
-            if (!localStorage.getItem('akashic_user_id')) {
-                localStorage.setItem('akashic_user_id', user.uid);
+            // Priority: Try Custom Token (Environment injected)
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                 try {
+                     await signInWithCustomToken(auth, __initial_auth_token);
+                     console.log("[Firebase Config] Signed in with Custom Token");
+                     return auth.currentUser;
+                 } catch (e) {
+                     console.warn("[Firebase Config] Custom token failed, attempting fallback...", e);
+                 }
             }
 
+            return new Promise((resolve) => {
+                const unsubscribe = onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        console.log("[Firebase Config] User Logged In:", user.uid);
+                        if (!localId) localStorage.setItem('akashic_user_id', user.uid);
+                        unsubscribe();
+                        resolve(user);
+                    } else {
+                        console.log("[Firebase Config] Attempting Anonymous Sign-in...");
+                        signInAnonymously(auth).then((userCredential) => {
+                             unsubscribe();
+                             resolve(userCredential.user);
+                        }).catch((error) => {
+                            // --- CRITICAL FIX: OFFLINE FALLBACK ---
+                            console.warn("[Firebase Config] Auth Failed. Entering Offline Mode.", error);
+                            window.isOffline = true;
+                            // Generate a purely local ID if we don't have one
+                            window.currentUserId = localId || 'offline_user_' + Date.now();
+                            unsubscribe();
+                            resolve({ uid: window.currentUserId, isAnonymous: true }); 
+                        });
+                    }
+                });
+            });
+        }
+
+        // Expose initAuth to window just in case
+        window.initAuth = initAuth;
+
+        // Kickoff Auth Flow
+        initAuth().then((user) => {
+            if (user && !window.isOffline) {
+                console.log("Connected as:", user.uid);
+                window.currentUserId = user.uid;
+            } else {
+                console.log("Initialized in Offline/Fallback Mode");
+            }
+            
+            // Mark ready REGARDLESS of success so app renders
             window.isAuthReady = true;
             document.dispatchEvent(new CustomEvent('auth-ready'));
-        }
-    });
-</script>
-
+        });
+    </script>
 
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback } = React;
@@ -165,7 +228,10 @@
         ];
         const INITIAL_MONSTER_DETAILS = { resistances: '', vulnerabilities: '', actions: '', statBlockSummary: '', type: 'Unknown' };
         const LAST_ACKNOWLEDGED_VERSION_KEY = 'dm-tools-acknowledged-version';
-        const HARDCODED_API_KEY = ""; 
+        
+        // --- BAKED IN KEY ---
+        const HARDCODED_API_KEY = "AIzaSyB1Xn3Wq0UXF92lmS6zWOjFJ3SXGj2pSrk"; 
+        
         const CURRENT_VERSION = "1.1.0"; 
         const INPUT_CLASS = "w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 focus:outline-none focus:border-indigo-500 text-sm";
         
@@ -505,8 +571,13 @@
             const [appId, setAppId] = useState(null);
             const [isInitialAuthCheckComplete, setIsInitialAuthCheckComplete] = useState(false);
             
-            // App State
-            const [homebrew, setHomebrew] = useState([]);
+            // App State - INITIALIZE FROM LOCALSTORAGE IF AVAILABLE
+            const [homebrew, setHomebrew] = useState(() => {
+                try {
+                    const local = localStorage.getItem('dm-tracker-homebrew');
+                    return local ? JSON.parse(local) : [];
+                } catch(e) { return []; }
+            });
             
             // Changelog State
             const [lastAcknowledgedVersion, setLastAcknowledgedVersion] = useState(() => localStorage.getItem(LAST_ACKNOWLEDGED_VERSION_KEY) || '0.0.0');
@@ -554,18 +625,27 @@
                     }
                 };
 
-                document.addEventListener('auth-ready', handleAuthReady);
-                handleAuthReady(); 
+                // Check immediately in case it's already ready
+                if (window.isAuthReady) {
+                    handleAuthReady();
+                }
 
+                document.addEventListener('auth-ready', handleAuthReady);
+                
                 return () => {
                     document.removeEventListener('auth-ready', handleAuthReady);
                 };
             }, []);
 
-            // Firestore Data Listener Effect
+            // Firestore Data Listener Effect - SKIPPED IF OFFLINE
             useEffect(() => {
                 if (!db || !userId || !appId || !isInitialAuthCheckComplete) {
                     return;
+                }
+
+                if (window.isOffline) {
+                    showNotification("Offline Mode: Saving locally.", "info");
+                    return; 
                 }
 
                 // Using Modular Syntax via window.firebase
@@ -578,7 +658,7 @@
                     }
                 }, error => {
                     console.error("Error syncing homebrew:", error);
-                    showNotification("Failed to load Homebrew Bank. Permissions error or offline.", "error");
+                    // Don't show error to user if we have local data
                 });
                 return () => unsubscribe();
             }, [db, userId, appId, isInitialAuthCheckComplete]);
@@ -633,8 +713,17 @@
                 showNotification(`Loaded ${monster.name} for editing.`, "info");
             };
 
-            // Firestore Operations
+            // Firestore Operations - UPDATED FOR OFFLINE SUPPORT
             const deleteHomebrew = async (id) => {
+                // Optimistic UI update for Offline Mode
+                if (window.isOffline) {
+                    const updated = homebrew.filter(h => h.id !== id);
+                    setHomebrew(updated);
+                    localStorage.setItem('dm-tracker-homebrew', JSON.stringify(updated));
+                    showNotification("Deleted (Local Only)", "info");
+                    return;
+                }
+
                 if (!db || !userId || !appId) { showNotification("Database not ready.", "error"); return; }
                 try {
                     await window.firebase.deleteDoc(window.firebase.doc(db, 'artifacts', appId, 'users', userId, 'homebrew', id));
@@ -647,7 +736,6 @@
             
             const saveHomebrewMonster = async (e) => {
                 e.preventDefault();
-                if (!db || !userId || !appId) { showNotification("Database not ready.", "error"); return; }
                 if (!homebrewForm.name || !homebrewForm.hp) { showNotification("Name/HP required", "error"); return; }
                 
                 const newMonsterData = { 
@@ -658,11 +746,30 @@
                     type: homebrewForm.type || 'Unknown', 
                     cr: parseFloat(homebrewForm.cr) || 0, // Ensure CR is saved
                     ...monsterDetails,
-                    createdAt: window.firebase.serverTimestamp() // Add timestamp for sorting/tracking
+                    createdAt: window.isOffline ? new Date().toISOString() : window.firebase.serverTimestamp() // Timestamp handling
                 };
 
-                const existing = homebrew.find(h => h.name.toLowerCase() === homebrewForm.name.toLowerCase());
+                const existingIndex = homebrew.findIndex(h => h.name.toLowerCase() === homebrewForm.name.toLowerCase());
+                const existing = existingIndex >= 0 ? homebrew[existingIndex] : null;
                 
+                // OFFLINE SAVE
+                if (window.isOffline) {
+                    let updatedList = [...homebrew];
+                    if (existing) {
+                        updatedList[existingIndex] = { ...existing, ...newMonsterData };
+                        showNotification("Updated (Local Only)", "info");
+                    } else {
+                        updatedList.push({ ...newMonsterData, id: generateId() });
+                        showNotification("Saved (Local Only)", "success");
+                    }
+                    setHomebrew(updatedList);
+                    localStorage.setItem('dm-tracker-homebrew', JSON.stringify(updatedList));
+                    clearHomebrewForm();
+                    return;
+                }
+
+                // ONLINE SAVE
+                if (!db || !userId || !appId) { showNotification("Database not ready.", "error"); return; }
                 try {
                     if (existing) {
                         // Update existing monster
@@ -743,12 +850,8 @@
             };
 
             const handleHomebrewConfirm = async (strategy) => {
-                if (!db || !userId || !appId) { showNotification("Database not ready.", "error"); setShowHomebrewImportModal(null); return; }
-
                 const { data: importedMonsters } = showHomebrewImportModal;
-                const HOMEBREW_PATH = `artifacts/${appId}/users/${userId}/homebrew`;
                 const processedImports = importedMonsters.map(m => { 
-                    // Clean up/re-ID monsters from the imported file
                     const cleanedMonster = { ...m };
                     delete cleanedMonster.id; 
                     delete cleanedMonster.createdAt;
@@ -757,6 +860,29 @@
                     } 
                     return cleanedMonster;
                 }).filter(m => m.name && m.hp);
+
+                // OFFLINE IMPORT
+                if (window.isOffline) {
+                    let next = [...homebrew];
+                    if (strategy === 'overwrite') {
+                        next = processedImports.map(m => ({...m, id: generateId()}));
+                    } else {
+                         const existingNames = new Set(next.map(m => m.name.toLowerCase()));
+                         processedImports.forEach(m => { 
+                             if (!existingNames.has(m.name.toLowerCase())) {
+                                 next.push({...m, id: generateId()}); 
+                             }
+                         });
+                    }
+                    setHomebrew(next);
+                    localStorage.setItem('dm-tracker-homebrew', JSON.stringify(next));
+                    setShowHomebrewImportModal(null);
+                    showNotification("Imported (Local Only)", "success");
+                    return;
+                }
+
+                // ONLINE IMPORT
+                if (!db || !userId || !appId) { showNotification("Database not ready.", "error"); setShowHomebrewImportModal(null); return; }
 
                 let monstersToWrite = [];
                 let existingMonsters = homebrew;
@@ -844,7 +970,9 @@
                                                 <span>Tracker</span>
                                             </a>
                                         </div>
-                                        {userId && <div className="text-[10px] text-slate-500 font-mono break-all leading-tight"><span className="text-amber-400">User ID:</span> {userId.slice(0,8)}...</div>}
+                                        {/* OFFLINE INDICATOR */}
+                                        {window.isOffline && <div className="bg-red-900/50 border border-red-500/50 text-red-200 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse flex items-center gap-1"><AlertTriangle size={10}/> Offline Mode</div>}
+                                        {userId && !window.isOffline && <div className="text-[10px] text-slate-500 font-mono break-all leading-tight"><span className="text-amber-400">User ID:</span> {userId.slice(0,8)}...</div>}
                                     </div>
                                 </div>
                                 <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
