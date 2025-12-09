@@ -108,11 +108,18 @@
                              resolve(userCredential.user);
                         }).catch((error) => {
                             console.warn("[Hub Auth] Auth Failed. Entering Offline Mode.", error);
+                            
+                            // SMART ERROR DETECTION
+                            let issue = null;
+                            if (error.message && error.message.includes('requests-from-referer')) {
+                                issue = 'domain_blocked';
+                            }
+
                             // Fallback to local ID if auth fails to ensure app continuity
                             const fallbackId = localId || 'offline_user_' + Date.now();
                             if (!localId) localStorage.setItem('akashic_user_id', fallbackId);
                             unsubscribe();
-                            resolve({ uid: fallbackId, isAnonymous: true, isOffline: true }); 
+                            resolve({ uid: fallbackId, isAnonymous: true, isOffline: true, authIssue: issue }); 
                         });
                     }
                 });
@@ -134,9 +141,15 @@
                 const idDisplay = document.getElementById('user-id-display');
                 if(idDisplay) {
                     const isOffline = user.isOffline || user.uid.startsWith('offline_');
-                    const statusDot = isOffline ? 'text-red-500' : 'text-green-500';
-                    const statusText = isOffline ? 'Offline Mode' : 'Connected';
-                    const statusClass = isOffline ? 'text-red-400' : 'text-slate-500';
+                    let statusDot = isOffline ? 'text-red-500' : 'text-green-500';
+                    let statusText = isOffline ? 'Offline Mode' : 'Connected';
+                    let statusClass = isOffline ? 'text-red-400' : 'text-slate-500';
+                    
+                    // Specific Feedback for Domain Blocking
+                    if (user.authIssue === 'domain_blocked') {
+                        statusText = 'Offline (Domain Blocked - Check Firebase Console)';
+                        statusDot = 'text-orange-500';
+                    }
                     
                     idDisplay.innerHTML = `<span class="${statusDot}">●</span> <span class="${statusClass}">${statusText}</span> as <span class="font-mono text-indigo-400">${finalId.slice(0,8)}...</span>`;
                 }
