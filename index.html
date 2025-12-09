@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="./firebase-config.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Akashic Tome</title>
@@ -57,29 +56,93 @@
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
     
-    <!-- FIREBASE AUTH INIT -->
-   <script type="module">
-    import { auth, initAuth } from "./firebase-config.js";
+<!-- FIREBASE AUTH INIT (SELF-CONTAINED) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-    // Wait for auth to settle
-    initAuth().then((user) => {
-        if (user) {
-            // UNIFIED KEY: 'akashic_user_id'
-            let finalId = localStorage.getItem('akashic_user_id');
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAdlWWNWbpizo_Dx2xJikTDKHdj4AJ0VSY",
+            authDomain: "battletracker-51502.firebaseapp.com",
+            projectId: "battletracker-51502",
+            storageBucket: "battletracker-51502.firebasestorage.app",
+            messagingSenderId: "717377728252",
+            appId: "1:717377728252:web:652210dc6904fef7ce7179"
+        };
 
-            if (!finalId) {
-                finalId = user.uid;
-                localStorage.setItem('akashic_user_id', finalId);
-            }
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Global instances
+        window.auth = auth;
+
+        // Initialize Auth Helper (Robust)
+        async function initAuth() {
+            console.log("[Hub Auth] Initializing...");
+            const localId = localStorage.getItem('akashic_user_id');
             
-            // Update Footer UI
-            const idDisplay = document.getElementById('user-id-display');
-            if(idDisplay) {
-                idDisplay.innerHTML = `<span class="text-green-500">●</span> Connected as <span class="font-mono text-indigo-400">${finalId.slice(0,8)}...</span>`;
+            // Priority: Try Custom Token (Environment injected)
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                 try {
+                     await signInWithCustomToken(auth, __initial_auth_token);
+                     console.log("[Hub Auth] Signed in with Custom Token");
+                     return auth.currentUser;
+                 } catch (e) {
+                     console.warn("[Hub Auth] Custom token failed, attempting fallback...", e);
+                 }
             }
+
+            return new Promise((resolve) => {
+                const unsubscribe = onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        console.log("[Hub Auth] User Logged In:", user.uid);
+                        if (!localId) localStorage.setItem('akashic_user_id', user.uid);
+                        unsubscribe();
+                        resolve(user);
+                    } else {
+                        console.log("[Hub Auth] Attempting Anonymous Sign-in...");
+                        signInAnonymously(auth).then((userCredential) => {
+                             unsubscribe();
+                             resolve(userCredential.user);
+                        }).catch((error) => {
+                            console.warn("[Hub Auth] Auth Failed. Entering Offline Mode.", error);
+                            // Fallback to local ID if auth fails to ensure app continuity
+                            const fallbackId = localId || 'offline_user_' + Date.now();
+                            if (!localId) localStorage.setItem('akashic_user_id', fallbackId);
+                            unsubscribe();
+                            resolve({ uid: fallbackId, isAnonymous: true, isOffline: true }); 
+                        });
+                    }
+                });
+            });
         }
-    });
-</script>
+
+        // Wait for auth to settle and update UI
+        initAuth().then((user) => {
+            if (user) {
+                // UNIFIED KEY: 'akashic_user_id' used across all apps
+                let finalId = localStorage.getItem('akashic_user_id');
+
+                if (!finalId) {
+                    finalId = user.uid;
+                    localStorage.setItem('akashic_user_id', finalId);
+                }
+                
+                // Update Footer UI with ID and Status
+                const idDisplay = document.getElementById('user-id-display');
+                if(idDisplay) {
+                    const isOffline = user.isOffline || user.uid.startsWith('offline_');
+                    const statusDot = isOffline ? 'text-red-500' : 'text-green-500';
+                    const statusText = isOffline ? 'Offline Mode' : 'Connected';
+                    const statusClass = isOffline ? 'text-red-400' : 'text-slate-500';
+                    
+                    idDisplay.innerHTML = `<span class="${statusDot}">●</span> <span class="${statusClass}">${statusText}</span> as <span class="font-mono text-indigo-400">${finalId.slice(0,8)}...</span>`;
+                }
+            }
+        });
+    </script>
 
     <div class="max-w-5xl w-full text-center space-y-8 animate-fade-in">
         <div class="space-y-2">
@@ -150,9 +213,11 @@
         <!-- Footer -->
         <footer class="pt-8 text-slate-600 text-xs font-mono flex flex-col items-center gap-2">
             <!-- ID Display Target -->
-            <div id="user-id-display" class="mb-2">Connecting to Akashic Network...</div>
+            <div id="user-id-display" class="mb-2 flex items-center gap-2">
+                <span class="text-slate-600 animate-pulse">Initializing Identity...</span>
+            </div>
             
-            <span>v1.2.1 • Connected via Firebase</span>
+            <span>v1.2.2 • Connected via Firebase</span>
             <button onclick="toggleChangelog()" class="text-slate-500 hover:text-white underline decoration-slate-700 hover:decoration-white transition-colors">
                 View Full System Changelog
             </button>
@@ -174,8 +239,8 @@
             
             <div class="cl-section">
                 <div class="cl-header text-indigo-400">System Core (v1.2.2) <span class="badge-new">LATEST</span></div>
-                <div class="cl-item">Hub Logic: The Homepage now acts as the central Authentication Hub.</div>
-                <div class="cl-item">Sticky Identity: Visiting the Hub synchronizes your User ID across all apps.</div>
+                <div class="cl-item">Hub Logic: The Homepage now acts as the central Authentication Hub with Offline Resilience.</div>
+                <div class="cl-item">Sticky Identity: Visiting the Hub synchronizes your User ID across all apps, even without internet.</div>
             </div>
 
             <div class="cl-section">
