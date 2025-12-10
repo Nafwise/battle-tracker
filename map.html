@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akashic Atlas (3D Map)</title>
+    <!-- Tailwind for matching the suite's theme -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #020617; font-family: ui-sans-serif, system-ui, sans-serif; }
+        
+        /* UI Overlay Styles matching Astral Theme */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        .pointer-events-auto { pointer-events: auto; }
+        
+        /* Custom Scrollbar for lists */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        
+        /* Crosshair */
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 20px; height: 20px;
+            transform: translate(-50%, -50%); pointer-events: none; mix-blend-mode: difference;
+        }
+        #crosshair::before { content: ''; position: absolute; top: 9px; left: 0; width: 20px; height: 2px; background: rgba(255, 255, 255, 0.8); }
+        #crosshair::after { content: ''; position: absolute; top: 0; left: 9px; width: 2px; height: 20px; background: rgba(255, 255, 255, 0.8); }
+
+        /* Floating Tooltip for Hovered Token */
+        #tooltip {
+            position: absolute; display: none;
+            background: rgba(15, 23, 42, 0.9); border: 1px solid #475569;
+            padding: 8px 12px; border-radius: 8px; color: white;
+            backdrop-filter: blur(4px); pointer-events: none;
+            transform: translate(-50%, -120%); white-space: nowrap;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            z-index: 20;
+        }
+
+        .slot { width: 36px; height: 36px; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; transition: all 0.2s; border-radius: 4px; }
+        .slot:hover { transform: scale(1.1); border-color: white; }
+        .slot.active { border-color: #38BDF8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); transform: scale(1.1); }
+    </style>
+</head>
+<body>
+
+    <!-- UI OVERLAY -->
+    <div id="ui-layer" class="flex flex-col justify-between p-4">
+        
+        <!-- HEADER -->
+        <header class="pointer-events-auto flex justify-between items-start">
+            <div class="bg-slate-900/90 border border-slate-700 p-3 rounded-xl shadow-lg backdrop-blur-sm">
+                <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan-400"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+                    Akashic Atlas
+                </h1>
+                <div class="text-xs text-slate-400 mt-1 flex gap-2">
+                    <span id="coords">0, 0, 0</span> | <span id="block-count">0</span> Blocks
+                </div>
+            </div>
+
+            <!-- NAVIGATION (Matches Suite) -->
+            <div class="flex gap-2">
+                <a href="./index.html" class="pointer-events-auto bg-slate-900 border border-slate-700 p-2 rounded-full text-slate-400 hover:text-white transition-colors" title="Hub">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </a>
+                <a href="./tome.html" class="pointer-events-auto bg-purple-900/80 border border-purple-600 p-2 rounded-full text-white hover:bg-purple-800 transition-colors" title="Tracker">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-8a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v8"/><path d="M4 11V7"/><path d="M20 11V7"/><path d="M2 7h4v4H2z"/><path d="M18 7h4v4h-4z"/><path d="M4 7l2-4 2 4"/><path d="M18 7l2-4 2 4"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/></svg>
+                </a>
+            </div>
+        </header>
+
+        <!-- INSTRUCTIONS / START -->
+        <div id="instructions" class="pointer-events-auto absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900/90 border border-cyan-500/50 p-8 rounded-2xl text-center shadow-[0_0_50px_rgba(6,182,212,0.15)] backdrop-blur-md cursor-pointer hover:border-cyan-400 transition-all">
+            <h2 class="text-2xl font-bold text-white mb-2">Click to Enter</h2>
+            <div class="space-y-2 text-slate-300 text-sm">
+                <p><strong class="text-cyan-400">WASD</strong> Move | <strong class="text-cyan-400">Space</strong> Jump/Fly</p>
+                <p><strong class="text-cyan-400">Left Click</strong> Destroy | <strong class="text-cyan-400">Right Click</strong> Place</p>
+                <p><strong class="text-cyan-400">1-9</strong> Select Terrain</p>
+            </div>
+            <div class="mt-6 pt-4 border-t border-slate-700">
+                <p class="text-xs text-indigo-300 animate-pulse">Syncs with Akashic Tracker Data</p>
+            </div>
+        </div>
+
+        <!-- TOOLBAR & SYNC CONTROLS -->
+        <div class="pointer-events-auto flex flex-col items-center gap-2 mb-4">
+            <!-- Sync Panel -->
+            <div class="bg-slate-900/90 border border-slate-700 p-2 rounded-lg flex items-center gap-3 backdrop-blur-md">
+                <button id="btn-sync" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded flex items-center gap-2 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    Sync Tokens
+                </button>
+                <div class="h-4 w-px bg-slate-700"></div>
+                <button id="btn-save" class="text-xs text-slate-400 hover:text-white">Save Map</button>
+                <button id="btn-clear" class="text-xs text-red-400 hover:text-red-300">Clear</button>
+                <input type="file" id="file-input" accept=".json" class="hidden">
+            </div>
+
+            <!-- Material Toolbar -->
+            <div id="toolbar" class="bg-slate-900/90 border border-slate-700 p-2 rounded-xl flex gap-2 backdrop-blur-md">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 3D ELEMENTS -->
+    <div id="crosshair"></div>
+    <div id="tooltip"></div>
+
+    <!-- Import Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        // --- Configuration ---
+        const WORLD_SIZE = 256;
+        const BLOCK_SIZE = 1;
+        
+        // Astral Palette
+        const MATERIALS = [
+            { color: 0x4b6e32, name: "Grass" },       
+            { color: 0x5c3c28, name: "Dirt" },        
+            { color: 0x64748b, name: "Stone" },       // Slate-ish stone
+            { color: 0x8B4513, name: "Wood" },        
+            { color: 0x38BDF8, name: "Water", transparent: true, opacity: 0.6 }, // Cyan Water
+            { color: 0xE6C288, name: "Sand" },        
+            { color: 0xf1f5f9, name: "Snow" },        
+            { color: 0xF43F5E, name: "Lava" },        // Rose Red Lava
+            { color: 0x1e293b, name: "Dungeon" }      // Dark Slate
+        ];
+
+        // --- Globals ---
+        let camera, scene, renderer, controls;
+        let raycaster;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, moveUp = false, moveDown = false;
+        let canJump = false, isFlying = false;
+        let prevTime = performance.now();
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        let lastSpaceKeyTime = 0;
+
+        // Data Storage
+        const voxels = new Map(); // Standard blocks
+        const objects = []; // For raycasting
+        const tokens = new Map(); // Combatant Tokens (distinct from voxels)
+        
+        let selectedMaterialIndex = 0;
+        let rollOverMesh;
+        let voxelGeometry, tokenGeometry;
+        const threeMaterials = [];
+
+        // UI
+        const instructions = document.getElementById('instructions');
+        const tooltip = document.getElementById('tooltip');
+        const toolbar = document.getElementById('toolbar');
+
+        // --- INITIALIZATION ---
+        init();
+        animate();
+
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020617); // Slate 950
+            scene.fog = new THREE.Fog(0x020617, 20, 100);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 10, 20);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            dirLight.position.set(50, 100, 50);
+            scene.add(dirLight);
+
+            // Controls
+            controls = new PointerLockControls(camera, document.body);
+            instructions.addEventListener('click', () => controls.lock());
+            controls.addEventListener('lock', () => instructions.style.display = 'none');
+            controls.addEventListener('unlock', () => instructions.style.display = 'block');
+            scene.add(controls.getObject());
+
+            // Input
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+            document.addEventListener('mousedown', onMouseClick);
+            document.addEventListener('mousemove', onMouseMove); // For tooltip
+
+            // World Base
+            const planeGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
+            planeGeo.rotateX(-Math.PI / 2);
+            const plane = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({ visible: false }));
+            plane.name = "ground";
+            scene.add(plane);
+            objects.push(plane);
+
+            const gridHelper = new THREE.GridHelper(WORLD_SIZE, WORLD_SIZE, 0x334155, 0x1e293b);
+            scene.add(gridHelper);
+
+            // Raycaster & Geometries
+            raycaster = new THREE.Raycaster();
+            voxelGeometry = new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            tokenGeometry = new THREE.CylinderGeometry(0.4, 0.4, 1.2, 16); // Cylinder for tokens
+
+            // Materials
+            MATERIALS.forEach(m => {
+                threeMaterials.push(new THREE.MeshLambertMaterial({ 
+                    color: m.color, 
+                    transparent: !!m.transparent, 
+                    opacity: m.opacity || 1.0 
+                }));
+            });
+
+            // Cursor
+            const rollOverGeo = new THREE.BoxGeometry(BLOCK_SIZE + 0.05, BLOCK_SIZE + 0.05, BLOCK_SIZE + 0.05);
+            rollOverMesh = new THREE.Mesh(rollOverGeo, new THREE.MeshBasicMaterial({ color: 0x38BDF8, opacity: 0.5, transparent: true, wireframe: true }));
+            scene.add(rollOverMesh);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            window.addEventListener('resize', onWindowResize);
+
+            // Init UI
+            initToolbar();
+            initButtons();
+
+            // Load Data
+            loadMap();
+            syncTokensFromTracker(); // Check for existing tracker data immediately
+        }
+
+        // --- TRACKER SYNC LOGIC ---
+
+        function syncTokensFromTracker() {
+            // 1. Read Combatant Data
+            const raw = localStorage.getItem('dm-tracker-monsters');
+            if (!raw) return;
+            const combatants = JSON.parse(raw);
+
+            // 2. Read Saved Positions (if any)
+            const savedPositions = JSON.parse(localStorage.getItem('dm-tracker-map-positions') || '{}');
+
+            // 3. Update Tokens
+            const currentIds = new Set();
+            
+            combatants.forEach((c, index) => {
+                currentIds.add(c.id);
+                
+                if (tokens.has(c.id)) {
+                    // Update existing token visuals (e.g. death state)
+                    const mesh = tokens.get(c.id);
+                    updateTokenVisuals(mesh, c);
+                } else {
+                    // Create new token
+                    const isMonster = c.type === 'monster';
+                    const color = isMonster ? 0xF43F5E : 0x6366f1; // Red vs Indigo
+                    const mat = new THREE.MeshLambertMaterial({ color: color });
+                    const mesh = new THREE.Mesh(tokenGeometry, mat);
+                    
+                    // Position: Saved > Default Grid Layout
+                    if (savedPositions[c.id]) {
+                        mesh.position.set(savedPositions[c.id].x, savedPositions[c.id].y, savedPositions[c.id].z);
+                    } else {
+                        // Spread them out nicely
+                        mesh.position.set(index * 2, 1, 0); 
+                    }
+
+                    mesh.userData = { isToken: true, id: c.id, name: c.name, hp: c.currentHp, maxHp: c.maxHp };
+                    mesh.name = "token"; // Tag for raycaster
+                    
+                    scene.add(mesh);
+                    objects.push(mesh); // Make interactable
+                    tokens.set(c.id, mesh);
+                    updateTokenVisuals(mesh, c);
+                }
+            });
+
+            // 4. Remove stale tokens (combatants deleted in tracker)
+            tokens.forEach((mesh, id) => {
+                if (!currentIds.has(id)) {
+                    scene.remove(mesh);
+                    objects.splice(objects.indexOf(mesh), 1);
+                    tokens.delete(id);
+                }
+            });
+
+            saveTokenPositions(); // Save initial spread if new
+            updateBlockCount();
+        }
+
+        function updateTokenVisuals(mesh, data) {
+            // Update UserData for Tooltip
+            mesh.userData.hp = data.currentHp;
+            mesh.userData.maxHp = data.maxHp;
+            
+            // Visuals: Dead?
+            if (data.currentHp <= 0 && data.type === 'monster') {
+                mesh.rotation.x = Math.PI / 2; // Lay flat
+                mesh.position.y = 0.2; // On ground
+                mesh.material.color.setHex(0x334155); // Turn grey
+            } else {
+                mesh.rotation.x = 0; // Stand up
+                // Restore color
+                const color = data.type === 'monster' ? 0xF43F5E : 0x6366f1;
+                mesh.material.color.setHex(color);
+                // Ensure it's not sunken if it revived
+                if (mesh.position.y < 0.6) mesh.position.y = 1; 
+            }
+        }
+
+        function saveTokenPositions() {
+            const posData = {};
+            tokens.forEach((mesh, id) => {
+                posData[id] = { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z };
+            });
+            localStorage.setItem('dm-tracker-map-positions', JSON.stringify(posData));
+        }
+
+        // --- INTERACTION ---
+
+        function onMouseMove(event) {
+            // Tooltip Logic
+            if (controls.isLocked) { tooltip.style.display = 'none'; return; } // Hide when playing
+            
+            // Just basic center-screen raycast if locked, mouse pos if unlocked
+            // Since we use pointer lock, 'hover' is tricky. 
+            // Instead, we'll show tooltip for what the CROSSHAIR is pointing at when Locked
+        }
+
+        function updateInteraction() {
+            // Run every frame in animate()
+            if (!controls.isLocked) return;
+
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            const intersects = raycaster.intersectObjects(objects, false);
+
+            if (intersects.length > 0) {
+                const intersect = intersects[0];
+                const obj = intersect.object;
+
+                // 1. Tooltip for Tokens
+                if (obj.userData.isToken) {
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = '50%';
+                    tooltip.style.top = '50%';
+                    tooltip.innerHTML = `<strong>${obj.userData.name}</strong><br>HP: ${obj.userData.hp}/${obj.userData.maxHp}`;
+                    rollOverMesh.visible = false;
+                    return;
+                } else {
+                    tooltip.style.display = 'none';
+                }
+
+                // 2. Voxel Cursor
+                rollOverMesh.visible = true;
+                const normal = intersect.face.normal;
+                rollOverMesh.position.copy(intersect.point).addScaledVector(normal, 0.5)
+                    .divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE / 2);
+            } else {
+                rollOverMesh.visible = false;
+                tooltip.style.display = 'none';
+            }
+        }
+
+        function onMouseClick(event) {
+            if (event.target.closest('#ui-layer')) return;
+            if (!controls.isLocked) { controls.lock(); return; }
+
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            const intersects = raycaster.intersectObjects(objects, false);
+
+            if (intersects.length > 0) {
+                const intersect = intersects[0];
+                const obj = intersect.object;
+
+                // TOKEN DRAGGING (Simplified: Click to pick up, Click to drop)
+                // For now, let's keep it simple: Tokens are entities. We can't "delete" them with click, 
+                // but maybe Right Click moves them to cursor?
+                
+                if (event.button === 2) { // Right Click
+                    if (obj.userData.isToken) {
+                        // Maybe select token? For now, do nothing special on token R-click
+                    } else {
+                        // PLACE BLOCK
+                        const pos = new THREE.Vector3().copy(intersect.point).addScaledVector(intersect.face.normal, 0.5)
+                            .divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE / 2);
+                        
+                        // Don't place inside player
+                        if (pos.distanceTo(controls.getObject().position) < 1.5) return;
+
+                        addBlock(pos.x, pos.y, pos.z, selectedMaterialIndex);
+                    }
+                } else if (event.button === 0) { // Left Click
+                    if (event.shiftKey && obj.userData.isToken) {
+                        // Shift+Click Token: Move it slightly up (Jump check?)
+                        // Or just log info
+                        console.log("Clicked token", obj.userData.name);
+                    } else if (obj.name !== "ground" && !obj.userData.isToken) {
+                        // REMOVE BLOCK
+                        removeBlock(obj);
+                    } else if (obj.userData.isToken) {
+                        // Clicked a token: Select it for moving? 
+                        // Implementation of Drag/Drop in PointerLock is hard. 
+                        // Better: Use "Arrow Keys" to nudge active token? 
+                        // For this demo: Let's assume Tokens are static markers updated by "Sync".
+                        // BUT: We can "Teleport" token to cursor location with Shift+RightClick
+                    }
+                }
+                
+                // Teleport Token Logic (Shift + Right Click on Ground)
+                if (event.button === 2 && event.shiftKey) {
+                   // Find closest token to player? Or last interacted?
+                   // Advanced feature. Let's skip for MVP simplicity.
+                }
+            }
+        }
+
+        // --- VOXEL LOGIC ---
+
+        function addBlock(x, y, z, matIndex, save = true) {
+            const key = `${x},${y},${z}`;
+            if (voxels.has(key)) return;
+
+            const mesh = new THREE.Mesh(voxelGeometry, threeMaterials[matIndex]);
+            mesh.position.set(x, y, z);
+            mesh.name = "voxel";
+            mesh.userData.colorIndex = matIndex;
+            
+            scene.add(mesh);
+            objects.push(mesh);
+            voxels.set(key, mesh);
+
+            if (save) saveMap();
+            updateBlockCount();
+        }
+
+        function removeBlock(object) {
+            scene.remove(object);
+            objects.splice(objects.indexOf(object), 1);
+            voxels.delete(`${object.position.x},${object.position.y},${object.position.z}`);
+            saveMap();
+            updateBlockCount();
+        }
+
+        // --- PERSISTENCE ---
+
+        function saveMap() {
+            const data = [];
+            voxels.forEach(v => {
+                data.push({ x: v.position.x, y: v.position.y, z: v.position.z, c: v.userData.colorIndex });
+            });
+            localStorage.setItem('dnd-voxel-map', JSON.stringify(data));
+        }
+
+        function loadMap() {
+            const raw = localStorage.getItem('dnd-voxel-map');
+            if (raw) {
+                const data = JSON.parse(raw);
+                data.forEach(b => addBlock(b.x, b.y, b.z, b.c, false));
+            } else {
+                // Default floor
+                for(let x=-4; x<=4; x++) for(let z=-4; z<=4; z++) addBlock(x, 0.5, z, 0, false);
+            }
+        }
+
+        // --- UI WIRING ---
+
+        function initToolbar() {
+            MATERIALS.forEach((m, i) => {
+                const div = document.createElement('div');
+                div.className = `slot ${i===0?'active':''}`;
+                div.style.backgroundColor = '#' + m.color.toString(16).padStart(6,'0');
+                div.onclick = () => {
+                    selectedMaterialIndex = i;
+                    document.querySelectorAll('.slot').forEach(s => s.classList.remove('active'));
+                    div.classList.add('active');
+                };
+                toolbar.appendChild(div);
+            });
+        }
+
+        function initButtons() {
+            document.getElementById('btn-sync').onclick = () => {
+                syncTokensFromTracker();
+                alert("Synced with Tracker!");
+            };
+            document.getElementById('btn-clear').onclick = () => {
+                if(confirm("Clear Map?")) {
+                    voxels.forEach(v => scene.remove(v));
+                    voxels.clear();
+                    // Keep Tokens and Ground!
+                    objects.length = 0;
+                    objects.push(scene.getObjectByName("ground"));
+                    tokens.forEach(t => objects.push(t));
+                    saveMap();
+                }
+            };
+            document.getElementById('btn-save').onclick = () => {
+                const data = localStorage.getItem('dnd-voxel-map');
+                const blob = new Blob([data], {type: 'application/json'});
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'akashic-map.json';
+                a.click();
+            };
+            // Load file logic... (omitted for brevity, same as previous versions)
+        }
+        
+        function updateBlockCount() {
+            document.getElementById('block-count').innerText = voxels.size;
+        }
+
+        // --- STANDARD EVENTS ---
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onKeyDown(e) {
+            switch(e.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyD': moveRight = true; break;
+                case 'Space': 
+                    if (!e.repeat) {
+                        if (Date.now() - lastSpaceKeyTime < 300) { isFlying = !isFlying; velocity.y=0; }
+                        else if (isFlying) moveUp = true;
+                        else if (canJump) { velocity.y += 10; canJump = false; }
+                        lastSpaceKeyTime = Date.now();
+                    }
+                    break;
+                case 'KeyC': if(isFlying) moveDown = true; break;
+                case 'Digit1': selectedMaterialIndex=0; break;
+                // ... add other keys
+            }
+            // Update UI selection
+            if(e.code.startsWith('Digit')) {
+                const idx = parseInt(e.key)-1;
+                if(idx >=0 && idx < MATERIALS.length) {
+                    selectedMaterialIndex = idx;
+                    document.querySelectorAll('.slot').forEach((s, i) => {
+                        if(i===idx) s.classList.add('active'); else s.classList.remove('active');
+                    });
+                }
+            }
+        }
+        function onKeyUp(e) {
+            switch(e.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyD': moveRight = false; break;
+                case 'Space': moveUp = false; break;
+                case 'KeyC': moveDown = false; break;
+            }
+        }
+
+        // --- ANIMATION LOOP ---
+
+        function checkCollision(pos) {
+            const x = Math.floor(pos.x)+0.5;
+            const y = Math.floor(pos.y-1.5)+0.5; // Feet
+            const z = Math.floor(pos.z)+0.5;
+            return voxels.has(`${x},${y},${z}`) || voxels.has(`${x},${Math.floor(pos.y-0.5)+0.5},${z}`);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const time = performance.now();
+            if (controls.isLocked) {
+                const delta = (time - prevTime) / 1000;
+                
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+                
+                if (isFlying) {
+                    velocity.y -= velocity.y * 5.0 * delta;
+                    if(moveUp) velocity.y += 30 * delta;
+                    if(moveDown) velocity.y -= 30 * delta;
+                } else {
+                    velocity.y -= 9.8 * 2.0 * delta;
+                }
+
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
+
+                if (moveForward || moveBackward) velocity.z -= direction.z * 100.0 * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 100.0 * delta;
+
+                controls.moveRight(-velocity.x * delta);
+                controls.moveForward(-velocity.z * delta);
+                controls.getObject().position.y += (velocity.y * delta);
+
+                if (controls.getObject().position.y < 2) {
+                    velocity.y = 0;
+                    controls.getObject().position.y = 2;
+                    if(!isFlying) canJump = true;
+                }
+                
+                // Update Coordinates UI
+                const p = controls.getObject().position;
+                document.getElementById('coords').innerText = `${Math.round(p.x)}, ${Math.round(p.y)}, ${Math.round(p.z)}`;
+                
+                updateInteraction();
+            }
+            prevTime = time;
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
