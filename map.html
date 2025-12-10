@@ -22,6 +22,7 @@
         #crosshair {
             position: absolute; top: 50%; left: 50%; width: 20px; height: 20px;
             transform: translate(-50%, -50%); pointer-events: none; mix-blend-mode: difference;
+            transition: opacity 0.2s;
         }
         #crosshair::before { content: ''; position: absolute; top: 9px; left: 0; width: 20px; height: 2px; background: rgba(255, 255, 255, 0.8); }
         #crosshair::after { content: ''; position: absolute; top: 0; left: 9px; width: 2px; height: 20px; background: rgba(255, 255, 255, 0.8); }
@@ -57,6 +58,16 @@
             background: rgba(0,0,0,0.3); padding: 2px 4px; rounded: 4px; color: #94a3b8;
         }
         .token-slot.active .key-hint { color: #38BDF8; background: rgba(56, 189, 248, 0.1); }
+        
+        /* Edit Mode Indicator */
+        #edit-mode-badge {
+            display: none;
+            position: absolute; top: 120px; left: 50%; transform: translateX(-50%);
+            background: rgba(234, 179, 8, 0.2); border: 1px solid rgba(234, 179, 8, 0.5);
+            color: #fcd34d; font-size: 0.75rem; font-weight: bold; padding: 4px 12px; rounded-full;
+            pointer-events: none; text-transform: uppercase; letter-spacing: 1px;
+            backdrop-filter: blur(4px);
+        }
     </style>
 </head>
 <body>
@@ -78,6 +89,10 @@
 
             <!-- NAVIGATION (Matches Suite) -->
             <div class="flex gap-2">
+                <button id="btn-atmosphere" class="pointer-events-auto bg-slate-800 border border-amber-500/50 p-2 rounded-full text-amber-400 hover:bg-slate-700 hover:text-amber-300 transition-colors shadow-lg" title="Toggle Atmosphere (Day/Dungeon)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                </button>
+                <div class="w-px h-8 bg-slate-700 mx-1"></div>
                 <a href="./index.html" class="pointer-events-auto bg-slate-900 border border-slate-700 p-2 rounded-full text-slate-400 hover:text-white transition-colors" title="Hub">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                 </a>
@@ -95,13 +110,18 @@
             </div>
         </div>
 
+        <!-- EDIT MODE BADGE -->
+        <div id="edit-mode-badge">Mouse Mode Active (Tab)</div>
+
         <!-- INSTRUCTIONS / START -->
         <div id="instructions" class="pointer-events-auto absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900/90 border border-cyan-500/50 p-8 rounded-2xl text-center shadow-[0_0_50px_rgba(6,182,212,0.15)] backdrop-blur-md cursor-pointer hover:border-cyan-400 transition-all">
             <h2 class="text-2xl font-bold text-white mb-2">Click to Enter</h2>
             <div class="space-y-2 text-slate-300 text-sm">
                 <p><strong class="text-cyan-400">WASD</strong> Move | <strong class="text-cyan-400">Space</strong> Jump/Fly</p>
-                <p><strong class="text-cyan-400">Left Click</strong> Destroy</p>
-                <p><strong class="text-cyan-400">Right Click</strong> Place Block / Move Token</p>
+                <p><strong class="text-cyan-400">Tab</strong> Toggle Mouse Mode</p>
+                <p><strong class="text-red-400">Left Drag</strong> Delete Blocks</p>
+                <p><strong class="text-cyan-400">Right Drag</strong> Place Blocks</p>
+                <p><strong class="text-indigo-400">Shift + Right Click</strong> Focus & Range (30ft)</p>
                 <div class="border-t border-slate-700 pt-2 mt-2">
                     <p><strong class="text-cyan-400">1-9</strong> Select Block</p>
                     <p><strong class="text-indigo-400">Shift + 1-9</strong> Select Token</p>
@@ -173,10 +193,17 @@
         let raycaster;
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, moveUp = false, moveDown = false;
         let canJump = false, isFlying = false;
+        let isTabMode = false; // Mouse Edit Mode
+        let isLocking = false; // Debounce for pointer lock
         let prevTime = performance.now();
         const velocity = new THREE.Vector3();
         const direction = new THREE.Vector3();
         let lastSpaceKeyTime = 0;
+        let lastLockTime = 0; // Cooldown for pointer lock
+
+        // Lighting & Atmosphere
+        let isNight = true; // Start in Dungeon Mode
+        let ambientLight, dirLight, torchLight;
 
         // Data Storage
         const voxels = new Map(); // Standard blocks
@@ -187,11 +214,19 @@
         // Interaction State
         let selectedMaterialIndex = 0;
         let heldTokenId = null; // ID of token currently being moved
+        let focusedToken = null; // ID of focused token for range finding
         let isShiftDown = false;
+        
+        // Drag Building/Deleting State
+        let isDragging = false;
+        let isDeleting = false;
+        let buildStartPoint = null; 
+        let deleteStartPoint = null; 
 
         // Visuals
         let rollOverMesh; // Box cursor
         let tokenRollOverMesh; // Cylinder cursor (Ghost token)
+        let rangeIndicator; // 30ft Ring
         let voxelGeometry, tokenGeometry;
         const threeMaterials = [];
 
@@ -200,6 +235,8 @@
         const tooltip = document.getElementById('tooltip');
         const toolbar = document.getElementById('toolbar');
         const tokenBar = document.getElementById('token-bar');
+        const crosshair = document.getElementById('crosshair');
+        const editModeBadge = document.getElementById('edit-mode-badge');
 
         // --- INITIALIZATION ---
         init();
@@ -208,32 +245,72 @@
         function init() {
             // Scene
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x020617); // Slate 950
-            scene.fog = new THREE.Fog(0x020617, 20, 100);
+            scene.background = new THREE.Color(0x020617); // Slate 950 (Night/Dungeon default)
+            scene.fog = new THREE.Fog(0x020617, 10, 60);  // Close fog for dungeon feel
 
-            // Camera
+            // Camera - Starts at Y=2 to prevent falling
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 10, 20);
+            camera.position.set(0, 2, 10);
 
-            // Lights
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            // -- LIGHTING --
+            // 1. Ambient (Base visibility)
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.2); // Dim start
             scene.add(ambientLight);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+
+            // 2. Directional (Sun/Moon)
+            dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
             dirLight.position.set(50, 100, 50);
             scene.add(dirLight);
 
+            // 3. Torch (Player Light)
+            torchLight = new THREE.PointLight(0xffaa00, 1.5, 20); // Orange, Range 20
+            camera.add(torchLight); // Attach to camera
+            scene.add(camera);      // Add camera to scene so light works
+
             // Controls
             controls = new PointerLockControls(camera, document.body);
-            instructions.addEventListener('click', () => controls.lock());
-            controls.addEventListener('lock', () => instructions.style.display = 'none');
-            controls.addEventListener('unlock', () => instructions.style.display = 'block');
-            scene.add(controls.getObject());
-
+            instructions.addEventListener('click', () => safeLock());
+            
+            // Lock Event: Enter Game Mode
+            controls.addEventListener('lock', () => {
+                instructions.style.display = 'none';
+                editModeBadge.style.display = 'none';
+                crosshair.style.opacity = '1';
+                isTabMode = false;
+                isLocking = false; // Reset lock debounce
+            });
+            
+            // Unlock Event: Check if Menu or Tab Mode
+            controls.addEventListener('unlock', () => {
+                isLocking = false; // Reset lock debounce
+                if (isTabMode) {
+                    // TAB MODE: Hide Menu, Show Cursor, Hide Crosshair
+                    instructions.style.display = 'none';
+                    editModeBadge.style.display = 'block';
+                    crosshair.style.opacity = '0';
+                } else {
+                    // ESC MODE: Show Main Menu
+                    instructions.style.display = 'block';
+                    editModeBadge.style.display = 'none';
+                    crosshair.style.opacity = '1';
+                }
+            });
+            
+            // Listen for pointer lock errors to reset state
+            document.addEventListener('pointerlockerror', () => {
+                isLocking = false;
+                console.warn("Pointer lock failed/rejected.");
+            });
+            
             // Input
             document.addEventListener('keydown', onKeyDown);
             document.addEventListener('keyup', onKeyUp);
-            document.addEventListener('mousedown', onMouseClick);
-            document.addEventListener('mousemove', onMouseMove); // For tooltip
+            
+            // Changed Mouse Click to Down/Up for Drag
+            document.addEventListener('mousedown', onMouseDown);
+            document.addEventListener('mouseup', onMouseUp);
+            
+            document.addEventListener('mousemove', onMouseMove); 
 
             // World Base
             const planeGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
@@ -270,6 +347,15 @@
             tokenRollOverMesh.visible = false;
             scene.add(tokenRollOverMesh);
 
+            // Range Indicator (30ft Ring)
+            // 30ft = 6 squares. Radius = 6.
+            const rangeGeo = new THREE.RingGeometry(5.9, 6.1, 32); 
+            rangeGeo.rotateX(-Math.PI / 2);
+            const rangeMat = new THREE.MeshBasicMaterial({ color: 0x38BDF8, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+            rangeIndicator = new THREE.Mesh(rangeGeo, rangeMat);
+            rangeIndicator.visible = false;
+            scene.add(rangeIndicator);
+
             // Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setPixelRatio(window.devicePixelRatio);
@@ -284,6 +370,30 @@
             // Load Data
             loadMap();
             syncTokensFromTracker(); 
+        }
+        
+        // --- LOCK HELPERS ---
+        function safeLock() {
+            const now = performance.now();
+            // Prevent rapid re-locking (1.2s cooldown) to avoid browser "user exited lock" errors
+            if (isLocking || controls.isLocked || (now - lastLockTime < 1200)) return;
+            
+            if (!document.hasFocus()) return;
+
+            isLocking = true;
+            lastLockTime = now;
+            
+            try {
+                controls.lock();
+            } catch (e) {
+                console.warn("Pointer lock attempt failed:", e);
+                isLocking = false;
+            }
+            
+            // Safety reset
+            setTimeout(() => { 
+                if(isLocking && !controls.isLocked) isLocking = false; 
+            }, 2000); 
         }
 
         // --- TRACKER SYNC LOGIC ---
@@ -367,59 +477,156 @@
             if (controls.isLocked) { tooltip.style.display = 'none'; return; } 
         }
 
+        // Helper to determine target voxel based on intent
+        function getVoxelPos(point, normal, mode) {
+            const pos = new THREE.Vector3().copy(point);
+            if (mode === 'build') {
+                // Add adjacent
+                pos.addScaledVector(normal, 0.5);
+            } else {
+                // Delete: Go INSIDE block
+                if (Math.abs(point.y) < 0.01) { // Hit ground
+                    pos.addScaledVector(normal, 0.5);
+                } else {
+                    pos.addScaledVector(normal, -0.1);
+                }
+            }
+            return pos.divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE / 2);
+        }
+
+        function focusOnToken(tokenMesh) {
+            focusedToken = tokenMesh;
+            
+            // Move Camera near token
+            const offset = new THREE.Vector3(0, 3, 5); // 3 up, 5 back
+            controls.getObject().position.copy(tokenMesh.position).add(offset);
+            
+            // Show Range
+            rangeIndicator.visible = true;
+            rangeIndicator.position.copy(tokenMesh.position);
+            rangeIndicator.position.y = 0.1;
+        }
+
         function updateInteraction() {
-            if (!controls.isLocked) return;
+            if (!controls.isLocked && !isTabMode) return;
 
-            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-            const intersects = raycaster.intersectObjects(objects, false);
+            // Keep Range Indicator Synced if focused
+            if (focusedToken && rangeIndicator.visible) {
+                rangeIndicator.position.copy(focusedToken.position);
+                rangeIndicator.position.y = 0.1;
+            }
 
-            if (intersects.length > 0) {
-                const intersect = intersects[0];
-                const obj = intersect.object;
-                const hitPoint = intersect.point;
-                const normal = intersect.face.normal;
+            if (isTabMode) {
+                // Raycast from mouse (not implemented fully for tab mode cursor, relying on locked)
+            } else {
+                raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+                const intersects = raycaster.intersectObjects(objects, false);
 
-                // 1. Tooltip for Tokens
-                if (obj.userData.isToken && heldTokenId === null) {
-                    tooltip.style.display = 'block';
-                    tooltip.style.left = '50%';
-                    tooltip.style.top = '50%';
-                    tooltip.innerHTML = `<strong>${obj.userData.name}</strong><br>HP: ${obj.userData.hp}/${obj.userData.maxHp}<br><span style="font-size:10px; color:#cbd5e1;">Right Click to Move</span>`;
+                if (intersects.length > 0) {
+                    const intersect = intersects[0];
+                    const obj = intersect.object;
+                    const hitPoint = intersect.point;
+                    const normal = intersect.face.normal;
                     
+                    // --- RANGE FINDER ---
+                    const dist = controls.getObject().position.distanceTo(hitPoint);
+                    const feet = Math.round(dist * 5); // 1 block = 5 ft
+
+                    // 1. Tooltip for Tokens
+                    if (obj.userData.isToken && heldTokenId === null && !isDragging && !isDeleting) {
+                        tooltip.style.display = 'block';
+                        tooltip.style.left = '50%';
+                        tooltip.style.top = '50%';
+                        tooltip.innerHTML = `
+                            <strong>${obj.userData.name}</strong><br>
+                            HP: ${obj.userData.hp}/${obj.userData.maxHp}<br>
+                            <span style="color:#fbbf24">Dist: ${feet} ft</span><br>
+                            <span style="font-size:10px; color:#cbd5e1;">Shift+RClick to Focus</span>
+                        `;
+                        
+                        rollOverMesh.visible = false;
+                        tokenRollOverMesh.visible = false;
+                        return;
+                    } else if (obj.name === "voxel" || obj.name === "ground") {
+                        if (!isDragging && !isDeleting) {
+                            tooltip.style.display = 'block';
+                            tooltip.style.left = '50%';
+                            tooltip.style.top = '55%'; 
+                            tooltip.innerHTML = `<span style="color:#fbbf24; font-size: 10px;">Target: ${feet} ft</span>`;
+                        } else {
+                            tooltip.style.display = 'none';
+                        }
+                    } else {
+                        tooltip.style.display = 'none';
+                    }
+
+                    // 2. Cursor Logic
+                    if (heldTokenId !== null) {
+                        // Moving a Token
+                        rollOverMesh.visible = false;
+                        tokenRollOverMesh.visible = true;
+                        tokenRollOverMesh.position.copy(hitPoint).add(normal);
+                        tokenRollOverMesh.position.divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE / 2);
+                        tokenRollOverMesh.position.y = Math.floor(hitPoint.y + 0.1) + 0.6; 
+                    } else if ((isDragging && buildStartPoint) || (isDeleting && deleteStartPoint)) {
+                        // DRAGGING BOX
+                        const activeStartPoint = isDragging ? buildStartPoint : deleteStartPoint;
+                        
+                        rollOverMesh.visible = true;
+                        tokenRollOverMesh.visible = false;
+                        
+                        // Color based on action
+                        if (isDeleting) {
+                            rollOverMesh.material.color.setHex(0xEF4444); // Red
+                        } else {
+                            rollOverMesh.material.color.setHex(0x38BDF8); // Cyan
+                        }
+                        
+                        // Current End Point
+                        const currentPos = getVoxelPos(hitPoint, normal, isDeleting ? 'delete' : 'build');
+                        
+                        // Calculate Bounds
+                        const minX = Math.min(activeStartPoint.x, currentPos.x);
+                        const maxX = Math.max(activeStartPoint.x, currentPos.x);
+                        const minY = Math.min(activeStartPoint.y, currentPos.y);
+                        const maxY = Math.max(activeStartPoint.y, currentPos.y);
+                        const minZ = Math.min(activeStartPoint.z, currentPos.z);
+                        const maxZ = Math.max(activeStartPoint.z, currentPos.z);
+
+                        // Scale and Position Cursor to encompass volume
+                        const width = maxX - minX + BLOCK_SIZE;
+                        const height = maxY - minY + BLOCK_SIZE;
+                        const depth = maxZ - minZ + BLOCK_SIZE;
+
+                        rollOverMesh.scale.set(width, height, depth);
+                        rollOverMesh.position.set(minX + width/2 - 0.5, minY + height/2 - 0.5, minZ + depth/2 - 0.5);
+
+                    } else {
+                        // STANDARD CURSOR
+                        tokenRollOverMesh.visible = false;
+                        rollOverMesh.visible = true;
+                        rollOverMesh.scale.set(1, 1, 1);
+                        // Default color: Blue (Ready to build)
+                        rollOverMesh.material.color.setHex(0x38BDF8);
+                        
+                        // Normal build cursor position
+                        rollOverMesh.position.copy(hitPoint).addScaledVector(normal, 0.5)
+                            .divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE / 2);
+                    }
+                } else {
                     rollOverMesh.visible = false;
                     tokenRollOverMesh.visible = false;
-                    return;
-                } else {
                     tooltip.style.display = 'none';
                 }
-
-                // 2. Cursor (Ghost Token OR Block)
-                if (heldTokenId !== null) {
-                    // We are holding a token
-                    rollOverMesh.visible = false;
-                    tokenRollOverMesh.visible = true;
-                    // Snap cylinder to grid center
-                    tokenRollOverMesh.position.copy(hitPoint).add(normal);
-                    tokenRollOverMesh.position.divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE / 2);
-                    // Cylinder height adjustment (1.2 height -> 0.6 offset)
-                    tokenRollOverMesh.position.y = Math.floor(hitPoint.y + 0.1) + 0.6; 
-                } else {
-                    // Standard block cursor
-                    tokenRollOverMesh.visible = false;
-                    rollOverMesh.visible = true;
-                    rollOverMesh.position.copy(hitPoint).addScaledVector(normal, 0.5)
-                        .divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE / 2);
-                }
-            } else {
-                rollOverMesh.visible = false;
-                tokenRollOverMesh.visible = false;
-                tooltip.style.display = 'none';
             }
         }
 
-        function onMouseClick(event) {
+        // --- MOUSE HANDLERS (Replaces onMouseClick) ---
+
+        function onMouseDown(event) {
             if (event.target.closest('#ui-layer')) return;
-            if (!controls.isLocked) { controls.lock(); return; }
+            if (isTabMode && !event.target.closest('button') && !event.target.closest('.token-slot')) { safeLock(); return; }
+            if (!controls.isLocked && !isTabMode) { safeLock(); return; }
 
             raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
             const intersects = raycaster.intersectObjects(objects, false);
@@ -428,45 +635,138 @@
                 const intersect = intersects[0];
                 const obj = intersect.object;
 
-                // RIGHT CLICK: Move/Place Logic
-                if (event.button === 2) { 
+                // RIGHT CLICK: Build / Token
+                if (event.button === 2) {
+                    
+                    // Priority 0: SHIFT CLICK TOKEN (Focus & Range)
+                    if (isShiftDown && obj.userData.isToken) {
+                        focusOnToken(obj);
+                        return; // Don't pick up or build
+                    }
+
+                    // Priority 1: Place Held Token
                     if (heldTokenId !== null) {
-                        // PLACE HELD TOKEN
                         const tokenMesh = tokens.get(heldTokenId);
                         if (tokenMesh) {
                             tokenMesh.position.copy(tokenRollOverMesh.position);
-                            // If we placed it on top of a block, fine. 
-                            // Ghost logic already handles Y offset roughly.
                             saveTokenPositions();
-                            heldTokenId = null; // Drop it
-                            renderTokenBar(); // Update UI highlight
+                            heldTokenId = null;
+                            renderTokenBar();
                         }
-                    } else if (obj.userData.isToken) {
-                        // PICK UP TOKEN (Right click on existing)
-                        heldTokenId = obj.userData.id;
-                        renderTokenBar();
-                    } else {
-                        // PLACE BLOCK (Standard)
-                        const pos = new THREE.Vector3().copy(intersect.point).addScaledVector(intersect.face.normal, 0.5)
-                            .divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE / 2);
-                        
-                        if (pos.distanceTo(controls.getObject().position) < 1.5) return;
-                        addBlock(pos.x, pos.y, pos.z, selectedMaterialIndex);
+                        return; // Done
                     }
-                } 
-                // LEFT CLICK: Destroy / Cancel
-                else if (event.button === 0) { 
-                    if (heldTokenId !== null) {
-                        // Cancel Move? Just drop it back where it was (nullify hand)
-                        // Or simple: Left click doesn't place, just drops focus?
-                        // Let's keep it simple: Left click destroys blocks, ignores tokens usually
-                        // If holding token, maybe left click cancels pickup?
-                        heldTokenId = null;
+
+                    // Priority 2: Pick Up Token
+                    if (obj.userData.isToken) {
+                        heldTokenId = obj.userData.id;
+                        // Clear focus if we pick up a different token
+                        if (focusedToken && focusedToken !== obj) {
+                            focusedToken = null;
+                            rangeIndicator.visible = false;
+                        }
                         renderTokenBar();
-                    } else if (obj.name !== "ground" && !obj.userData.isToken) {
-                        removeBlock(obj);
+                        return; // Done
+                    }
+
+                    // Priority 3: Start Drag Build
+                    if (!isDragging) {
+                        isDragging = true;
+                        buildStartPoint = getVoxelPos(intersect.point, intersect.face.normal, 'build');
                     }
                 }
+                
+                // LEFT CLICK: Delete / Clear Focus
+                if (event.button === 0) {
+                    if (heldTokenId !== null) {
+                        heldTokenId = null; // Cancel Move
+                        renderTokenBar();
+                    } else if (!obj.userData.isToken) {
+                        // Clear Focus if clicking ground
+                        if (focusedToken) {
+                            focusedToken = null;
+                            rangeIndicator.visible = false;
+                        }
+                        // Start Drag Delete
+                        if (!isDeleting) {
+                            isDeleting = true;
+                            deleteStartPoint = getVoxelPos(intersect.point, intersect.face.normal, 'delete');
+                        }
+                    }
+                }
+            }
+        }
+
+        function onMouseUp(event) {
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            const intersects = raycaster.intersectObjects(objects, false);
+            const intersect = intersects.length > 0 ? intersects[0] : null;
+
+            // Handle Right Click Release (Build)
+            if (event.button === 2 && isDragging) {
+                if (intersect && buildStartPoint) {
+                    const endPoint = getVoxelPos(intersect.point, intersect.face.normal, 'build');
+                    executeBoxAction(buildStartPoint, endPoint, 'build');
+                }
+                isDragging = false;
+                buildStartPoint = null;
+                if (rollOverMesh) {
+                    rollOverMesh.scale.set(1,1,1);
+                    rollOverMesh.material.color.setHex(0x38BDF8); // Reset to Blue
+                }
+            }
+
+            // Handle Left Click Release (Delete)
+            if (event.button === 0 && isDeleting) {
+                if (intersect && deleteStartPoint) {
+                    const endPoint = getVoxelPos(intersect.point, intersect.face.normal, 'delete');
+                    executeBoxAction(deleteStartPoint, endPoint, 'delete');
+                }
+                isDeleting = false;
+                deleteStartPoint = null;
+                if (rollOverMesh) {
+                    rollOverMesh.scale.set(1,1,1);
+                    rollOverMesh.material.color.setHex(0x38BDF8); // Reset to Blue
+                }
+            }
+        }
+
+        function executeBoxAction(start, end, action) {
+            if (!start || !end) return; // Safety check
+
+            const minX = Math.min(start.x, end.x);
+            const maxX = Math.max(start.x, end.x);
+            const minY = Math.min(start.y, end.y);
+            const maxY = Math.max(start.y, end.y);
+            const minZ = Math.min(start.z, end.z);
+            const maxZ = Math.max(start.z, end.z);
+
+            let changeCount = 0;
+            const playerPos = controls.getObject().position;
+
+            for (let x = minX; x <= maxX; x++) {
+                for (let y = minY; y <= maxY; y++) {
+                    for (let z = minZ; z <= maxZ; z++) {
+                        if (action === 'build') {
+                            const dist = new THREE.Vector3(x, y, z).distanceTo(playerPos);
+                            if (dist < 1.5) continue; 
+                            addBlock(x, y, z, selectedMaterialIndex, false);
+                            changeCount++;
+                        } else if (action === 'delete') {
+                            const key = `${x},${y},${z}`;
+                            const voxel = voxels.get(key);
+                            if (voxel) {
+                                scene.remove(voxel);
+                                objects.splice(objects.indexOf(voxel), 1);
+                                voxels.delete(key);
+                                changeCount++;
+                            }
+                        }
+                    }
+                }
+            }
+            if (changeCount > 0) {
+                saveMap();
+                updateBlockCount();
             }
         }
 
@@ -490,6 +790,7 @@
         }
 
         function removeBlock(object) {
+            // Helper for single block, though now onMouseUp handles it
             scene.remove(object);
             objects.splice(objects.indexOf(object), 1);
             voxels.delete(`${object.position.x},${object.position.y},${object.position.z}`);
@@ -513,8 +814,6 @@
                 const data = JSON.parse(raw);
                 data.forEach(b => addBlock(b.x, b.y, b.z, b.c, false));
             }
-            // If raw is missing, we do NOT load a default floor anymore.
-            // Starts empty.
         }
 
         // --- UI WIRING ---
@@ -536,31 +835,28 @@
         function renderTokenBar() {
             tokenBar.innerHTML = '';
             combatantList.forEach((c, i) => {
-                // Show first 9 only for shortcuts, or all if list is long but hotkeys only work for 9
                 const div = document.createElement('div');
                 const isSelected = c.id === heldTokenId;
                 div.className = `token-slot ${isSelected ? 'active' : ''}`;
                 
-                // Color indicator
                 const dotColor = c.type === 'monster' ? '#F43F5E' : '#6366f1';
-                
                 div.innerHTML = `
                     <div style="width:8px; height:8px; border-radius:50%; background:${dotColor};"></div>
                     <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${c.name}</span>
                     ${i < 9 ? `<span class="key-hint">Shift+${i+1}</span>` : ''}
                 `;
-                
                 div.onclick = () => {
                     heldTokenId = c.id;
                     renderTokenBar();
                 };
-                
                 tokenBar.appendChild(div);
             });
         }
 
         function initButtons() {
             document.getElementById('btn-sync').onclick = () => { syncTokensFromTracker(); alert("Synced!"); };
+            document.getElementById('btn-atmosphere').onclick = toggleAtmosphere;
+            
             document.getElementById('btn-clear').onclick = () => {
                 if(confirm("Clear Map Blocks?")) {
                     voxels.forEach(v => scene.remove(v));
@@ -584,6 +880,25 @@
         function updateBlockCount() {
             document.getElementById('block-count').innerText = voxels.size;
         }
+        
+        function toggleAtmosphere() {
+            isNight = !isNight;
+            if (isNight) {
+                // Dungeon/Night Mode
+                scene.background = new THREE.Color(0x020617);
+                scene.fog = new THREE.Fog(0x020617, 10, 60);
+                ambientLight.intensity = 0.2;
+                dirLight.intensity = 0.5;
+                torchLight.intensity = 1.5;
+            } else {
+                // Day Mode
+                scene.background = new THREE.Color(0x87CEEB);
+                scene.fog = new THREE.Fog(0x87CEEB, 30, 150);
+                ambientLight.intensity = 0.7;
+                dirLight.intensity = 0.8;
+                torchLight.intensity = 0;
+            }
+        }
 
         // --- EVENTS ---
         
@@ -595,6 +910,18 @@
 
         function onKeyDown(e) {
             if (e.key === 'Shift') isShiftDown = true;
+
+            // TAB Toggle Logic
+            if (e.code === 'Tab') {
+                e.preventDefault();
+                if (controls.isLocked) {
+                    isTabMode = true;
+                    controls.unlock();
+                } else {
+                    safeLock();
+                }
+                return;
+            }
 
             switch(e.code) {
                 case 'KeyW': moveForward = true; break;
@@ -612,18 +939,15 @@
                 case 'KeyC': if(isFlying) moveDown = true; break;
             }
 
-            // Material Select vs Token Select
             if(e.code.startsWith('Digit')) {
                 const idx = parseInt(e.key)-1;
                 if (idx >= 0 && idx < 9) {
                     if (isShiftDown) {
-                        // SELECT TOKEN
                         if (combatantList[idx]) {
                             heldTokenId = combatantList[idx].id;
                             renderTokenBar();
                         }
                     } else {
-                        // SELECT MATERIAL
                         if (idx < MATERIALS.length) {
                             selectedMaterialIndex = idx;
                             document.querySelectorAll('.slot').forEach((s, i) => {
