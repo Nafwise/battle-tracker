@@ -82,6 +82,65 @@
         }
         .token-slot.active .key-hint { color: #38BDF8; background: rgba(56, 189, 248, 0.1); }
         
+        /* 10-Key Hotbar Styles */
+        #hotbar {
+            display: flex; gap: 8px; align-items: flex-end; justify-content: center;
+            padding: 10px; background: linear-gradient(to top, rgba(2, 6, 23, 0.9), transparent);
+        }
+
+        .hotbar-slot {
+            width: 48px; height: 48px; 
+            border: 2px solid rgba(71, 85, 105, 0.5); 
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 6px; 
+            position: relative;
+            transition: all 0.1s;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        
+        .hotbar-slot.active-category {
+            border-color: #38BDF8;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .key-label {
+            position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+            background: #0f172a; border: 1px solid #334155; color: #94a3b8;
+            font-size: 10px; font-weight: bold; padding: 0 4px; border-radius: 4px;
+            font-family: monospace;
+        }
+
+        /* Vertical Scroll Popup */
+        .scroll-popup {
+            position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
+            display: none; flex-direction: column-reverse; align-items: center; gap: 4px;
+            pointer-events: none;
+        }
+        
+        .hotbar-slot.show-popup .scroll-popup { display: flex; }
+
+        .popup-item {
+            width: 40px; height: 40px; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.6); border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0.6; transition: all 0.1s;
+            color: white; font-size: 10px; text-align: center; overflow: hidden;
+        }
+        
+        /* The middle item (Current Selection) */
+        .popup-item.current {
+            width: 56px; height: 56px; 
+            border: 2px solid #FCD34D;
+            background: rgba(0,0,0,0.9);
+            opacity: 1; font-weight: bold;
+            box-shadow: 0 0 10px rgba(252, 211, 77, 0.3);
+        }
+
+        .token-dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 4px currentColor; }
+        .token-initial { font-size: 14px; font-weight: bold; color: white; text-shadow: 0 1px 2px black; }
+
         /* Edit Mode Indicator */
         #edit-mode-badge {
             display: none;
@@ -96,11 +155,12 @@
 <body>
 
     <!-- UI OVERLAY -->
-    <div id="ui-layer" class="flex flex-col justify-between p-4">
+    <div id="ui-layer" class="flex flex-col justify-between h-full">
         
-        <!-- HEADER -->
-        <header class="pointer-events-auto flex justify-between items-start">
-            <div class="bg-slate-900/90 border border-slate-700 p-3 rounded-xl shadow-lg backdrop-blur-sm">
+        <!-- TOP BAR -->
+        <div class="p-4 flex justify-between items-start pointer-events-none">
+            <!-- HEADER -->
+            <header class="pointer-events-auto bg-slate-900/90 border border-slate-700 p-3 rounded-xl shadow-lg backdrop-blur-sm">
                 <h1 class="text-xl font-bold text-white flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan-400"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
                     Akashic Atlas
@@ -108,73 +168,50 @@
                 <div class="text-xs text-slate-400 mt-1 flex gap-2">
                     <span id="coords">0, 0, 0</span> | <span id="block-count">0</span> Blocks
                 </div>
-            </div>
+            </header>
 
-            <!-- NAVIGATION (Matches Suite) -->
+            <!-- CONTROLS -->
             <div class="flex gap-2">
-                <button id="btn-atmosphere" class="pointer-events-auto bg-slate-800 border border-amber-500/50 p-2 rounded-full text-amber-400 hover:bg-slate-700 hover:text-amber-300 transition-colors shadow-lg" title="Toggle Atmosphere (Day/Dungeon)">
+                <button id="btn-atmosphere" class="pointer-events-auto bg-slate-800 border border-amber-500/50 p-2 rounded-full text-amber-400 hover:bg-slate-700 hover:text-amber-300 transition-colors shadow-lg" title="Toggle Atmosphere">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
                 </button>
                 <div class="w-px h-8 bg-slate-700 mx-1"></div>
-                <a href="./index.html" class="pointer-events-auto bg-slate-900 border border-slate-700 p-2 rounded-full text-slate-400 hover:text-white transition-colors" title="Hub">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                </a>
+                <button id="btn-sync" class="pointer-events-auto bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded flex items-center gap-2 transition-colors">
+                    Sync
+                </button>
+                <button id="btn-clear" class="pointer-events-auto bg-red-900/50 hover:bg-red-800 border border-red-700 text-red-200 text-xs font-bold px-3 py-1.5 rounded transition-colors">
+                    Clear
+                </button>
+                <button id="btn-save" class="pointer-events-auto bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-xs font-bold px-3 py-1.5 rounded transition-colors">
+                    Save
+                </button>
                 <a href="./tome.html" class="pointer-events-auto bg-purple-900/80 border border-purple-600 p-2 rounded-full text-white hover:bg-purple-800 transition-colors" title="Tracker">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-8a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v8"/><path d="M4 11V7"/><path d="M20 11V7"/><path d="M2 7h4v4H2z"/><path d="M18 7h4v4h-4z"/><path d="M4 7l2-4 2 4"/><path d="M18 7l2-4 2 4"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/></svg>
                 </a>
-            </div>
-        </header>
-
-        <!-- TOKEN ROSTER (Left Side) -->
-        <div id="token-bar-container" class="absolute left-4 top-24 bottom-24 overflow-y-auto pointer-events-auto w-48 hidden sm:block">
-            <h3 class="text-xs font-bold text-slate-500 uppercase mb-2 bg-slate-900/50 p-1 rounded backdrop-blur-sm">Active Tokens</h3>
-            <div id="token-bar">
-                <!-- Generated by JS -->
+                <input type="file" id="file-input" accept=".json" class="hidden">
             </div>
         </div>
 
-        <!-- EDIT MODE BADGE -->
+        <!-- CENTER BADGES -->
         <div id="edit-mode-badge">Mouse Mode Active (Tab)</div>
-
-        <!-- INSTRUCTIONS / START -->
-        <div id="instructions" class="pointer-events-auto absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900/90 border border-cyan-500/50 p-8 rounded-2xl text-center shadow-[0_0_50px_rgba(6,182,212,0.15)] backdrop-blur-md cursor-pointer hover:border-cyan-400 transition-all">
+        <div id="instructions" class="pointer-events-auto absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900/90 border border-cyan-500/50 p-8 rounded-2xl text-center shadow-[0_0_50px_rgba(6,182,212,0.15)] backdrop-blur-md cursor-pointer hover:border-cyan-400 transition-all z-50">
             <h2 class="text-2xl font-bold text-white mb-2">Click to Enter</h2>
             <div class="space-y-2 text-slate-300 text-sm">
                 <p><strong class="text-cyan-400">WASD</strong> Move | <strong class="text-cyan-400">Space</strong> Jump/Fly</p>
                 <p><strong class="text-cyan-400">Tab</strong> Toggle Mouse Mode</p>
-                <p><strong class="text-red-400">Left Drag</strong> Delete Blocks</p>
-                <p><strong class="text-cyan-400">Right Drag</strong> Place Blocks</p>
-                <p><strong class="text-indigo-400">Shift + Right Click</strong> Focus & Range (15ft)</p>
-                <div class="border-t border-slate-700 pt-2 mt-2">
-                    <p><strong class="text-cyan-400">Hold 1 + Scroll</strong> Solid Blocks</p>
-                    <p><strong class="text-cyan-400">Hold 2 + Scroll</strong> Liquids</p>
-                    <p><strong class="text-indigo-400">Shift + 1-9</strong> Select Token</p>
-                </div>
-            </div>
-            <div class="mt-6 pt-4 border-t border-slate-700">
-                <p class="text-xs text-indigo-300 animate-pulse">Syncs with Akashic Tracker Data</p>
+                <p><strong class="text-red-400">Left Drag</strong> Delete | <strong class="text-cyan-400">Right Drag</strong> Place</p>
+                <p><strong class="text-indigo-400">Shift + Right Click</strong> Focus & Range</p>
             </div>
         </div>
 
-        <!-- TOOLBAR & SYNC CONTROLS -->
-        <div class="pointer-events-auto flex flex-col items-center gap-2 mb-4">
-            <!-- Sync Panel -->
-            <div class="bg-slate-900/90 border border-slate-700 p-2 rounded-lg flex items-center gap-3 backdrop-blur-md">
-                <button id="btn-sync" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded flex items-center gap-2 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                    Sync Tokens
-                </button>
-                <div class="h-4 w-px bg-slate-700"></div>
-                <button id="btn-save" class="text-xs text-slate-400 hover:text-white">Save Map</button>
-                <button id="btn-clear" class="text-xs text-red-400 hover:text-red-300">Clear</button>
-                <input type="file" id="file-input" accept=".json" class="hidden">
-            </div>
-
-            <!-- Material Toolbar -->
-            <div id="toolbar" class="flex gap-4 items-end">
-                <!-- Generated by JS -->
+        <!-- BOTTOM HOTBAR -->
+        <div class="pointer-events-auto mt-auto w-full flex flex-col items-center">
+            <div class="text-xs text-slate-400 mb-2 font-mono bg-black/50 px-2 py-1 rounded">Hold 1-4 & Scroll to Select</div>
+            <div id="hotbar">
+                <!-- 10 Slots (1-0) generated by JS -->
             </div>
         </div>
+
     </div>
 
     <!-- 3D ELEMENTS -->
@@ -199,568 +236,446 @@
         const WORLD_SIZE = 64; 
         const BLOCK_SIZE = 1;
         
-        // D&D Condition Colors
-        const CONDITION_COLORS = {
-            "Blinded": 0x525252, "Charmed": 0xdb2777, "Deafened": 0x94a3b8, "Frightened": 0x7c3aed,
-            "Grappled": 0xf97316, "Incapacitated": 0xdc2626, "Invisible": 0xffffff, "Paralyzed": 0xfacc15,
-            "Petrified": 0x475569, "Poisoned": 0x16a34a, "Prone": 0x78350f, "Restrained": 0x9a3412,
-            "Stunned": 0xf59e0b, "Unconscious": 0x000000, "Exhaustion": 0x7f1d1d, "Default": 0x38BDF8
-        };
+        const CONDITION_COLORS = { "Blinded":0x525252,"Charmed":0xdb2777,"Deafened":0x94a3b8,"Frightened":0x7c3aed,"Grappled":0xf97316,"Incapacitated":0xdc2626,"Invisible":0xffffff,"Paralyzed":0xfacc15,"Petrified":0x475569,"Poisoned":0x16a34a,"Prone":0x78350f,"Restrained":0x9a3412,"Stunned":0xf59e0b,"Unconscious":0x000000,"Exhaustion":0x7f1d1d,"Default":0x38BDF8 };
 
-        // Astral Palette (Blocks)
-        // Indices: 0-8 (Keys 1-9), 9 (Key 0), 10 (Key -), 11 (Key =)
+        // --- Categories ---
+        // 1: Solids, 2: Liquids, 3: Players, 4: Enemies, 5-0: TBD
         const MATERIALS = [
-            { color: 0x4b6e32, name: "Grass" },       // 0
-            { color: 0x5c3c28, name: "Dirt" },        // 1
-            { color: 0x64748b, name: "Stone" },       // 2
-            { color: 0x8B4513, name: "Wood" },        // 3
-            { color: 0x38BDF8, name: "Water", transparent: true, opacity: 0.6 }, // 4
-            { color: 0xE6C288, name: "Sand" },        // 5
-            { color: 0xf1f5f9, name: "Snow" },        // 6
-            { color: 0xea580c, name: "Lava/Fire", transparent: true, opacity: 0.7 }, // 7
-            { color: 0x1e293b, name: "Dungeon" },     // 8
-            { color: 0x84cc16, name: "Acid", transparent: true, opacity: 0.6 }, // 9
-            { color: 0x14532d, name: "Poison", transparent: true, opacity: 0.7 }, // 10
-            { color: 0xa855f7, name: "Force", transparent: true, opacity: 0.5 }   // 11
+            { color: 0x4b6e32, name: "Grass", type: 'solid' }, 
+            { color: 0x5c3c28, name: "Dirt", type: 'solid' },
+            { color: 0x64748b, name: "Stone", type: 'solid' },
+            { color: 0x8B4513, name: "Wood", type: 'solid' },
+            { color: 0xE6C288, name: "Sand", type: 'solid' },
+            { color: 0xf1f5f9, name: "Snow", type: 'solid' },
+            { color: 0x1e293b, name: "Dungeon", type: 'solid' },
+            
+            { color: 0x38BDF8, name: "Water", type: 'liquid', transparent: true, opacity: 0.6 },
+            { color: 0xea580c, name: "Lava", type: 'liquid', transparent: true, opacity: 0.7 },
+            { color: 0x84cc16, name: "Acid", type: 'liquid', transparent: true, opacity: 0.6 },
+            { color: 0x14532d, name: "Poison", type: 'liquid', transparent: true, opacity: 0.7 },
+            { color: 0xa855f7, name: "Force", type: 'liquid', transparent: true, opacity: 0.5 }
         ];
 
-        // Groups
-        const SOLID_IDXS = [0, 1, 2, 3, 5, 6, 8];
-        const LIQUID_IDXS = [4, 7, 9, 10, 11];
+        // Mapped Indices for easier lookup
+        const SOLIDS = [0, 1, 2, 3, 4, 5, 6]; 
+        const LIQUIDS = [7, 8, 9, 10, 11];
+
+        // UI State
+        const CATEGORIES = [
+            { id: 0, name: "Solids", key: "1", type: "block", items: SOLIDS },
+            { id: 1, name: "Liquids", key: "2", type: "block", items: LIQUIDS },
+            { id: 2, name: "Players", key: "3", type: "token", items: [] }, 
+            { id: 3, name: "Enemies", key: "4", type: "token", items: [] }, 
+            { id: 4, name: "TBD", key: "5", type: "none", items: [] },
+            { id: 5, name: "TBD", key: "6", type: "none", items: [] },
+            { id: 6, name: "TBD", key: "7", type: "none", items: [] },
+            { id: 7, name: "TBD", key: "8", type: "none", items: [] },
+            { id: 8, name: "TBD", key: "9", type: "none", items: [] },
+            { id: 9, name: "TBD", key: "0", type: "none", items: [] }
+        ];
+
+        let activeCategoryIndex = 0; 
+        let categoryIndices = new Array(10).fill(0); 
+        let isHoldingKey = new Array(10).fill(false); 
 
         // --- Globals ---
-        let camera, scene, renderer, controls;
-        let raycaster;
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, moveUp = false, moveDown = false;
-        let canJump = false, isFlying = false;
-        let isTabMode = false; 
-        let isLocking = false; 
-        let prevTime = performance.now();
-        const velocity = new THREE.Vector3();
-        const direction = new THREE.Vector3();
-        let lastSpaceKeyTime = 0;
-        let lastLockTime = 0; 
-
-        // Lighting & Atmosphere
+        let camera, scene, renderer, controls, raycaster;
+        let moveForward=false, moveBackward=false, moveLeft=false, moveRight=false, moveUp=false, moveDown=false;
+        let canJump=false, isFlying=false, isTabMode=false, isLocking=false;
+        let prevTime = performance.now(), lastSpaceKeyTime = 0, lastLockTime = 0;
+        const velocity = new THREE.Vector3(), direction = new THREE.Vector3();
         let isNight = true; 
         let ambientLight, dirLight, torchLight;
 
-        // Data Storage
         const voxels = new Map(); 
         const objects = []; 
         const tokens = new Map(); 
-        let combatantList = []; 
-        
-        // Geometry Cache for Culling
         const geometryCache = new Map();
         
-        // Interaction State
-        let selectedMaterialIndex = 0;
-        let group1Index = 0; // Current selection index within solids
-        let group2Index = 0; // Current selection index within liquids
-        let isKey1Down = false;
-        let isKey2Down = false;
+        let heldTokenId = null, focusedToken = null, isShiftDown = false;
+        let isDragging=false, isDeleting=false, buildStartPoint=null, deleteStartPoint=null;
 
-        let heldTokenId = null; 
-        let focusedToken = null; 
-        let isShiftDown = false;
-        
-        // Drag Building/Deleting State
-        let isDragging = false;
-        let isDeleting = false;
-        let buildStartPoint = null; 
-        let deleteStartPoint = null; 
-
-        // Visuals
-        let rollOverMesh; 
-        let tokenRollOverMesh; 
-        let rangeGroup; 
-        let voxelGeometry, tokenGeometry;
+        let rollOverMesh, tokenRollOverMesh, rangeGroup, voxelGeometry, tokenGeometry;
         const threeMaterials = [];
 
-        // UI
+        // DOM Elements
         const instructions = document.getElementById('instructions');
         const tooltip = document.getElementById('tooltip');
-        const toolbar = document.getElementById('toolbar');
-        const tokenBar = document.getElementById('token-bar');
+        const hotbarEl = document.getElementById('hotbar');
         const crosshair = document.getElementById('crosshair');
         const editModeBadge = document.getElementById('edit-mode-badge');
 
-        // --- INITIALIZATION ---
         init();
         animate();
 
         function init() {
-            // Scene
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x020617); 
-            scene.fog = new THREE.Fog(0x020617, 10, 60);
+            scene = new THREE.Scene(); scene.background = new THREE.Color(0x020617); scene.fog = new THREE.Fog(0x020617, 10, 60);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000); camera.position.set(0, 2, 10);
+            
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.2); scene.add(ambientLight);
+            dirLight = new THREE.DirectionalLight(0xffffff, 0.5); dirLight.position.set(50, 100, 50); scene.add(dirLight);
+            torchLight = new THREE.PointLight(0xffaa00, 1.5, 20); camera.add(torchLight); scene.add(camera);
 
-            // Camera
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 2, 10);
-
-            // Lights
-            ambientLight = new THREE.AmbientLight(0xffffff, 0.2); 
-            scene.add(ambientLight);
-            dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            dirLight.position.set(50, 100, 50);
-            scene.add(dirLight);
-            torchLight = new THREE.PointLight(0xffaa00, 1.5, 20); 
-            camera.add(torchLight); 
-            scene.add(camera);
-
-            // Controls
             controls = new PointerLockControls(camera, document.body);
             instructions.addEventListener('click', () => safeLock());
-            
-            controls.addEventListener('lock', () => {
-                instructions.style.display = 'none';
-                editModeBadge.style.display = 'none';
-                crosshair.style.opacity = '1';
-                isTabMode = false;
-                isLocking = false;
-            });
-            
-            controls.addEventListener('unlock', () => {
-                isLocking = false; 
-                if (isTabMode) {
-                    instructions.style.display = 'none';
-                    editModeBadge.style.display = 'block';
-                    crosshair.style.opacity = '0';
-                } else {
-                    instructions.style.display = 'block';
-                    editModeBadge.style.display = 'none';
-                    crosshair.style.opacity = '1';
-                }
-            });
-            
-            document.addEventListener('pointerlockerror', () => {
-                isLocking = false;
-                console.warn("Pointer lock failed/rejected.");
-            });
-            
-            // Input
-            document.addEventListener('keydown', onKeyDown);
-            document.addEventListener('keyup', onKeyUp);
-            document.addEventListener('mousedown', onMouseDown);
-            document.addEventListener('mouseup', onMouseUp);
-            document.addEventListener('mousemove', onMouseMove); 
-            document.addEventListener('wheel', onScroll);
+            controls.addEventListener('lock', () => { instructions.style.display='none'; editModeBadge.style.display='none'; crosshair.style.opacity='1'; isTabMode=false; isLocking=false; });
+            controls.addEventListener('unlock', () => { isLocking=false; if(isTabMode){ instructions.style.display='none'; editModeBadge.style.display='block'; crosshair.style.opacity='0'; } else { instructions.style.display='block'; editModeBadge.style.display='none'; crosshair.style.opacity='1'; } });
+            document.addEventListener('pointerlockerror', () => { isLocking=false; console.warn("Lock failed"); });
 
-            // World Base
-            const planeGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
-            planeGeo.rotateX(-Math.PI / 2);
-            const plane = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({ visible: false }));
-            plane.name = "ground";
-            scene.add(plane);
-            objects.push(plane);
+            document.addEventListener('keydown', onKeyDown); document.addEventListener('keyup', onKeyUp);
+            document.addEventListener('mousedown', onMouseDown); document.addEventListener('mouseup', onMouseUp);
+            document.addEventListener('mousemove', onMouseMove); document.addEventListener('wheel', onScroll);
 
-            const gridHelper = new THREE.GridHelper(WORLD_SIZE, WORLD_SIZE, 0x334155, 0x1e293b);
-            scene.add(gridHelper);
+            const plane = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ visible: false }));
+            plane.name = "ground"; scene.add(plane); objects.push(plane);
+            scene.add(new THREE.GridHelper(WORLD_SIZE, WORLD_SIZE, 0x334155, 0x1e293b));
 
-            // Raycaster & Geometries
             raycaster = new THREE.Raycaster();
             voxelGeometry = new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-            tokenGeometry = new THREE.CylinderGeometry(0.4, 0.4, 1.2, 16); 
-
+            tokenGeometry = new THREE.CylinderGeometry(0.4, 0.4, 1.2, 16);
+            
             initGeometryCache();
+            MATERIALS.forEach(m => threeMaterials.push(new THREE.MeshLambertMaterial({ color: m.color, transparent: !!m.transparent, opacity: m.opacity || 1.0 })));
 
-            // Materials
-            MATERIALS.forEach(m => {
-                threeMaterials.push(new THREE.MeshLambertMaterial({ 
-                    color: m.color, 
-                    transparent: !!m.transparent, 
-                    opacity: m.opacity || 1.0 
-                }));
-            });
-
-            // Cursors
-            const rollOverGeo = new THREE.BoxGeometry(BLOCK_SIZE + 0.05, BLOCK_SIZE + 0.05, BLOCK_SIZE + 0.05);
-            rollOverMesh = new THREE.Mesh(rollOverGeo, new THREE.MeshBasicMaterial({ color: 0x38BDF8, opacity: 0.5, transparent: true, wireframe: true }));
+            rollOverMesh = new THREE.Mesh(new THREE.BoxGeometry(1.05,1.05,1.05), new THREE.MeshBasicMaterial({ color: 0x38BDF8, opacity: 0.5, transparent: true, wireframe: true }));
             scene.add(rollOverMesh);
-
             tokenRollOverMesh = new THREE.Mesh(tokenGeometry, new THREE.MeshBasicMaterial({ color: 0xFCD34D, opacity: 0.5, transparent: true, wireframe: true }));
-            tokenRollOverMesh.visible = false;
-            scene.add(tokenRollOverMesh);
+            tokenRollOverMesh.visible = false; scene.add(tokenRollOverMesh);
+            rangeGroup = new THREE.Group(); rangeGroup.visible = false; scene.add(rangeGroup);
 
-            rangeGroup = new THREE.Group();
-            rangeGroup.visible = false;
-            scene.add(rangeGroup);
-
-            // Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
             window.addEventListener('resize', onWindowResize);
 
-            // Init UI
-            initToolbar();
+            initHotbar();
             initButtons();
-
-            // Load Data
             loadMap();
-            syncTokensFromTracker(); 
+            syncTokensFromTracker();
+        }
+
+        // --- HOTBAR UI ---
+        function initHotbar() {
+            hotbarEl.innerHTML = '';
+            CATEGORIES.forEach((cat, index) => {
+                const slot = document.createElement('div');
+                slot.className = `hotbar-slot ${index === activeCategoryIndex ? 'active-category' : ''}`;
+                slot.id = `slot-${index}`;
+                slot.onclick = () => { setActiveCategory(index); };
+                
+                const keyLabel = document.createElement('div'); keyLabel.className = 'key-label'; keyLabel.innerText = cat.key; slot.appendChild(keyLabel);
+                const content = document.createElement('div'); content.className = 'slot-content'; content.id = `slot-content-${index}`; slot.appendChild(content);
+                const popup = document.createElement('div'); popup.className = 'scroll-popup'; popup.id = `popup-${index}`; slot.appendChild(popup);
+
+                hotbarEl.appendChild(slot);
+                updateSlotVisual(index);
+            });
+        }
+
+        function updateSlotVisual(index) {
+            const cat = CATEGORIES[index];
+            const contentEl = document.getElementById(`slot-content-${index}`);
+            const popupEl = document.getElementById(`popup-${index}`);
+            if (!contentEl || !popupEl) return;
+
+            const currentIndex = categoryIndices[index];
+            const items = cat.items;
+            
+            contentEl.innerHTML = '';
+            if (items.length > 0) {
+                const item = cat.type === 'block' ? MATERIALS[items[currentIndex]] : items[currentIndex];
+                contentEl.appendChild(createItemVisual(item, cat.type, true));
+            } else {
+                contentEl.innerText = "Empty"; contentEl.style.fontSize = "8px"; contentEl.style.color = "#475569";
+            }
+
+            if (isHoldingKey[index] && items.length > 1) {
+                popupEl.innerHTML = '';
+                const prevIdx = (currentIndex - 1 + items.length) % items.length;
+                const nextIdx = (currentIndex + 1) % items.length;
+                
+                const prevItem = cat.type === 'block' ? MATERIALS[items[prevIdx]] : items[prevIdx];
+                const currItem = cat.type === 'block' ? MATERIALS[items[currentIndex]] : items[currentIndex];
+                const nextItem = cat.type === 'block' ? MATERIALS[items[nextIdx]] : items[nextIdx];
+
+                const divNext = document.createElement('div'); divNext.className = 'popup-item'; divNext.appendChild(createItemVisual(nextItem, cat.type));
+                const divCurr = document.createElement('div'); divCurr.className = 'popup-item current'; divCurr.appendChild(createItemVisual(currItem, cat.type));
+                const divPrev = document.createElement('div'); divPrev.className = 'popup-item'; divPrev.appendChild(createItemVisual(prevItem, cat.type));
+
+                popupEl.appendChild(divNext); popupEl.appendChild(divCurr); popupEl.appendChild(divPrev);
+                document.getElementById(`slot-${index}`).classList.add('show-popup');
+            } else {
+                document.getElementById(`slot-${index}`).classList.remove('show-popup');
+            }
+        }
+
+        function createItemVisual(item, type, large=false) {
+            const container = document.createElement('div');
+            container.style.display = 'flex'; container.style.alignItems = 'center'; container.style.justifyContent = 'center'; container.style.width = '100%'; container.style.height = '100%';
+            
+            if (type === 'block') {
+                container.style.backgroundColor = '#' + item.color.toString(16).padStart(6,'0');
+                if(large) container.style.border = "2px solid rgba(255,255,255,0.2)";
+                container.title = item.name;
+            } else if (type === 'token') {
+                const dot = document.createElement('div'); dot.className = 'token-dot';
+                dot.style.backgroundColor = item.type === 'monster' ? '#F43F5E' : '#6366f1';
+                dot.style.color = item.type === 'monster' ? '#F43F5E' : '#6366f1'; 
+                if (large) {
+                    dot.style.width = "16px"; dot.style.height = "16px";
+                    const label = document.createElement('div'); label.className = 'token-initial'; label.innerText = item.name.charAt(0).toUpperCase();
+                    container.appendChild(label); container.style.flexDirection = 'column'; container.appendChild(dot);
+                } else {
+                    container.appendChild(dot);
+                }
+                container.title = item.name;
+            }
+            return container;
+        }
+
+        function setActiveCategory(index) {
+            document.getElementById(`slot-${activeCategoryIndex}`)?.classList.remove('active-category');
+            activeCategoryIndex = index;
+            document.getElementById(`slot-${activeCategoryIndex}`)?.classList.add('active-category');
+            
+            const cat = CATEGORIES[index];
+            if (cat.type === 'token' && cat.items.length > 0) {
+                const itemIdx = categoryIndices[index];
+                heldTokenId = cat.items[itemIdx].id;
+            } else {
+                heldTokenId = null; 
+            }
+        }
+
+        function cycleCategory(index, direction) {
+            const cat = CATEGORIES[index];
+            if (cat.items.length === 0) return;
+            if (direction > 0) { categoryIndices[index] = (categoryIndices[index] + 1) % cat.items.length; } else { categoryIndices[index] = (categoryIndices[index] - 1 + cat.items.length) % cat.items.length; }
+            updateSlotVisual(index);
+            if (index === activeCategoryIndex && cat.type === 'token') { heldTokenId = cat.items[categoryIndices[index]].id; }
+        }
+
+        // --- INPUT HANDLING ---
+        function onKeyDown(e) {
+            if (e.key === 'Shift') isShiftDown = true;
+            if (e.code === 'Tab') { e.preventDefault(); if(controls.isLocked){ isTabMode=true; controls.unlock(); } else { safeLock(); } return; }
+            
+            if(e.code==='KeyW') moveForward=true; if(e.code==='KeyA') moveLeft=true; if(e.code==='KeyS') moveBackward=true; if(e.code==='KeyD') moveRight=true;
+            if(e.code==='Space' && !e.repeat) { if(Date.now()-lastSpaceKeyTime<300){ isFlying=!isFlying; velocity.y=0;} else if(isFlying) moveUp=true; else if(canJump){velocity.y+=10; canJump=false;} lastSpaceKeyTime=Date.now(); }
+            if(e.code==='KeyC') if(isFlying) moveDown=true;
+
+            if (e.code.startsWith('Digit')) {
+                const num = parseInt(e.key); const index = num === 0 ? 9 : num - 1; 
+                if (!isHoldingKey[index]) { isHoldingKey[index] = true; setActiveCategory(index); updateSlotVisual(index); }
+            }
+        }
+
+        function onKeyUp(e) {
+            if (e.key === 'Shift') isShiftDown = false;
+            if(e.code==='KeyW') moveForward=false; if(e.code==='KeyA') moveLeft=false; if(e.code==='KeyS') moveBackward=false; if(e.code==='KeyD') moveRight=false;
+            if(e.code==='Space') moveUp=false; if(e.code==='KeyC') moveDown=false;
+
+            if (e.code.startsWith('Digit')) {
+                const num = parseInt(e.key); const index = num === 0 ? 9 : num - 1; 
+                isHoldingKey[index] = false; updateSlotVisual(index);
+            }
+        }
+
+        function onScroll(e) {
+            const heldIndex = isHoldingKey.findIndex(k => k === true);
+            if (heldIndex !== -1) cycleCategory(heldIndex, e.deltaY > 0 ? 1 : -1);
         }
         
-        function initGeometryCache() {
-            const baseGeo = new THREE.BoxGeometry(1, 1, 1);
-            const indices = baseGeo.index.array;
-            const position = baseGeo.attributes.position;
-            const normal = baseGeo.attributes.normal;
-            const uv = baseGeo.attributes.uv;
-            for (let mask = 0; mask < 64; mask++) {
-                const newIndices = [];
-                for (let i = 0; i < 6; i++) {
-                    if ((mask & (1 << i)) !== 0) {
-                        const offset = i * 6;
-                        for (let j = 0; j < 6; j++) newIndices.push(indices[offset + j]);
-                    }
-                }
-                const geo = new THREE.BufferGeometry();
-                geo.setAttribute('position', position);
-                geo.setAttribute('normal', normal);
-                geo.setAttribute('uv', uv);
-                geo.setIndex(newIndices);
-                geometryCache.set(mask, geo);
-            }
-        }
-        const DIRS = [{x:1,y:0,z:0},{x:-1,y:0,z:0},{x:0,y:1,z:0},{x:0,y:-1,z:0},{x:0,y:0,z:1},{x:0,y:0,z:-1}];
-        function getVisibilityMask(x, y, z, myMatIndex) {
-            let mask = 0;
-            for (let i = 0; i < 6; i++) {
-                const d = DIRS[i];
-                const neighbor = voxels.get(`${x+d.x},${y+d.y},${z+d.z}`);
-                if (!neighbor || neighbor.userData.colorIndex !== myMatIndex) mask |= (1 << i);
-            }
-            return mask;
-        }
-        function updateVoxelGeometry(voxel) {
-            const { x, y, z } = voxel.position;
-            const mask = getVisibilityMask(x, y, z, voxel.userData.colorIndex);
-            const geo = geometryCache.get(mask);
-            if (geo) voxel.geometry = geo;
-        }
-        function updateNeighbors(x, y, z) {
-            for (let i = 0; i < 6; i++) {
-                const d = DIRS[i];
-                const neighbor = voxels.get(`${x+d.x},${y+d.y},${z+d.z}`);
-                if (neighbor) updateVoxelGeometry(neighbor);
-            }
-        }
-        function safeLock() {
-            const now = performance.now();
-            if (isLocking || controls.isLocked || (now - lastLockTime < 1200)) return;
-            if (!document.hasFocus()) return;
-            isLocking = true; lastLockTime = now;
-            try { controls.lock(); } catch (e) { console.warn("Lock failed:", e); isLocking = false; }
-            setTimeout(() => { if(isLocking && !controls.isLocked) isLocking = false; }, 2000); 
-        }
-
-        // --- TRACKER SYNC ---
+        // --- DATA & LOGIC ---
         function syncTokensFromTracker() {
             const raw = localStorage.getItem('dm-tracker-monsters');
-            combatantList = raw ? JSON.parse(raw) : [];
+            let all = raw ? JSON.parse(raw) : [];
+            CATEGORIES[2].items = all.filter(c => c.type === 'player');
+            CATEGORIES[3].items = all.filter(c => c.type === 'monster');
+            if (categoryIndices[2] >= CATEGORIES[2].items.length) categoryIndices[2] = 0;
+            if (categoryIndices[3] >= CATEGORIES[3].items.length) categoryIndices[3] = 0;
+
             const savedPositions = JSON.parse(localStorage.getItem('dm-tracker-map-positions') || '{}');
             const currentIds = new Set();
-            combatantList.forEach((c, index) => {
+            
+            all.forEach((c, index) => {
                 currentIds.add(c.id);
-                if (tokens.has(c.id)) { updateTokenVisuals(tokens.get(c.id), c); } 
-                else {
-                    const isMonster = c.type === 'monster';
-                    const color = isMonster ? 0xF43F5E : 0x6366f1; 
+                if (tokens.has(c.id)) { updateTokenVisuals(tokens.get(c.id), c); } else {
+                    const color = c.type === 'monster' ? 0xF43F5E : 0x6366f1; 
                     const mesh = new THREE.Mesh(tokenGeometry, new THREE.MeshLambertMaterial({ color }));
                     if (savedPositions[c.id]) mesh.position.set(savedPositions[c.id].x, savedPositions[c.id].y, savedPositions[c.id].z);
                     else mesh.position.set(index * 2 + 0.5, 1, 0.5); 
                     mesh.userData = { isToken: true, id: c.id, name: c.name, hp: c.currentHp, maxHp: c.maxHp, conditions: c.conditions || [] };
-                    mesh.name = "token"; 
-                    scene.add(mesh); objects.push(mesh); tokens.set(c.id, mesh); updateTokenVisuals(mesh, c);
+                    mesh.name = "token"; scene.add(mesh); objects.push(mesh); tokens.set(c.id, mesh); updateTokenVisuals(mesh, c);
                 }
             });
             tokens.forEach((mesh, id) => { if (!currentIds.has(id)) { scene.remove(mesh); objects.splice(objects.indexOf(mesh), 1); tokens.delete(id); } });
-            saveTokenPositions(); updateBlockCount(); renderTokenBar(); 
-        }
-        function updateTokenVisuals(mesh, data) {
-            mesh.userData.hp = data.currentHp; mesh.userData.maxHp = data.maxHp;
-            mesh.userData.name = data.name; mesh.userData.conditions = data.conditions || [];
-            if (data.currentHp <= 0 && data.type === 'monster') { mesh.rotation.x = Math.PI / 2; mesh.position.y = 0.2; mesh.material.color.setHex(0x334155); } 
-            else { mesh.rotation.x = 0; const color = data.type === 'monster' ? 0xF43F5E : 0x6366f1; mesh.material.color.setHex(color); if (mesh.position.y < 0.6) mesh.position.y = 1; }
-        }
-        function saveTokenPositions() {
-            const posData = {};
-            tokens.forEach((mesh, id) => { posData[id] = { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z }; });
-            localStorage.setItem('dm-tracker-map-positions', JSON.stringify(posData));
+            updateSlotVisual(2); updateSlotVisual(3);
         }
 
-        // --- INTERACTION ---
-        function onMouseMove(event) { if (controls.isLocked) { tooltip.style.display = 'none'; return; } }
-        function getVoxelPos(point, normal, mode) {
-            const pos = new THREE.Vector3().copy(point);
-            if (mode === 'build') { pos.addScaledVector(normal, 0.5); } 
-            else { if (Math.abs(point.y) < 0.01) pos.addScaledVector(normal, 0.5); else pos.addScaledVector(normal, -0.1); }
-            return pos.divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE / 2);
+        // --- STANDARD FUNCTIONS (Restored & Fixed) ---
+        function initGeometryCache() {
+            const baseGeo = new THREE.BoxGeometry(1,1,1); const idx=baseGeo.index.array, pos=baseGeo.attributes.position, norm=baseGeo.attributes.normal, uv=baseGeo.attributes.uv;
+            for(let m=0; m<64; m++){ const ni=[]; for(let i=0;i<6;i++){ if((m&(1<<i))!==0){ const o=i*6; for(let j=0;j<6;j++) ni.push(idx[o+j]); }} 
+            const g=new THREE.BufferGeometry(); g.setAttribute('position',pos); g.setAttribute('normal',norm); g.setAttribute('uv',uv); g.setIndex(ni); geometryCache.set(m,g); }
         }
-        function focusOnToken(tokenMesh) {
-            focusedToken = tokenMesh;
-            controls.getObject().position.copy(tokenMesh.position).add(new THREE.Vector3(0, 3, 5));
-            updateRangeIndicator(tokenMesh);
+        const DIRS = [{x:1,y:0,z:0},{x:-1,y:0,z:0},{x:0,y:1,z:0},{x:0,y:-1,z:0},{x:0,y:0,z:1},{x:0,y:0,z:-1}];
+        function getVisibilityMask(x,y,z,mat) { let m=0; for(let i=0;i<6;i++){ const d=DIRS[i], n=voxels.get(`${x+d.x},${y+d.y},${z+d.z}`); if(!n||n.userData.colorIndex!==mat) m|=(1<<i); } return m; }
+        function updateVoxelGeometry(v) { const m=getVisibilityMask(v.position.x,v.position.y,v.position.z,v.userData.colorIndex); const g=geometryCache.get(m); if(g) v.geometry=g; }
+        function updateNeighbors(x,y,z) { for(let i=0;i<6;i++){ const d=DIRS[i], n=voxels.get(`${x+d.x},${y+d.y},${z+d.z}`); if(n) updateVoxelGeometry(n); } }
+        function safeLock() { const n=performance.now(); if(isLocking||controls.isLocked||(n-lastLockTime<1200))return; if(!document.hasFocus())return; isLocking=true; lastLockTime=n; try{controls.lock();}catch(e){isLocking=false;} setTimeout(()=>{if(isLocking&&!controls.isLocked)isLocking=false;},2000); }
+        
+        function updateTokenVisuals(mesh, data) {
+            mesh.userData.hp=data.currentHp; mesh.userData.maxHp=data.maxHp; mesh.userData.name=data.name; mesh.userData.conditions=data.conditions||[];
+            if(data.currentHp<=0 && data.type==='monster') { mesh.rotation.x=Math.PI/2; mesh.position.y=0.2; mesh.material.color.setHex(0x334155); }
+            else { mesh.rotation.x=0; mesh.material.color.setHex(data.type==='monster'?0xF43F5E:0x6366f1); if(mesh.position.y<0.6) mesh.position.y=1; }
         }
-        function updateRangeIndicator(tokenMesh) {
-            while(rangeGroup.children.length > 0) rangeGroup.remove(rangeGroup.children[0]); 
-            rangeGroup.visible = true; rangeGroup.position.copy(tokenMesh.position); rangeGroup.position.y = tokenMesh.position.y - 0.55; 
-            const conditions = tokenMesh.userData.conditions || [];
-            const innerR = 2.9, outerR = 3.0, segments = 64;
-            if (conditions.length === 0) {
-                const geo = new THREE.RingGeometry(innerR, outerR, segments); geo.rotateX(-Math.PI / 2);
-                const mat = new THREE.MeshBasicMaterial({ color: CONDITION_COLORS["Default"], side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
-                rangeGroup.add(new THREE.Mesh(geo, mat));
-            } else {
-                const arcLength = (Math.PI * 2) / conditions.length;
-                conditions.forEach((cond, i) => {
-                    const colorHex = CONDITION_COLORS[cond] || CONDITION_COLORS["Default"];
-                    const geo = new THREE.RingGeometry(innerR, outerR, Math.max(8, Math.floor(segments/conditions.length)), 1, i * arcLength, arcLength);
-                    geo.rotateX(-Math.PI / 2);
-                    const mat = new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
-                    rangeGroup.add(new THREE.Mesh(geo, mat));
-                });
-            }
+        function saveTokenPositions() { const d={}; tokens.forEach((m,id)=>{d[id]={x:m.position.x,y:m.position.y,z:m.position.z};}); localStorage.setItem('dm-tracker-map-positions', JSON.stringify(d)); }
+        
+        function getVoxelPos(pt,norm,mode) { const p=new THREE.Vector3().copy(pt); if(mode==='build')p.addScaledVector(norm,0.5); else{ if(Math.abs(pt.y)<0.01) p.addScaledVector(norm,0.5); else p.addScaledVector(norm,-0.1); } return p.divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE/2); }
+        function focusOnToken(t) { focusedToken=t; controls.getObject().position.copy(t.position).add(new THREE.Vector3(0,3,5)); updateRangeIndicator(t); }
+        function updateRangeIndicator(t) {
+            while(rangeGroup.children.length>0) rangeGroup.remove(rangeGroup.children[0]);
+            rangeGroup.visible=true; rangeGroup.position.copy(t.position); rangeGroup.position.y=t.position.y-0.55;
+            const conds=t.userData.conditions||[]; const segs=64;
+            if(conds.length===0) { const g=new THREE.RingGeometry(2.9,3.0,segs); g.rotateX(-Math.PI/2); rangeGroup.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({color:CONDITION_COLORS["Default"], side:THREE.DoubleSide, transparent:true, opacity:0.8}))); }
+            else { const arc=(Math.PI*2)/conds.length; conds.forEach((c,i)=>{ const g=new THREE.RingGeometry(2.9,3.0,Math.max(8,Math.floor(segs/conds.length)),1,i*arc,arc); g.rotateX(-Math.PI/2); rangeGroup.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({color:CONDITION_COLORS[c]||CONDITION_COLORS["Default"], side:THREE.DoubleSide, transparent:true, opacity:0.9}))); }); }
         }
+
         function updateInteraction() {
-            if (!controls.isLocked && !isTabMode) return;
-            if (focusedToken && rangeGroup.visible) { rangeGroup.position.copy(focusedToken.position); rangeGroup.position.y = focusedToken.position.y - 0.55; }
-            if (!isTabMode) {
-                raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-                const intersects = raycaster.intersectObjects(objects, false);
-                if (intersects.length > 0) {
-                    const intersect = intersects[0]; const obj = intersect.object; const hitPoint = intersect.point; const normal = intersect.face.normal;
-                    const dist = controls.getObject().position.distanceTo(hitPoint); const feet = Math.round(dist * 5); 
-                    if (obj.userData.isToken && heldTokenId === null && !isDragging && !isDeleting) {
-                        tooltip.style.display = 'block'; tooltip.style.left = '50%'; tooltip.style.top = '50%';
-                        let condStr = ""; if (obj.userData.conditions && obj.userData.conditions.length > 0) condStr = `<br><span style="color:#f87171; font-size:10px;">${obj.userData.conditions.join(", ")}</span>`;
-                        tooltip.innerHTML = `<strong>${obj.userData.name}</strong><br>HP: ${obj.userData.hp}/${obj.userData.maxHp}${condStr}<br><span style="color:#fbbf24">Dist: ${feet} ft</span><br><span style="font-size:10px; color:#cbd5e1;">Shift+RClick to Focus</span>`;
-                        rollOverMesh.visible = false; tokenRollOverMesh.visible = false; return;
-                    } else if (obj.name === "voxel" || obj.name === "ground") {
-                        if (!isDragging && !isDeleting) { tooltip.style.display = 'block'; tooltip.style.left = '50%'; tooltip.style.top = '55%'; tooltip.innerHTML = `<span style="color:#fbbf24; font-size: 10px;">Target: ${feet} ft</span>`; } else tooltip.style.display = 'none';
-                    } else tooltip.style.display = 'none';
-                    if (heldTokenId !== null) {
-                        rollOverMesh.visible = false; tokenRollOverMesh.visible = true; tokenRollOverMesh.position.copy(hitPoint).add(normal);
-                        tokenRollOverMesh.position.divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE / 2); tokenRollOverMesh.position.y = Math.floor(hitPoint.y + 0.1) + 0.6; 
-                    } else if ((isDragging && buildStartPoint) || (isDeleting && deleteStartPoint)) {
-                        const activeStartPoint = isDragging ? buildStartPoint : deleteStartPoint;
-                        rollOverMesh.visible = true; tokenRollOverMesh.visible = false; rollOverMesh.material.color.setHex(isDeleting ? 0xEF4444 : 0x38BDF8);
-                        const currentPos = getVoxelPos(hitPoint, normal, isDeleting ? 'delete' : 'build');
-                        const minX = Math.min(activeStartPoint.x, currentPos.x), maxX = Math.max(activeStartPoint.x, currentPos.x);
-                        const minY = Math.min(activeStartPoint.y, currentPos.y), maxY = Math.max(activeStartPoint.y, currentPos.y);
-                        const minZ = Math.min(activeStartPoint.z, currentPos.z), maxZ = Math.max(activeStartPoint.z, currentPos.z);
-                        const width = maxX - minX + BLOCK_SIZE, height = maxY - minY + BLOCK_SIZE, depth = maxZ - minZ + BLOCK_SIZE;
-                        rollOverMesh.scale.set(width, height, depth); rollOverMesh.position.set(minX + width/2 - 0.5, minY + height/2 - 0.5, minZ + depth/2 - 0.5);
-                    } else {
-                        tokenRollOverMesh.visible = false; rollOverMesh.visible = true; rollOverMesh.scale.set(1, 1, 1); rollOverMesh.material.color.setHex(0x38BDF8);
-                        rollOverMesh.position.copy(hitPoint).addScaledVector(normal, 0.5).divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE / 2);
+            if(!controls.isLocked && !isTabMode) return;
+            if(focusedToken && rangeGroup.visible) { rangeGroup.position.copy(focusedToken.position); rangeGroup.position.y=focusedToken.position.y-0.55; }
+            if(!isTabMode) {
+                raycaster.setFromCamera(new THREE.Vector2(0,0), camera); const intersects=raycaster.intersectObjects(objects, false);
+                if(intersects.length>0) {
+                    const hit=intersects[0], obj=hit.object, pt=hit.point, norm=hit.face.normal, dist=controls.getObject().position.distanceTo(pt);
+                    if(obj.userData.isToken && heldTokenId===null && !isDragging && !isDeleting) {
+                        tooltip.style.display='block'; tooltip.style.left='50%'; tooltip.style.top='50%'; 
+                        let condStr = obj.userData.conditions?.length ? `<br><span style="color:#f87171; font-size:10px;">${obj.userData.conditions.join(", ")}</span>` : "";
+                        tooltip.innerHTML=`<strong>${obj.userData.name}</strong><br>HP: ${obj.userData.hp}/${obj.userData.maxHp}${condStr}<br><span style="color:#fbbf24">Dist: ${Math.round(dist*5)} ft</span>`;
+                        rollOverMesh.visible=false; tokenRollOverMesh.visible=false; return;
                     }
-                } else { rollOverMesh.visible = false; tokenRollOverMesh.visible = false; tooltip.style.display = 'none'; }
+                    
+                    const cat = CATEGORIES[activeCategoryIndex];
+                    if (cat.type === 'token' && heldTokenId !== null) {
+                        rollOverMesh.visible=false; tokenRollOverMesh.visible=true; tokenRollOverMesh.position.copy(pt).add(norm);
+                        tokenRollOverMesh.position.divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE/2); tokenRollOverMesh.position.y = Math.floor(pt.y+0.1)+0.6;
+                    } else if (cat.type === 'block') {
+                        tokenRollOverMesh.visible=false; rollOverMesh.visible=true; rollOverMesh.scale.set(1,1,1); rollOverMesh.material.color.setHex(0x38BDF8);
+                        rollOverMesh.position.copy(pt).addScaledVector(norm,0.5).divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE/2);
+                        
+                        if (isDragging && buildStartPoint) {
+                           const end = getVoxelPos(pt, norm, 'build');
+                           const minX = Math.min(buildStartPoint.x, end.x), maxX = Math.max(buildStartPoint.x, end.x);
+                           const minY = Math.min(buildStartPoint.y, end.y), maxY = Math.max(buildStartPoint.y, end.y);
+                           const minZ = Math.min(buildStartPoint.z, end.z), maxZ = Math.max(buildStartPoint.z, end.z);
+                           rollOverMesh.scale.set(maxX-minX+1, maxY-minY+1, maxZ-minZ+1);
+                           rollOverMesh.position.set(minX+(maxX-minX+1)/2-0.5, minY+(maxY-minY+1)/2-0.5, minZ+(maxZ-minZ+1)/2-0.5);
+                        } else if (isDeleting && deleteStartPoint) {
+                           rollOverMesh.material.color.setHex(0xEF4444);
+                           const end = getVoxelPos(pt, norm, 'delete');
+                           const minX = Math.min(deleteStartPoint.x, end.x), maxX = Math.max(deleteStartPoint.x, end.x);
+                           const minY = Math.min(deleteStartPoint.y, end.y), maxY = Math.max(deleteStartPoint.y, end.y);
+                           const minZ = Math.min(deleteStartPoint.z, end.z), maxZ = Math.max(deleteStartPoint.z, end.z);
+                           rollOverMesh.scale.set(maxX-minX+1, maxY-minY+1, maxZ-minZ+1);
+                           rollOverMesh.position.set(minX+(maxX-minX+1)/2-0.5, minY+(maxY-minY+1)/2-0.5, minZ+(maxZ-minZ+1)/2-0.5);
+                        }
+                    }
+                } else { rollOverMesh.visible=false; tokenRollOverMesh.visible=false; tooltip.style.display='none'; }
             }
         }
-        function onMouseDown(event) {
-            if (event.target.closest('#ui-layer')) return;
-            if (isTabMode && !event.target.closest('button') && !event.target.closest('.token-slot')) { safeLock(); return; }
-            if (!controls.isLocked && !isTabMode) { safeLock(); return; }
-            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-            const intersects = raycaster.intersectObjects(objects, false);
-            if (intersects.length > 0) {
-                const intersect = intersects[0]; const obj = intersect.object;
-                if (event.button === 2) {
-                    if (isShiftDown && obj.userData.isToken) { focusOnToken(obj); return; }
-                    if (heldTokenId !== null) {
-                        const tokenMesh = tokens.get(heldTokenId);
-                        if (tokenMesh) { tokenMesh.position.copy(tokenRollOverMesh.position); saveTokenPositions(); heldTokenId = null; renderTokenBar(); }
-                        return; 
+        function onMouseMove(event) { if (controls.isLocked) { tooltip.style.display = 'none'; return; } }
+
+        function onMouseDown(e) {
+            if(e.target.closest('#ui-layer')) return; if(isTabMode) return; if(!controls.isLocked){ safeLock(); return; }
+            raycaster.setFromCamera(new THREE.Vector2(0,0), camera); const intersects=raycaster.intersectObjects(objects, false);
+            if(intersects.length>0) {
+                const hit=intersects[0], obj=hit.object;
+                if(e.button===2) { // Right Click
+                    if(isShiftDown && obj.userData.isToken) { focusOnToken(obj); return; }
+                    const cat = CATEGORIES[activeCategoryIndex];
+                    if (cat.type === 'token') {
+                         if (heldTokenId !== null) { const t = tokens.get(heldTokenId); if(t) { t.position.copy(tokenRollOverMesh.position); saveTokenPositions(); } }
+                    } else if (cat.type === 'block') {
+                        if (!isDragging) { isDragging = true; buildStartPoint = getVoxelPos(hit.point, hit.face.normal, 'build'); }
                     }
-                    if (obj.userData.isToken) { heldTokenId = obj.userData.id; if (focusedToken && focusedToken !== obj) { focusedToken = null; rangeGroup.visible = false; } renderTokenBar(); return; }
-                    if (!isDragging) { isDragging = true; buildStartPoint = getVoxelPos(intersect.point, intersect.face.normal, 'build'); }
                 }
-                if (event.button === 0) {
-                    if (heldTokenId !== null) { heldTokenId = null; renderTokenBar(); }
-                    else if (!obj.userData.isToken) {
-                        if (focusedToken) { focusedToken = null; rangeGroup.visible = false; }
-                        if (!isDeleting) { isDeleting = true; deleteStartPoint = getVoxelPos(intersect.point, intersect.face.normal, 'delete'); }
-                    }
+                if(e.button===0 && !obj.userData.isToken) { // Left Click
+                    if(focusedToken) { focusedToken=null; rangeGroup.visible=false; }
+                    if(!isDeleting) { isDeleting=true; deleteStartPoint = getVoxelPos(hit.point, hit.face.normal, 'delete'); }
                 }
             }
         }
-        function onMouseUp(event) {
-            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-            const intersects = raycaster.intersectObjects(objects, false);
-            const intersect = intersects.length > 0 ? intersects[0] : null;
-            if (event.button === 2 && isDragging) {
-                if (intersect && buildStartPoint) { const endPoint = getVoxelPos(intersect.point, intersect.face.normal, 'build'); executeBoxAction(buildStartPoint, endPoint, 'build'); }
-                isDragging = false; buildStartPoint = null; if (rollOverMesh) { rollOverMesh.scale.set(1,1,1); rollOverMesh.material.color.setHex(0x38BDF8); }
+        function onMouseUp(e) {
+            raycaster.setFromCamera(new THREE.Vector2(0,0), camera); const intersects=raycaster.intersectObjects(objects, false);
+            const hit=intersects.length>0?intersects[0]:null;
+            if(e.button===2 && isDragging) {
+                if(hit && buildStartPoint) executeBoxAction(buildStartPoint, getVoxelPos(hit.point, hit.face.normal, 'build'), 'build');
+                isDragging=false; buildStartPoint=null; rollOverMesh.scale.set(1,1,1);
             }
-            if (event.button === 0 && isDeleting) {
-                if (intersect && deleteStartPoint) { const endPoint = getVoxelPos(intersect.point, intersect.face.normal, 'delete'); executeBoxAction(deleteStartPoint, endPoint, 'delete'); }
-                isDeleting = false; deleteStartPoint = null; if (rollOverMesh) { rollOverMesh.scale.set(1,1,1); rollOverMesh.material.color.setHex(0x38BDF8); }
+            if(e.button===0 && isDeleting) {
+                if(hit && deleteStartPoint) executeBoxAction(deleteStartPoint, getVoxelPos(hit.point, hit.face.normal, 'delete'), 'delete');
+                isDeleting=false; deleteStartPoint=null; rollOverMesh.scale.set(1,1,1); rollOverMesh.material.color.setHex(0x38BDF8);
             }
         }
         function executeBoxAction(start, end, action) {
-            if (!start || !end) return; 
-            const minX = Math.min(start.x, end.x), maxX = Math.max(start.x, end.x);
-            const minY = Math.min(start.y, end.y), maxY = Math.max(start.y, end.y);
-            const minZ = Math.min(start.z, end.z), maxZ = Math.max(start.z, end.z);
-            let changeCount = 0; const playerPos = controls.getObject().position;
-            for (let x = minX; x <= maxX; x++) {
-                for (let y = minY; y <= maxY; y++) {
-                    for (let z = minZ; z <= maxZ; z++) {
-                        if (action === 'build') {
-                            const dist = new THREE.Vector3(x, y, z).distanceTo(playerPos);
-                            if (dist < 1.5) continue; 
-                            addBlock(x, y, z, selectedMaterialIndex, false); changeCount++;
-                        } else if (action === 'delete') {
-                            const key = `${x},${y},${z}`; const voxel = voxels.get(key);
-                            if (voxel) { scene.remove(voxel); objects.splice(objects.indexOf(voxel), 1); voxels.delete(key); updateNeighbors(x, y, z); changeCount++; }
-                        }
-                    }
-                }
+            const minX=Math.min(start.x,end.x), maxX=Math.max(start.x,end.x), minY=Math.min(start.y,end.y), maxY=Math.max(start.y,end.y), minZ=Math.min(start.z,end.z), maxZ=Math.max(start.z,end.z);
+            let c=0; const pp=controls.getObject().position;
+            const cat = CATEGORIES[activeCategoryIndex];
+            const matIdx = (cat.type === 'block') ? cat.items[categoryIndices[activeCategoryIndex]] : 0; 
+            
+            for(let x=minX; x<=maxX; x++) for(let y=minY; y<=maxY; y++) for(let z=minZ; z<=maxZ; z++) {
+                if(action==='build') { if(new THREE.Vector3(x,y,z).distanceTo(pp)>1.5) { addBlock(x,y,z, matIdx, false); c++; } }
+                else { const v=voxels.get(`${x},${y},${z}`); if(v){ removeBlock(v); c++; } }
             }
-            if (changeCount > 0) { saveMap(); updateBlockCount(); }
+            if(c>0) { saveMap(); updateBlockCount(); }
         }
 
-        // --- VOXEL LOGIC (Restored) ---
-        function addBlock(x, y, z, matIndex, save = true) {
-            const key = `${x},${y},${z}`;
-            if (voxels.has(key)) return;
-
-            const mesh = new THREE.Mesh(voxelGeometry, threeMaterials[matIndex]);
-            mesh.position.set(x, y, z);
-            mesh.name = "voxel";
-            mesh.userData.colorIndex = matIndex;
-            
-            scene.add(mesh);
-            objects.push(mesh);
-            voxels.set(key, mesh);
-
-            // Update self and neighbors for culling
-            updateVoxelGeometry(mesh);
-            updateNeighbors(x, y, z);
-
-            if (save) saveMap();
-            updateBlockCount();
+        // --- BLOCK MANAGEMENT ---
+        function addBlock(x,y,z,mat,save=true) {
+            const k=`${x},${y},${z}`; if(voxels.has(k)) return;
+            const m=new THREE.Mesh(voxelGeometry, threeMaterials[mat]);
+            m.position.set(x,y,z); m.name="voxel"; m.userData.colorIndex=mat;
+            scene.add(m); objects.push(m); voxels.set(k,m);
+            updateVoxelGeometry(m); updateNeighbors(x,y,z);
+            if(save){ saveMap(); updateBlockCount(); }
         }
-
-        function removeBlock(object) {
-            const { x, y, z } = object.position;
-            scene.remove(object);
-            objects.splice(objects.indexOf(object), 1);
-            voxels.delete(`${x},${y},${z}`);
-            
-            // Neighbors might now have visible faces
-            updateNeighbors(x, y, z);
-            
-            saveMap();
-            updateBlockCount();
+        function removeBlock(o) {
+            const {x,y,z}=o.position; scene.remove(o); objects.splice(objects.indexOf(o),1); voxels.delete(`${x},${y},${z}`);
+            updateNeighbors(x,y,z); saveMap(); updateBlockCount();
         }
-
-        function saveMap() {
-            const data = [];
-            voxels.forEach(v => {
-                data.push({ x: v.position.x, y: v.position.y, z: v.position.z, c: v.userData.colorIndex });
-            });
-            localStorage.setItem('dnd-voxel-map', JSON.stringify(data));
-        }
-
-        function loadMap() {
-            const raw = localStorage.getItem('dnd-voxel-map');
-            if (raw) {
-                const data = JSON.parse(raw);
-                data.forEach(b => addBlock(b.x, b.y, b.z, b.c, false));
-            }
-        }
-
-        function initToolbar() {
-            const solidsContainer = document.createElement('div');
-            solidsContainer.className = 'toolbar-group';
-            solidsContainer.innerHTML = '<div class="group-label">SOLIDS (1)</div>';
-            SOLID_IDXS.forEach(i => { const div = createSlotElement(i); solidsContainer.appendChild(div); });
-            toolbar.appendChild(solidsContainer);
-            const liquidsContainer = document.createElement('div');
-            liquidsContainer.className = 'toolbar-group';
-            liquidsContainer.innerHTML = '<div class="group-label">LIQUIDS (2)</div>';
-            LIQUID_IDXS.forEach(i => { const div = createSlotElement(i); liquidsContainer.appendChild(div); });
-            toolbar.appendChild(liquidsContainer);
-            updateToolbarUI();
-        }
-        function createSlotElement(index) {
-            const m = MATERIALS[index]; const div = document.createElement('div'); div.className = 'slot'; div.setAttribute('data-index', index); div.style.backgroundColor = '#' + m.color.toString(16).padStart(6,'0'); div.title = m.name;
-            div.onclick = () => {
-                selectedMaterialIndex = index;
-                if (SOLID_IDXS.includes(index)) { isKey1Down = true; isKey2Down = false; group1Index = SOLID_IDXS.indexOf(index); } 
-                else if (LIQUID_IDXS.includes(index)) { isKey1Down = false; isKey2Down = true; group2Index = LIQUID_IDXS.indexOf(index); }
-                updateToolbarUI();
-            };
-            return div;
-        }
-        function renderTokenBar() {
-            tokenBar.innerHTML = '';
-            combatantList.forEach((c, i) => {
-                const div = document.createElement('div'); const isSelected = c.id === heldTokenId; div.className = `token-slot ${isSelected ? 'active' : ''}`;
-                const dotColor = c.type === 'monster' ? '#F43F5E' : '#6366f1';
-                div.innerHTML = `<div style="width:8px; height:8px; border-radius:50%; background:${dotColor};"></div><span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${c.name}</span>${i < 9 ? `<span class="key-hint">Shift+${i+1}</span>` : ''}`;
-                div.onclick = () => { heldTokenId = c.id; renderTokenBar(); };
-                tokenBar.appendChild(div);
-            });
-        }
+        function saveMap() { const d=[]; voxels.forEach(v=>d.push({x:v.position.x,y:v.position.y,z:v.position.z,c:v.userData.colorIndex})); localStorage.setItem('dnd-voxel-map', JSON.stringify(d)); }
+        function loadMap() { const r=localStorage.getItem('dnd-voxel-map'); if(r){ JSON.parse(r).forEach(b=>addBlock(b.x,b.y,b.z,b.c,false)); } }
+        function updateBlockCount() { document.getElementById('block-count').innerText=voxels.size; }
+        
         function initButtons() {
-            document.getElementById('btn-sync').onclick = () => { syncTokensFromTracker(); alert("Synced!"); };
-            document.getElementById('btn-atmosphere').onclick = toggleAtmosphere;
-            document.getElementById('btn-clear').onclick = () => { if(confirm("Clear Map Blocks?")) { voxels.forEach(v => scene.remove(v)); voxels.clear(); objects.length = 0; objects.push(scene.getObjectByName("ground")); tokens.forEach(t => objects.push(t)); saveMap(); updateBlockCount(); } };
-            document.getElementById('btn-save').onclick = () => { const data = localStorage.getItem('dnd-voxel-map'); const blob = new Blob([data], {type: 'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'akashic-map.json'; a.click(); };
+            document.getElementById('btn-sync').onclick=()=>{ syncTokensFromTracker(); alert("Synced!"); };
+            document.getElementById('btn-atmosphere').onclick = () => { isNight=!isNight; if(isNight){scene.background=new THREE.Color(0x020617); scene.fog=new THREE.Fog(0x020617,10,60); ambientLight.intensity=0.2; dirLight.intensity=0.5; torchLight.intensity=1.5;} else {scene.background=new THREE.Color(0x87CEEB); scene.fog=new THREE.Fog(0x87CEEB,30,150); ambientLight.intensity=0.7; dirLight.intensity=0.8; torchLight.intensity=0;} };
+            document.getElementById('btn-clear').onclick=()=>{ if(confirm("Clear Map?")){ voxels.forEach(v=>scene.remove(v)); voxels.clear(); objects.length=0; objects.push(scene.getObjectByName("ground")); tokens.forEach(t=>objects.push(t)); saveMap(); updateBlockCount(); } };
+            document.getElementById('btn-save').onclick=()=>{ const d=localStorage.getItem('dnd-voxel-map'); const b=new Blob([d],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='akashic-map.json'; a.click(); };
+            document.getElementById('file-input').addEventListener('change', (e) => {
+                const f=e.target.files[0]; if(!f)return; const r=new FileReader();
+                r.onload=(ev)=>{ try{ const d=JSON.parse(ev.target.result); voxels.forEach(v=>scene.remove(v)); voxels.clear(); objects.length=0; objects.push(scene.getObjectByName("ground")); tokens.forEach(t=>objects.push(t)); d.forEach(b=>addBlock(b.x,b.y,b.z,b.c,false)); saveMap(); updateBlockCount(); }catch(err){alert("Error");} };
+                r.readAsText(f); e.target.value='';
+            });
         }
-        function updateBlockCount() { document.getElementById('block-count').innerText = voxels.size; }
-        function toggleAtmosphere() {
-            isNight = !isNight;
-            if (isNight) { scene.background = new THREE.Color(0x020617); scene.fog = new THREE.Fog(0x020617, 10, 60); ambientLight.intensity = 0.2; dirLight.intensity = 0.5; torchLight.intensity = 1.5; } 
-            else { scene.background = new THREE.Color(0x87CEEB); scene.fog = new THREE.Fog(0x87CEEB, 30, 150); ambientLight.intensity = 0.7; dirLight.intensity = 0.8; torchLight.intensity = 0; }
-        }
-        function onWindowResize() { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
-        function onKeyDown(e) {
-            if (e.key === 'Shift') isShiftDown = true;
-            if (e.code === 'Tab') { e.preventDefault(); if (controls.isLocked) { isTabMode = true; controls.unlock(); } else { safeLock(); } return; }
-            switch(e.code) {
-                case 'KeyW': moveForward = true; break; case 'KeyA': moveLeft = true; break; case 'KeyS': moveBackward = true; break; case 'KeyD': moveRight = true; break;
-                case 'Space': if (!e.repeat) { if (Date.now() - lastSpaceKeyTime < 300) { isFlying = !isFlying; velocity.y=0; } else if (isFlying) moveUp = true; else if (canJump) { velocity.y += 10; canJump = false; } lastSpaceKeyTime = Date.now(); } break;
-                case 'KeyC': if(isFlying) moveDown = true; break;
-            }
-            if (e.key === '1') { if (isShiftDown) { if (combatantList[0]) { heldTokenId = combatantList[0].id; renderTokenBar(); } } else { isKey1Down = true; isKey2Down = false; selectedMaterialIndex = SOLID_IDXS[group1Index]; updateToolbarUI(); } }
-            if (e.key === '2') { if (isShiftDown) { if (combatantList[1]) { heldTokenId = combatantList[1].id; renderTokenBar(); } } else { isKey2Down = true; isKey1Down = false; selectedMaterialIndex = LIQUID_IDXS[group2Index]; updateToolbarUI(); } }
-            if (isShiftDown && e.code.startsWith('Digit')) { const idx = parseInt(e.key) - 1; if (idx >= 2 && idx < 9 && combatantList[idx]) { heldTokenId = combatantList[idx].id; renderTokenBar(); } }
-        }
-        function onKeyUp(e) {
-            if (e.key === 'Shift') isShiftDown = false;
-            if (e.key === '1') isKey1Down = false; if (e.key === '2') isKey2Down = false;
-            switch(e.code) { case 'KeyW': moveForward = false; break; case 'KeyA': moveLeft = false; break; case 'KeyS': moveBackward = false; break; case 'KeyD': moveRight = false; break; case 'Space': moveUp = false; break; case 'KeyC': moveDown = false; break; }
-        }
-        function onScroll(e) {
-            if (isKey1Down) { if (e.deltaY > 0) group1Index = (group1Index + 1) % SOLID_IDXS.length; else group1Index = (group1Index - 1 + SOLID_IDXS.length) % SOLID_IDXS.length; selectedMaterialIndex = SOLID_IDXS[group1Index]; updateToolbarUI(); }
-            else if (isKey2Down) { if (e.deltaY > 0) group2Index = (group2Index + 1) % LIQUID_IDXS.length; else group2Index = (group2Index - 1 + LIQUID_IDXS.length) % LIQUID_IDXS.length; selectedMaterialIndex = LIQUID_IDXS[group2Index]; updateToolbarUI(); }
-        }
-        function updateToolbarUI() { document.querySelectorAll('.slot').forEach(s => { const idx = parseInt(s.getAttribute('data-index')); if(idx === selectedMaterialIndex) s.classList.add('active'); else s.classList.remove('active'); }); }
+        function onWindowResize() { camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
         function animate() {
             requestAnimationFrame(animate);
-            const time = performance.now();
-            if (controls.isLocked) {
-                const delta = (time - prevTime) / 1000;
-                velocity.x -= velocity.x * 10.0 * delta; velocity.z -= velocity.z * 10.0 * delta;
-                if (isFlying) { velocity.y -= velocity.y * 5.0 * delta; if(moveUp) velocity.y += 30 * delta; if(moveDown) velocity.y -= 30 * delta; } else { velocity.y -= 9.8 * 2.0 * delta; }
-                direction.z = Number(moveForward) - Number(moveBackward); direction.x = Number(moveRight) - Number(moveLeft); direction.normalize();
-                if (moveForward || moveBackward) velocity.z -= direction.z * 100.0 * delta;
-                if (moveLeft || moveRight) velocity.x -= direction.x * 100.0 * delta;
-                controls.moveRight(-velocity.x * delta); controls.moveForward(-velocity.z * delta); controls.getObject().position.y += (velocity.y * delta);
-                if (controls.getObject().position.y < 2) { velocity.y = 0; controls.getObject().position.y = 2; if(!isFlying) canJump = true; }
-                const p = controls.getObject().position; document.getElementById('coords').innerText = `${Math.round(p.x)}, ${Math.round(p.y)}, ${Math.round(p.z)}`;
+            const time=performance.now();
+            if(controls.isLocked) {
+                const delta=(time-prevTime)/1000;
+                velocity.x-=velocity.x*10.0*delta; velocity.z-=velocity.z*10.0*delta;
+                if(isFlying) { velocity.y-=velocity.y*5.0*delta; if(moveUp)velocity.y+=30*delta; if(moveDown)velocity.y-=30*delta; } else { velocity.y-=9.8*2.0*delta; }
+                direction.z=Number(moveForward)-Number(moveBackward); direction.x=Number(moveRight)-Number(moveLeft); direction.normalize();
+                if(moveForward||moveBackward) velocity.z-=direction.z*100.0*delta; if(moveLeft||moveRight) velocity.x-=direction.x*100.0*delta;
+                controls.moveRight(-velocity.x*delta); controls.moveForward(-velocity.z*delta); controls.getObject().position.y+=(velocity.y*delta);
+                if(controls.getObject().position.y<2){ velocity.y=0; controls.getObject().position.y=2; if(!isFlying)canJump=true; }
+                const p=controls.getObject().position; document.getElementById('coords').innerText=`${Math.round(p.x)}, ${Math.round(p.y)}, ${Math.round(p.z)}`;
                 updateInteraction();
             }
-            prevTime = time;
-            renderer.render(scene, camera);
+            prevTime=time; renderer.render(scene, camera);
         }
     </script>
 </body>
