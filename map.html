@@ -16,7 +16,8 @@
         #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); pointer-events: none; mix-blend-mode: difference; transition: opacity 0.2s; }
         #crosshair::before { content: ''; position: absolute; top: 9px; left: 0; width: 20px; height: 2px; background: rgba(255, 255, 255, 0.9); }
         #crosshair::after { content: ''; position: absolute; top: 0; left: 9px; width: 2px; height: 20px; background: rgba(255, 255, 255, 0.9); }
-        .hotbar-slot { transition: all 0.15s ease-out; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); }
+        /* Added touch-action: none here as well */
+        .hotbar-slot { transition: all 0.15s ease-out; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); touch-action: none; }
         .hotbar-slot.active { border-color: #38BDF8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); transform: translateY(-4px); z-index: 20; }
         #tooltip { position: absolute; display: none; transform: translate(-50%, -120%); backdrop-filter: blur(8px); z-index: 50; pointer-events: none; }
         .token-item { transition: all 0.2s; }
@@ -565,7 +566,29 @@
                         else if(c.type==='loot') inr=`<span style="font-size:20px">${item.icon}</span>`;
                     }
                     div.innerHTML = `<span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-900 text-slate-400 text-[9px] px-1.5 rounded border border-slate-700">${(i+1)%10}</span>${inr}`;
-                    div.onclick = () => { state.activeCategoryIdx=i; UIManager.renderHotbar(); }; el.appendChild(div);
+                    
+                    // Prevent camera movement when touching hotbar
+                    div.addEventListener('touchstart', (e) => { e.stopPropagation(); }, {passive: false});
+                    div.addEventListener('touchmove', (e) => { e.stopPropagation(); }, {passive: false});
+                    div.addEventListener('touchend', (e) => { e.stopPropagation(); }, {passive: false});
+
+                    // Cycle logic on click/tap
+                    div.onclick = (e) => { 
+                        e.stopPropagation();
+                        if (state.activeCategoryIdx === i) {
+                            // Already active, cycle sub-selection
+                            const count = c.items.length;
+                            if (count > 1) {
+                                let s = (state.subSelections[i] || 0) + 1;
+                                if (s >= count) s = 0;
+                                state.subSelections[i] = s;
+                            }
+                        } else {
+                            state.activeCategoryIdx = i; 
+                        }
+                        UIManager.renderHotbar(); 
+                    }; 
+                    el.appendChild(div);
                 });
             },
             renderSidebar: () => {
