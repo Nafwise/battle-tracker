@@ -51,6 +51,7 @@
             display: flex; align-items: center; gap: 8px;
             cursor: pointer; transition: all 0.2s;
             z-index: 50;
+            touch-action: none; /* Prevent gestures */
         }
         #next-turn-btn:hover { transform: translateX(-50%) scale(1.05); box-shadow: 0 0 25px rgba(99, 102, 241, 0.8); }
         #next-turn-btn.hidden { display: none; }
@@ -76,7 +77,8 @@
             .mode-switch { justify-content: space-between; }
             .mode-btn { padding: 6px 8px; font-size: 10px; flex-grow: 1; text-align: center; }
             #instructions { display: none !important; } /* Hide heavy instructions on mobile */
-            #hotbar-wrapper { bottom: 10px; }
+            /* FIX: Ensure hotbar wrapper is above mobile controls (z-index 40) */
+            #hotbar-wrapper { bottom: 10px; z-index: 60; position: relative; }
             .hotbar-slot { width: 40px; height: 40px; }
             #next-turn-btn { top: auto; bottom: 200px; }
             #sidebar-container { display: none; } /* Hide sidebar on mobile */
@@ -547,6 +549,11 @@
                         const btn = document.getElementById('next-turn-btn');
                         btn.classList.remove('hidden');
                         btn.innerHTML = `<span>Next Turn (${mons[turnIndex].name})</span> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>`;
+                        
+                        // Prevent camera movement on this button
+                        btn.addEventListener('touchstart', (e) => { e.stopPropagation(); }, {passive: false});
+                        btn.addEventListener('touchmove', (e) => { e.stopPropagation(); }, {passive: false});
+                        btn.addEventListener('touchend', (e) => { e.stopPropagation(); }, {passive: false});
                     }
                 }
             }
