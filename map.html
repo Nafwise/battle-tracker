@@ -69,10 +69,11 @@
         .app-link-campaign:hover { border-color: #10b981; color: #6ee7b7; }
 
         /* Mobile specific adjustments */
-        @media (max-width: 1024px) { /* Increased breakpoint for tablets */
+        @media (max-width: 1024px) { 
             #ui-layer { padding: 10px; }
             .mode-switch { justify-content: space-between; }
             .mode-btn { padding: 6px 8px; font-size: 10px; flex-grow: 1; text-align: center; }
+            #instructions { display: none !important; } /* Hide heavy instructions on mobile */
             #hotbar-wrapper { bottom: 10px; }
             .hotbar-slot { width: 40px; height: 40px; }
             #next-turn-btn { top: auto; bottom: 200px; }
@@ -84,8 +85,6 @@
 
         /* Virtual Joystick Area */
         #mobile-controls { display: none; pointer-events: none; position: absolute; bottom: 20px; left: 20px; right: 20px; height: 150px; justify-content: space-between; align-items: end; z-index: 40; }
-        
-        /* Show mobile controls on touch devices or small screens */
         @media (max-width: 1024px) { #mobile-controls { display: flex; } }
         
         .touch-zone { width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; pointer-events: auto; position: relative; backdrop-filter: blur(4px); touch-action: none; }
@@ -100,6 +99,14 @@
         .build-btn.break-btn { border-color: #ef4444; color: #ef4444; background: rgba(127, 29, 29, 0.9); }
         .build-btn.fly-btn { border-color: #eab308; color: #fef08a; background: rgba(113, 63, 18, 0.9); font-size: 10px; font-weight: bold; }
         .build-btn.fly-btn.active { background: #eab308; color: black; box-shadow: 0 0 15px rgba(234, 179, 8, 0.6); }
+
+        /* Vertical movement controls for Fly Mode */
+        #mobile-vertical-controls { display: none; flex-direction: column; gap: 10px; position: absolute; bottom: 160px; left: 160px; pointer-events: auto; z-index: 50; }
+        @media (max-width: 1024px) { /* Display only on mobile/tablet */
+             /* We set display via JS based on fly mode, but ensure default hidden */
+        }
+        .vert-btn { width: 50px; height: 50px; background: rgba(15, 23, 42, 0.8); border: 2px solid #64748b; border-radius: 12px; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
+        .vert-btn:active { background: #38BDF8; color: black; }
 
     </style>
 </head>
@@ -167,7 +174,6 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
         </button>
 
-        <!-- Instructions Overlay - Hidden on Touch Devices by default to prevent PointerLock error -->
         <div id="instructions" class="interactive absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900/95 border border-cyan-500/50 p-8 rounded-2xl text-center shadow-[0_0_50px_rgba(6,182,212,0.2)] backdrop-blur-md cursor-pointer hover:border-cyan-400 transition-all z-50 group">
             <h2 class="text-3xl font-bold text-white mb-2 group-hover:scale-105 transition-transform">Click to Enter</h2>
             <div id="instr-build" class="space-y-2 text-slate-300 text-sm mt-4 text-left grid grid-cols-2 gap-x-6">
@@ -199,10 +205,14 @@
             <div id="joystick-move" class="touch-zone">
                 <div id="stick-move" class="touch-stick"></div>
             </div>
+            <div id="mobile-vertical-controls">
+                <button id="mob-up" class="vert-btn">▲</button>
+                <button id="mob-down" class="vert-btn">▼</button>
+            </div>
             <div id="mobile-build-actions">
-                <button id="mob-place" class="build-btn place-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
-                <button id="mob-break" class="build-btn break-btn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-                <button id="mob-fly" class="build-btn fly-btn bg-yellow-900/80 border-yellow-500 text-yellow-200 text-xs font-bold">FLY</button>
+                <button id="mob-place" class="build-btn place-btn"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <button id="mob-break" class="build-btn break-btn"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                <button id="mob-fly" class="build-btn fly-btn">FLY</button>
             </div>
         </div>
 
@@ -616,7 +626,8 @@
         }
 
         function handleRaycast() {
-            if (!controls.isLocked && state.mode!=='view' && state.gameMode !== 'players' && state.gameMode !== 'enemies' && state.gameMode !== 'dm') return;
+            // FIX: Ensure raycast works even if unlocked in certain modes
+            if(!controls.isLocked && !isTouchDevice && state.mode!=='view' && state.gameMode !== 'players' && state.gameMode !== 'enemies' && state.gameMode !== 'dm') return;
             
             // RAYCAST FIX: If unlocked or touch, use mouse position. If locked, use center (0,0)
             if (controls.isLocked && !isTouchDevice) {
@@ -626,12 +637,21 @@
             }
             
             const hits = raycaster.intersectObjects([...state.mapData.values(), ...state.tokenData.values(), scene.getObjectByName('ground')]);
+            
+            // Default: Hide rollers
+            rollover.visible = false; 
+            tokenRoll.visible = false;
+            UIManager.updateTooltip(null);
+
             if(hits.length) {
-                const hit = hits[0]; UIManager.updateTooltip(hit.object.name==='ground'?null:hit.object);
+                const hit = hits[0]; 
+                UIManager.updateTooltip(hit.object.name==='ground'?null:hit.object);
+                
+                // Logic based on mode
                 if (state.gameMode === 'dm' || state.gameMode === 'players' || state.gameMode === 'enemies') {
-                    rollover.visible = false; tokenRoll.visible = false;
+                    // Token Movement Logic
                     if (state.controlledToken) {
-                        if(hit.object.userData.isVoxel || hit.object.name === 'ground') {
+                         if(hit.object.userData.isVoxel || hit.object.name === 'ground') {
                             rollover.visible = true;
                             let floorY = hit.object.name === 'ground' ? 0 : Math.round(hit.point.y);
                             if (hit.face.normal.y < 0.9 && hit.object.userData.isVoxel) floorY = Math.floor(hit.point.y); 
@@ -646,23 +666,29 @@
                     }
                     return {hit, interactable:true};
                 }
-                const cat = CATEGORIES[state.activeCategoryIdx];
-                if(cat.type === 'block') {
-                    tokenRoll.visible = false; rollover.visible = true;
-                    if(state.dragStart) {
-                        const s = state.dragStart.pos, e = getVoxelPos(hit.point, hit.face.normal, state.dragStart.mode);
-                        const minX=Math.min(s.x,e.x), maxX=Math.max(s.x,e.x), minY=Math.min(s.y,e.y), maxY=Math.max(s.y,e.y), minZ=Math.min(s.z,e.z), maxZ=Math.max(s.z,e.z);
-                        rollover.scale.set(maxX-minX+1, maxY-minY+1, maxZ-minZ+1); rollover.position.set(minX+(maxX-minX+1)/2-0.5, minY+(maxY-minY+1)/2-0.5, minZ+(maxZ-minZ+1)/2-0.5);
-                        rollover.material.color.setHex(state.dragStart.mode==='delete' ? CONFIG.colors.delete : CONFIG.colors.highlight);
-                    } else { const p = hit.point.clone().add(hit.face.normal.multiplyScalar(0.5)).floor().addScalar(0.5); rollover.scale.set(1,1,1); rollover.position.copy(p); rollover.material.color.setHex(CONFIG.colors.highlight); }
-                } else if (cat.type === 'token' || cat.type === 'loot') {
-                    rollover.visible = false; tokenRoll.visible = true;
-                    const tx = Math.floor(hit.point.x + hit.face.normal.x*0.1) + 0.5, tz = Math.floor(hit.point.z + hit.face.normal.z*0.1) + 0.5;
-                    let fy = hit.object.name==='ground'?0:(hit.face.normal.y>0.9?Math.round(hit.point.y):Math.floor(hit.point.y));
-                    tokenRoll.position.set(tx, fy+(cat.type==='loot'?0.2:0.1), tz);
+                
+                // Build Mode Logic
+                if (state.gameMode === 'build') {
+                    const cat = CATEGORIES[state.activeCategoryIdx];
+                    if(cat.type === 'block') {
+                        rollover.visible = true;
+                        if(state.dragStart) {
+                            const s = state.dragStart.pos, e = getVoxelPos(hit.point, hit.face.normal, state.dragStart.mode);
+                            const minX=Math.min(s.x,e.x), maxX=Math.max(s.x,e.x), minY=Math.min(s.y,e.y), maxY=Math.max(s.y,e.y), minZ=Math.min(s.z,e.z), maxZ=Math.max(s.z,e.z);
+                            rollover.scale.set(maxX-minX+1, maxY-minY+1, maxZ-minZ+1); rollover.position.set(minX+(maxX-minX+1)/2-0.5, minY+(maxY-minY+1)/2-0.5, minZ+(maxZ-minZ+1)/2-0.5);
+                            rollover.material.color.setHex(state.dragStart.mode==='delete' ? CONFIG.colors.delete : CONFIG.colors.highlight);
+                        } else { const p = hit.point.clone().add(hit.face.normal.multiplyScalar(0.5)).floor().addScalar(0.5); rollover.scale.set(1,1,1); rollover.position.copy(p); rollover.material.color.setHex(CONFIG.colors.highlight); }
+                    } else if (cat.type === 'token' || cat.type === 'loot') {
+                        tokenRoll.visible = true;
+                        const tx = Math.floor(hit.point.x + hit.face.normal.x*0.1) + 0.5, tz = Math.floor(hit.point.z + hit.face.normal.z*0.1) + 0.5;
+                        let fy = hit.object.name==='ground'?0:(hit.face.normal.y>0.9?Math.round(hit.point.y):Math.floor(hit.point.y));
+                        tokenRoll.position.set(tx, fy+(cat.type==='loot'?0.2:0.1), tz);
+                    }
+                    return {hit, interactable:true};
                 }
-                return {hit, interactable:true};
-            } else { rollover.visible=false; tokenRoll.visible=false; UIManager.updateTooltip(null); return {interactable:false}; }
+            } 
+            
+            return {interactable:false};
         }
 
         // --- MOUSE MOVEMENT TRACKING FOR UNLOCKED CURSOR ---
@@ -795,6 +821,13 @@
             
             // Movement logic
             const threshold = 10;
+            // Reverse Z (forward is negative Z)
+            // Left/Right is X axis
+            
+            // If facing forward (default): -Z is forward, +X is right
+            // We need to apply movement relative to camera vector
+            // But basic WASD logic is handled in animate() based on flags
+            
             move.f = dy < -threshold;
             move.b = dy > threshold;
             move.l = dx < -threshold;
@@ -811,8 +844,8 @@
             document.dispatchEvent(event);
         };
 
-        // Fix touch listener for buttons to prevent default and ensure tap registers
-        const touchBtns = ['mob-place', 'mob-break', 'mob-fly'];
+        // Fix touch listener for buttons
+        const touchBtns = ['mob-place', 'mob-break', 'mob-fly', 'mob-up', 'mob-down'];
         touchBtns.forEach(id => {
             const el = document.getElementById(id);
             if(el) {
@@ -828,8 +861,21 @@
                     } else if (id === 'mob-fly') {
                         isFlying = !isFlying; velocity.y = 0;
                         el.classList.toggle('bg-yellow-700');
+                        // Toggle vertical controls visibility
+                        const vControls = document.getElementById('mobile-vertical-controls');
+                        if(vControls) vControls.style.display = isFlying ? 'flex' : 'none';
+                    } else if (id === 'mob-up') {
+                        move.u = true;
+                    } else if (id === 'mob-down') {
+                        move.d = true;
                     }
                 }, { passive: false });
+                
+                el.addEventListener('touchend', (e) => {
+                     e.preventDefault();
+                     if (id === 'mob-up') move.u = false;
+                     if (id === 'mob-down') move.d = false;
+                });
             }
         });
 
