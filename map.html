@@ -20,10 +20,39 @@
         #tooltip { position: absolute; display: none; transform: translate(-50%, -120%); backdrop-filter: blur(8px); z-index: 50; pointer-events: none; }
         .token-item { transition: all 0.2s; }
         .token-item:hover { transform: translateX(4px); background: rgba(51, 65, 85, 0.8); }
-        .mode-switch { position: relative; display: flex; background: #0f172a; border-radius: 8px; padding: 4px; border: 1px solid #334155; }
+        .mode-switch { position: relative; display: flex; background: #0f172a; border-radius: 8px; padding: 4px; border: 1px solid #334155; gap: 4px; }
         .mode-btn { padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; color: #94a3b8; transition: all 0.2s; }
-        .mode-btn.active { background: #38BDF8; color: #0f172a; shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
+        .mode-btn.active { background: #38BDF8; color: #0f172a; box-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
         #move-badge { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #6ee7b7; font-weight: bold; padding: 6px 16px; border-radius: 20px; backdrop-filter: blur(4px); display: none; text-shadow: 0 1px 2px black; }
+        
+        #save-indicator { position: absolute; bottom: 20px; right: 20px; background: rgba(0,0,0,0.7); color: #aaa; padding: 5px 10px; border-radius: 5px; font-size: 12px; pointer-events: none; transition: opacity 0.5s; opacity: 0; }
+        #save-indicator.visible { opacity: 1; }
+        
+        #slots-modal { display: none; }
+        #slots-modal.open { display: flex; }
+
+        /* Focus Navigation Controls */
+        #focus-controls { display: none; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); gap: 10px; align-items: center; pointer-events: auto; }
+        #focus-controls.visible { display: flex; }
+        .focus-nav-btn { background: rgba(15, 23, 42, 0.9); color: white; border: 1px solid #334155; width: 40px; height: 40px; border-radius: 50%; display: flex; items-center; justify-content: center; font-weight: bold; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .focus-nav-btn:hover { background: #38BDF8; color: #0f172a; transform: scale(1.1); }
+        .focus-label { background: rgba(15, 23, 42, 0.9); color: white; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; border: 1px solid #334155; min-width: 150px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+
+        /* Next Turn Button - Integrated from Tome */
+        #next-turn-btn { 
+            position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(135deg, #4f46e5, #ec4899);
+            border: 2px solid #a5b4fc;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+            padding: 8px 24px; border-radius: 99px;
+            color: white; font-weight: bold; font-size: 14px;
+            display: flex; align-items: center; gap: 8px;
+            cursor: pointer; transition: all 0.2s;
+            z-index: 50;
+        }
+        #next-turn-btn:hover { transform: translateX(-50%) scale(1.05); box-shadow: 0 0 25px rgba(99, 102, 241, 0.8); }
+        #next-turn-btn.hidden { display: none; }
+        .turn-active-glow { box-shadow: 0 0 30px 10px rgba(255, 215, 0, 0.6); } /* Gold glow for active turn */
     </style>
 </head>
 <body>
@@ -37,22 +66,41 @@
                     </h1>
                     <div class="mode-switch">
                         <button id="mode-build" class="mode-btn active">BUILD</button>
-                        <button id="mode-dm" class="mode-btn">DM MODE</button>
+                        <button id="mode-dm" class="mode-btn">DM</button>
+                        <button id="mode-players" class="mode-btn text-blue-400">PLAYERS</button>
+                        <button id="mode-enemies" class="mode-btn text-red-400">ENEMIES</button>
                     </div>
                 </div>
-                <div class="text-xs text-slate-400 font-mono flex gap-3"><span id="coord-display">0, 0, 0</span> | <span id="block-count">0 Blocks</span></div>
+                <div class="text-xs text-slate-400 font-mono flex gap-3">
+                    <span id="coord-display">0, 0, 0</span> | <span id="block-count">0 Blocks</span> | <span id="current-map-name" class="text-amber-400 font-bold">Default Map</span>
+                </div>
             </div>
             <div class="flex gap-2">
                 <button id="btn-atmosphere" class="interactive bg-slate-800 border border-amber-500/50 p-2 rounded-lg text-amber-400 hover:bg-slate-700 transition-colors shadow-lg" title="Toggle Day/Night"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
                 <div class="w-px h-10 bg-slate-700/50 mx-1"></div>
-                <button id="btn-sync" class="interactive bg-indigo-600 hover:bg-indigo-500 border border-indigo-400 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-lg transition-all flex items-center gap-2">Sync</button>
-                <button id="btn-save" class="interactive bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Save</button>
-                <button id="btn-load" class="interactive bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Load</button>
+                <button id="btn-sync" class="interactive bg-indigo-600 hover:bg-indigo-500 border border-indigo-400 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-lg transition-all flex items-center gap-2">Sync Tokens</button>
+                <button id="btn-slots" class="interactive bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-400 text-xs font-bold px-3 py-2 rounded-lg transition-colors flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Maps</button>
+                <button id="btn-export" class="interactive bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Export JSON</button>
+                <button id="btn-import" class="interactive bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Import JSON</button>
                 <button id="btn-clear" class="interactive bg-red-900/30 hover:bg-red-900/80 border border-red-800/50 text-red-200 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Clear</button>
                 <input type="file" id="file-input" accept=".json" class="hidden">
             </div>
         </div>
         <div id="sidebar-container" class="absolute left-4 top-32 bottom-32 w-64 interactive overflow-y-auto pr-2 hidden sm:block"></div>
+        
+        <!-- Focus Navigation UI -->
+        <div id="focus-controls" class="interactive">
+            <button id="focus-prev" class="focus-nav-btn">&lt;</button>
+            <div id="focus-label" class="focus-label">No Target</div>
+            <button id="focus-next" class="focus-nav-btn">&gt;</button>
+        </div>
+
+        <!-- Next Turn Button (New) -->
+        <button id="next-turn-btn" class="interactive hidden">
+            <span>Next Turn</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+        </button>
+
         <div id="instructions" class="interactive absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900/95 border border-cyan-500/50 p-8 rounded-2xl text-center shadow-[0_0_50px_rgba(6,182,212,0.2)] backdrop-blur-md cursor-pointer hover:border-cyan-400 transition-all z-50 group">
             <h2 class="text-3xl font-bold text-white mb-2 group-hover:scale-105 transition-transform">Click to Enter</h2>
             <div id="instr-build" class="space-y-2 text-slate-300 text-sm mt-4 text-left grid grid-cols-2 gap-x-6">
@@ -65,18 +113,45 @@
             </div>
             <div id="instr-dm" class="space-y-2 text-slate-300 text-sm mt-4 text-left hidden">
                 <div><span class="text-cyan-400 font-bold">WASD</span> Free Camera</div>
-                <div><span class="text-indigo-400 font-bold">R-Click</span> Control Unit</div>
-                <div><span class="text-green-400 font-bold">L-Click</span> Move Unit</div>
+                <div><span class="text-indigo-400 font-bold">R-Click (Hold)</span> Pitch/Yaw</div>
+                <div><span class="text-green-400 font-bold">L-Click</span> Select/Move</div>
                 <div><span class="text-red-400 font-bold">Esc</span> Release Unit</div>
+            </div>
+            <div id="instr-focus" class="space-y-2 text-slate-300 text-sm mt-4 text-left hidden">
+                <div><span class="text-cyan-400 font-bold">R-Click (Hold)</span> Pitch/Yaw</div>
+                <div><span class="text-green-400 font-bold">L-Click</span> Move Token</div>
+                <div><span class="text-indigo-400 font-bold">Tab</span> Snap to Token</div>
+                <div><span class="text-amber-400 font-bold">Scroll</span> Zoom</div>
             </div>
         </div>
         <div id="mouse-mode-badge" class="absolute top-32 left-1/2 -translate-x-1/2 bg-yellow-500/20 border border-yellow-500 text-yellow-200 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur hidden">Mouse Cursor Active (Tab)</div>
         <div id="move-badge">Movement: 30ft</div>
+        
+        <div id="save-indicator">Saving...</div>
+
         <div class="interactive mt-auto w-full flex flex-col items-center" id="hotbar-wrapper">
             <div class="bg-black/80 text-slate-400 text-[10px] uppercase tracking-widest px-3 py-1 rounded-t-lg font-bold border-t border-x border-slate-800/50">Hold Number & Scroll to Cycle Options</div>
             <div id="hotbar" class="flex gap-2 p-3 bg-slate-900/90 border border-slate-700 rounded-2xl shadow-2xl backdrop-blur-md"></div>
         </div>
     </div>
+
+    <!-- MAP SLOTS MODAL -->
+    <div id="slots-modal" class="interactive fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 w-full max-w-md rounded-xl border border-slate-700 shadow-2xl flex flex-col max-h-[80vh]">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Select Map</h2>
+                <button id="close-slots" class="text-slate-400 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div class="p-4 overflow-y-auto space-y-2 flex-1" id="slots-list"></div>
+            <div class="p-4 border-t border-slate-700 bg-slate-800 rounded-b-xl">
+                <div class="flex gap-2">
+                    <input type="text" id="new-map-name" placeholder="New Map Name" class="flex-1 bg-slate-900 border border-slate-600 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    <button id="create-map-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded text-sm">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="crosshair"></div>
     <div id="tooltip" class="bg-slate-900/95 border border-slate-600 rounded-lg p-3 text-white shadow-xl min-w-[150px]"></div>
 
@@ -88,6 +163,7 @@
         import * as THREE from 'three';
         import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
+        // --- CONFIGURATION ---
         const CONFIG = {
             worldSize: 64,
             colors: { 
@@ -107,12 +183,19 @@
         const CATEGORIES = [
             { key: '1', label: 'Solid', type: 'block', items: [0, 1, 2, 3, 4, 5, 6] }, { key: '2', label: 'Liquid', type: 'block', items: [7, 8, 9, 10, 11] },
             { key: '3', label: 'Players', type: 'token', subType: 'player', items: [] }, { key: '4', label: 'Enemies', type: 'token', subType: 'monster', items: [] },
-            { key: '5', label: 'Loot', type: 'loot', items: [] }, { key: '6', label: 'Misc', type: 'none', items: [] },
+            { key: '5', label: 'Loot', type: 'loot', items: [] }, { key: '6', label: '-', type: 'none', items: [] },
             { key: '7', label: '-', type: 'none', items: [] }, { key: '8', label: '-', type: 'none', items: [] }, { key: '9', label: '-', type: 'none', items: [] }, { key: '0', label: '-', type: 'none', items: [] }
         ];
         const DIRS = [ {x:1,y:0,z:0}, {x:-1,y:0,z:0}, {x:0,y:1,z:0}, {x:0,y:-1,z:0}, {x:0,y:0,z:1}, {x:0,y:0,z:-1} ];
 
-        const state = { gameMode: 'build', activeCategoryIdx: 0, subSelections: new Array(10).fill(0), isAtmosphereDay: false, heldKeys: {}, mapData: new Map(), tokenData: new Map(), mode: 'view', dragStart: null, controlledToken: null, focusedToken: null, moveBudget: 30 };
+        const state = { 
+            gameMode: 'build', activeCategoryIdx: 0, subSelections: new Array(10).fill(0), 
+            isAtmosphereDay: false, heldKeys: {}, mapData: new Map(), tokenData: new Map(), 
+            mode: 'view', dragStart: null, controlledToken: null, focusedToken: null, moveBudget: 30,
+            currentMapId: 'default', currentMapName: 'Default Map', autoSaveTimer: null,
+            focusIndex: 0, focusList: [], 
+            currentTurnIndex: 0 // New state for turn tracking
+        };
 
         const scene = new THREE.Scene(); scene.background = new THREE.Color(CONFIG.colors.bgNight); scene.fog = new THREE.Fog(CONFIG.colors.bgNight, 10, 60);
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(0, 5, 10);
@@ -122,6 +205,14 @@
         const torchLight = new THREE.PointLight(0xffaa00, 1.5, 20); camera.add(torchLight); scene.add(camera);
         const plane = new THREE.Mesh(new THREE.PlaneGeometry(64, 64).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({visible:false})); plane.name = "ground"; scene.add(plane);
         scene.add(new THREE.GridHelper(64, 64, 0x334155, 0x1e293b));
+
+        // MOUSE AND ROTATION TRACKING
+        const mouse = new THREE.Vector2();
+        let isRightMouseDown = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        
+        document.addEventListener('contextmenu', event => event.preventDefault());
 
         const GeometryManager = {
             cache: new Map(),
@@ -150,45 +241,67 @@
                 RangeRingManager.group.visible = true;
                 RangeRingManager.group.position.copy(targetToken.position);
                 RangeRingManager.group.position.y = targetToken.position.y - 0.1 + 0.02;
+                
                 const data = targetToken.userData.data;
-                if (type === 'movement') {
-                    const radius = (state.moveBudget / 5); if (radius <= 0) return;
+                const radius = (state.moveBudget / 5); 
+                
+                // Base Ring
+                const baseRing = new THREE.Mesh(new THREE.RingGeometry(0.4, 0.5, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({color: 0xffffff, side: THREE.DoubleSide, opacity: 0.8, transparent: true}));
+                RangeRingManager.group.add(baseRing);
+
+                if (type === 'movement' && radius > 0) {
                     const mesh = new THREE.Mesh(new THREE.RingGeometry(Math.max(0.1, radius-0.2), radius, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({color: 0x38BDF8, side: THREE.DoubleSide, transparent: true, opacity: 0.4}));
                     RangeRingManager.group.add(mesh);
-                } else if (type === 'conditions') {
-                    const conditions = data.conditions || []; const radius = 6;
-                    if (conditions.length === 0) {
-                        RangeRingManager.group.add(new THREE.Mesh(new THREE.RingGeometry(radius-0.2, radius, 64).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: CONDITION_COLORS.Default, side: THREE.DoubleSide, transparent: true, opacity: 0.5 })));
-                    } else {
-                        const segmentSize = (Math.PI * 2) / conditions.length;
-                        conditions.forEach((cond, i) => {
-                            RangeRingManager.group.add(new THREE.Mesh(new THREE.RingGeometry(radius-0.2, radius, 32, 1, i * segmentSize, segmentSize).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: CONDITION_COLORS[cond] || CONDITION_COLORS.Default, side: THREE.DoubleSide, transparent: true, opacity: 0.8 })));
-                        });
-                    }
+                } else if (type === 'conditions' || type === 'focus') {
+                    const moveRadius = 6; // 30ft default vis
+                    const mesh = new THREE.Mesh(new THREE.RingGeometry(moveRadius-0.1, moveRadius, 64).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide, transparent: true, opacity: 0.3 }));
+                    RangeRingManager.group.add(mesh);
                 }
             }
         }; RangeRingManager.init();
 
-        const WorldManager = {
-            add: (x,y,z,mat) => {
-                const k = `${x},${y},${z}`; if(state.mapData.has(k)) return;
-                const m = new THREE.Mesh(GeometryManager.get(0), materials[mat]); m.position.set(x,y,z); m.userData={isVoxel:true, matIndex:mat};
-                scene.add(m); state.mapData.set(k, m);
-                WorldManager.updateGeo(x,y,z); DIRS.forEach(d=>WorldManager.updateGeo(x+d.x, y+d.y, z+d.z));
+        // --- MAP STORAGE MANAGER ---
+        const MapStorageManager = {
+            getKeys: () => { try { return JSON.parse(localStorage.getItem('akashic_map_index')) || { 'default': 'Default Map' }; } catch { return { 'default': 'Default Map' }; } },
+            saveIndex: (idx) => localStorage.setItem('akashic_map_index', JSON.stringify(idx)),
+            loadMap: (id) => {
+                const idx = MapStorageManager.getKeys();
+                if (!idx[id]) return false;
+                state.currentMapId = id; state.currentMapName = idx[id];
+                document.getElementById('current-map-name').innerText = state.currentMapName;
+                try {
+                    const raw = localStorage.getItem(`akashic_map_${id}_voxels`);
+                    WorldManager.clear(false); 
+                    if (raw) { JSON.parse(raw).forEach(b => WorldManager.add(b.x, b.y, b.z, b.c, false)); }
+                } catch(e) { console.error("Map Load Error", e); }
+                try {
+                    const posRaw = localStorage.getItem(`akashic_map_${id}_positions`);
+                    const posData = posRaw ? JSON.parse(posRaw) : {};
+                    state.tokenData.forEach((mesh, tokenId) => {
+                        if (posData[tokenId]) mesh.position.set(posData[tokenId].x, posData[tokenId].y, posData[tokenId].z);
+                        else mesh.position.set(0, 2, 0); 
+                    });
+                } catch(e) {}
                 document.getElementById('block-count').innerText = `${state.mapData.size} Blocks`;
+                return true;
             },
-            remove: (m) => {
-                const {x,y,z} = m.position; scene.remove(m); state.mapData.delete(`${x},${y},${z}`);
-                DIRS.forEach(d=>WorldManager.updateGeo(x+d.x, y+d.y, z+d.z)); document.getElementById('block-count').innerText = `${state.mapData.size} Blocks`;
+            saveMap: () => {
+                const voxelData = []; state.mapData.forEach(m => voxelData.push({x:m.position.x, y:m.position.y, z:m.position.z, c:m.userData.matIndex}));
+                localStorage.setItem(`akashic_map_${state.currentMapId}_voxels`, JSON.stringify(voxelData));
+                const posData = {}; state.tokenData.forEach((m, id) => { posData[id] = {x:m.position.x, y:m.position.y, z:m.position.z}; });
+                localStorage.setItem(`akashic_map_${state.currentMapId}_positions`, JSON.stringify(posData));
+                const ind = document.getElementById('save-indicator'); ind.classList.add('visible'); setTimeout(() => ind.classList.remove('visible'), 1000);
             },
-            updateGeo: (x,y,z) => {
-                const m = state.mapData.get(`${x},${y},${z}`); if(!m) return;
-                let mask = 0; DIRS.forEach((d,i) => { const n = state.mapData.get(`${x+d.x},${y+d.y},${z+d.z}`); if(n && n.userData.matIndex === m.userData.matIndex) mask |= (1<<i); });
-                m.geometry = GeometryManager.get(mask);
-            },
-            clear: () => { state.mapData.forEach(m=>scene.remove(m)); state.mapData.clear(); state.tokenData.forEach(m=>scene.remove(m)); state.tokenData.clear(); document.getElementById('block-count').innerText = `0 Blocks`; },
-            save: () => { const d=[]; state.mapData.forEach(m=>d.push({x:m.position.x, y:m.position.y, z:m.position.z, c:m.userData.matIndex})); localStorage.setItem('dnd-voxel-map', JSON.stringify(d)); },
-            load: () => { try { const r = localStorage.getItem('dnd-voxel-map'); if(r) { const d = JSON.parse(r); state.mapData.forEach(m=>scene.remove(m)); state.mapData.clear(); d.forEach(b=>WorldManager.add(b.x,b.y,b.z,b.c)); } } catch(e) { console.error(e); } }
+            createMap: (name) => { const id = Date.now().toString(36); const idx = MapStorageManager.getKeys(); idx[id] = name; MapStorageManager.saveIndex(idx); return id; },
+            deleteMap: (id) => { if (id === 'default') { alert("Cannot delete default map."); return; } if (!confirm("Delete this map forever?")) return; const idx = MapStorageManager.getKeys(); delete idx[id]; MapStorageManager.saveIndex(idx); localStorage.removeItem(`akashic_map_${id}_voxels`); localStorage.removeItem(`akashic_map_${id}_positions`); if (state.currentMapId === id) MapStorageManager.loadMap('default'); UIManager.renderSlots(); },
+            triggerAutoSave: () => { if (state.autoSaveTimer) clearTimeout(state.autoSaveTimer); state.autoSaveTimer = setTimeout(MapStorageManager.saveMap, 2000); }
+        };
+
+        const WorldManager = {
+            add: (x,y,z,mat, updateGeo=true) => { const k = `${x},${y},${z}`; if(state.mapData.has(k)) return; const m = new THREE.Mesh(GeometryManager.get(0), materials[mat]); m.position.set(x,y,z); m.userData={isVoxel:true, matIndex:mat}; scene.add(m); state.mapData.set(k, m); if(updateGeo) { WorldManager.updateGeo(x,y,z); DIRS.forEach(d=>WorldManager.updateGeo(x+d.x, y+d.y, z+d.z)); document.getElementById('block-count').innerText = `${state.mapData.size} Blocks`; MapStorageManager.triggerAutoSave(); } },
+            remove: (m) => { const {x,y,z} = m.position; scene.remove(m); state.mapData.delete(`${x},${y},${z}`); DIRS.forEach(d=>WorldManager.updateGeo(x+d.x, y+d.y, z+d.z)); document.getElementById('block-count').innerText = `${state.mapData.size} Blocks`; MapStorageManager.triggerAutoSave(); },
+            updateGeo: (x,y,z) => { const m = state.mapData.get(`${x},${y},${z}`); if(!m) return; let mask = 0; DIRS.forEach((d,i) => { const n = state.mapData.get(`${x+d.x},${y+d.y},${z+d.z}`); if(n && n.userData.matIndex === m.userData.matIndex) mask |= (1<<i); }); m.geometry = GeometryManager.get(mask); },
+            clear: (updateUI=true) => { state.mapData.forEach(m=>scene.remove(m)); state.mapData.clear(); if(updateUI) { document.getElementById('block-count').innerText = `0 Blocks`; MapStorageManager.triggerAutoSave(); } }
         };
 
         const EntityManager = {
@@ -197,49 +310,76 @@
                     const mons = JSON.parse(localStorage.getItem('dm-tracker-monsters')||'[]');
                     if(!mons.length) { mons.push({id:'p1', name:'Hero', type:'player', currentHp:20, maxHp:20, conditions:['Poisoned']}); mons.push({id:'e1', name:'Goblin', type:'monster', currentHp:7, maxHp:7, conditions:[]}); }
                     CATEGORIES[2].items = mons.filter(c=>c.type==='player'); CATEGORIES[3].items = mons.filter(c=>c.type==='monster');
-                    const loot = JSON.parse(localStorage.getItem('dm-loot') || '[]');
-                    if (!loot.length) loot.push({id:'l1', name:'Gold', icon:'💰'}, {id:'l2', name:'Sword', icon:'⚔️'}, {id:'l3', name:'Potion', icon:'🧪'});
-                    CATEGORIES[4].items = loot;
+                    const loot = JSON.parse(localStorage.getItem('dm-loot') || '[]'); if (!loot.length) loot.push({id:'l1', name:'Gold', icon:'💰'}, {id:'l2', name:'Sword', icon:'⚔️'}, {id:'l3', name:'Potion', icon:'🧪'}); CATEGORIES[4].items = loot;
                     
-                    const savedPos = JSON.parse(localStorage.getItem('dm-tracker-map-positions')||'{}');
-                    const placedLoot = JSON.parse(localStorage.getItem('dm-placed-loot')||'[]');
-
-                    // Cleanup tokens
                     state.tokenData.forEach((m,id) => { if(!m.userData.isLoot && !mons.find(c=>c.id===id)) { scene.remove(m); state.tokenData.delete(id); } });
-                    // Cleanup loot
-                    state.tokenData.forEach((m,id) => { if(m.userData.isLoot && !placedLoot.find(l=>l.instanceId===id)) { scene.remove(m); state.tokenData.delete(id); } });
-
-                    mons.forEach((c,i) => {
-                        let m = state.tokenData.get(c.id);
-                        const col = c.type==='monster' ? CONFIG.colors.monster : CONFIG.colors.player;
-                        if(!m) {
-                            m = new THREE.Mesh(tokenGeo, new THREE.MeshLambertMaterial({color:col}));
-                            m.add(new THREE.Mesh(new THREE.SphereGeometry(0.25), new THREE.MeshLambertMaterial({color:0xffffff})).translateY(0.4));
-                            m.userData={isToken:true, id:c.id, data:c}; scene.add(m); state.tokenData.set(c.id, m);
-                            const p = savedPos[c.id] || {x:i*2, y:0.1, z:0};
-                            m.position.set(p.x, p.y, p.z);
-                        } else { m.material.color.setHex(col); m.userData.data=c; }
-                    });
-
-                    placedLoot.forEach(l => {
-                        if(!state.tokenData.has(l.instanceId)) {
-                            const m = new THREE.Mesh(lootGeo, new THREE.MeshLambertMaterial({color:0xFFD700}));
-                            m.position.set(l.x, l.y, l.z); m.userData = {isLoot:true, id:l.instanceId, data:l.data};
-                            scene.add(m); state.tokenData.set(l.instanceId, m);
-                        }
+                    
+                    mons.forEach((c,i) => { 
+                        let m = state.tokenData.get(c.id); 
+                        const col = c.type==='monster' ? CONFIG.colors.monster : CONFIG.colors.player; 
+                        if(!m) { 
+                            m = new THREE.Mesh(tokenGeo, new THREE.MeshLambertMaterial({color:col})); 
+                            m.add(new THREE.Mesh(new THREE.SphereGeometry(0.25), new THREE.MeshLambertMaterial({color:0xffffff})).translateY(0.4)); 
+                            m.userData={isToken:true, id:c.id, data:c}; scene.add(m); state.tokenData.set(c.id, m); m.position.set(i*2, 2, 0); 
+                        } else { m.material.color.setHex(col); m.userData.data=c; } 
                     });
                     
                     UIManager.renderHotbar(); UIManager.renderSidebar();
+                    EntityManager.updateTurnVisuals();
                 } catch(e) { console.error(e); }
             },
-            savePos: () => {
-                const d={}; const l=[];
-                state.tokenData.forEach((m,id)=>{
-                    if(m.userData.isLoot) l.push({instanceId:id, x:m.position.x, y:m.position.y, z:m.position.z, data:m.userData.data});
-                    else d[id]={x:m.position.x, y:m.position.y, z:m.position.z};
+            advanceTurn: () => {
+                const mons = JSON.parse(localStorage.getItem('dm-tracker-monsters') || '[]');
+                if (mons.length === 0) return;
+                
+                // Get Current Turn Index from Tome (or local state if simple mode)
+                let turn = parseInt(localStorage.getItem('dm-tracker-turn-index') || '0');
+                turn = (turn + 1) % mons.length;
+                
+                // Save back to sync with Tome
+                localStorage.setItem('dm-tracker-turn-index', turn);
+                state.currentTurnIndex = turn;
+                
+                EntityManager.updateTurnVisuals();
+                
+                // Auto-snap if in relevant mode
+                const activeId = mons[turn].id;
+                const token = state.tokenData.get(activeId);
+                
+                if (token && (state.gameMode === 'players' || state.gameMode === 'enemies')) {
+                    // Only snap if the token matches the current mode (Player vs Enemy)
+                    const isPlayerTurn = mons[turn].type === 'player';
+                    if ((state.gameMode === 'players' && isPlayerTurn) || (state.gameMode === 'enemies' && !isPlayerTurn)) {
+                        snapCameraTo(token);
+                    }
+                }
+            },
+            updateTurnVisuals: () => {
+                // Clear old glows
+                state.tokenData.forEach(m => {
+                    if (m.userData.glow) { m.remove(m.userData.glow); m.userData.glow = null; }
                 });
-                localStorage.setItem('dm-tracker-map-positions', JSON.stringify(d));
-                localStorage.setItem('dm-placed-loot', JSON.stringify(l));
+
+                const mons = JSON.parse(localStorage.getItem('dm-tracker-monsters') || '[]');
+                const turnIndex = parseInt(localStorage.getItem('dm-tracker-turn-index') || '0');
+                if (mons.length > 0 && mons[turnIndex]) {
+                    const activeId = mons[turnIndex].id;
+                    const token = state.tokenData.get(activeId);
+                    if (token) {
+                        // Add Gold Glow
+                        const glowGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.05, 32);
+                        const glowMat = new THREE.MeshBasicMaterial({ color: 0xFFD700, transparent: true, opacity: 0.5 });
+                        const glow = new THREE.Mesh(glowGeo, glowMat);
+                        glow.position.y = -0.1;
+                        token.add(glow);
+                        token.userData.glow = glow;
+                        
+                        // Update UI
+                        const btn = document.getElementById('next-turn-btn');
+                        btn.classList.remove('hidden');
+                        btn.innerHTML = `<span>Next Turn (${mons[turnIndex].name})</span> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>`;
+                    }
+                }
             }
         };
 
@@ -256,7 +396,7 @@
                         else if(c.type==='token') { const cl = c.subType==='monster'?'#ef4444':'#3b82f6'; inr=`<div style="width:12px;height:12px;background:${cl};border-radius:50%"></div><span class="text-[9px] text-white truncate w-full text-center">${item.name}</span>`; }
                         else if(c.type==='loot') inr=`<span style="font-size:20px">${item.icon}</span>`;
                     }
-                    div.innerHTML = `<span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-950 text-slate-400 text-[9px] px-1.5 rounded border border-slate-700">${(i+1)%10}</span>${inr}`;
+                    div.innerHTML = `<span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-900 text-slate-400 text-[9px] px-1.5 rounded border border-slate-700">${(i+1)%10}</span>${inr}`;
                     div.onclick = () => { state.activeCategoryIdx=i; UIManager.renderHotbar(); }; el.appendChild(div);
                 });
             },
@@ -281,6 +421,18 @@
                 if(o.userData.isVoxel) t.innerHTML = `<div class="font-bold text-sm">${MATERIALS[o.userData.matIndex].name}</div>`;
                 else if(o.userData.isToken) t.innerHTML = `<div class="font-bold text-indigo-300 text-lg">${o.userData.data.name}</div><div class="text-xs">HP: ${o.userData.data.currentHp}/${o.userData.data.maxHp}</div><div class="text-[9px] text-slate-400">${o.userData.data.conditions?.join(',')||''}</div>`;
                 else if(o.userData.isLoot) t.innerHTML = `<div class="font-bold text-amber-400">${o.userData.data.icon} ${o.userData.data.name}</div>`;
+            },
+            renderSlots: () => {
+                const idx = MapStorageManager.getKeys();
+                const list = document.getElementById('slots-list');
+                list.innerHTML = '';
+                Object.keys(idx).forEach(id => {
+                    const row = document.createElement('div'); row.className = `flex justify-between items-center p-3 rounded mb-2 cursor-pointer transition-colors ${state.currentMapId === id ? 'bg-indigo-900/50 border border-indigo-500' : 'bg-slate-800 border border-slate-700 hover:bg-slate-700'}`; row.innerHTML = `<span class="font-bold text-sm text-white">${idx[id]}</span>`;
+                    const actions = document.createElement('div'); actions.className = 'flex gap-2';
+                    if (id !== state.currentMapId) { const loadBtn = document.createElement('button'); loadBtn.innerText = "Load"; loadBtn.className = "text-xs bg-green-700 hover:bg-green-600 text-white px-2 py-1 rounded"; loadBtn.onclick = (e) => { e.stopPropagation(); MapStorageManager.loadMap(id); document.getElementById('slots-modal').classList.remove('open'); }; actions.appendChild(loadBtn); } else { const activeBadge = document.createElement('span'); activeBadge.innerText = "Active"; activeBadge.className = "text-[10px] bg-indigo-600 text-white px-2 py-1 rounded"; actions.appendChild(activeBadge); }
+                    if (id !== 'default') { const delBtn = document.createElement('button'); delBtn.innerText = "X"; delBtn.className = "text-xs bg-red-900/50 hover:bg-red-700 text-red-200 px-2 py-1 rounded"; delBtn.onclick = (e) => { e.stopPropagation(); MapStorageManager.deleteMap(id); }; actions.appendChild(delBtn); }
+                    row.appendChild(actions); list.appendChild(row);
+                });
             }
         };
 
@@ -294,19 +446,77 @@
 
         function getVoxelPos(pt, norm, mode) { const p = pt.clone(); if(mode==='build') p.add(norm.clone().multiplyScalar(0.5)); else p.add(norm.clone().multiplyScalar(-0.1)); return p.floor().addScalar(0.5); }
         function checkCollision(pos) {
-            if(state.gameMode === 'dm' || isFlying) return false;
+            if(state.gameMode === 'dm' || state.gameMode === 'players' || state.gameMode === 'enemies' || isFlying) return false;
             const r=0.3, h=1.6, minX=Math.floor(pos.x-r), maxX=Math.ceil(pos.x+r), minY=Math.floor(pos.y-h), maxY=Math.ceil(pos.y), minZ=Math.floor(pos.z-r), maxZ=Math.ceil(pos.z+r);
             for(let x=minX; x<maxX; x++) for(let y=minY; y<maxY; y++) for(let z=minZ; z<maxZ; z++) { if(state.mapData.has(`${x},${y},${z}`) && (pos.x-r < x+0.5 && pos.x+r > x-0.5 && pos.y-h < y+0.5 && pos.y > y-0.5 && pos.z-r < z+0.5 && pos.z+r > z-0.5)) return true; }
             return false;
         }
 
+        function snapCameraTo(token) {
+            if(!token) return;
+            const targetPos = token.position.clone();
+            const camOffset = new THREE.Vector3(0, 10, 8); // Top-down isometric offset
+            camera.position.copy(targetPos).add(camOffset);
+            camera.lookAt(targetPos);
+            controls.unlock();
+            
+            RangeRingManager.update(token, 'focus');
+            document.getElementById('focus-label').innerText = token.userData.data.name;
+        }
+
+        function updateFocusMode(mode) {
+            state.focusList = [];
+            state.tokenData.forEach(t => {
+                if (t.userData.isToken) {
+                    if (mode === 'players' && t.userData.data.type === 'player') state.focusList.push(t);
+                    if (mode === 'enemies' && t.userData.data.type === 'monster') state.focusList.push(t);
+                }
+            });
+            
+            if (state.focusList.length > 0) {
+                state.focusIndex = 0;
+                snapCameraTo(state.focusList[0]);
+                state.controlledToken = state.focusList[0];
+                state.moveBudget = 30; // Reset movement budget for turn logic simulation
+                RangeRingManager.update(state.controlledToken, 'movement');
+                document.getElementById('move-badge').style.display = 'block';
+                document.getElementById('move-badge').innerText = `Movement: ${state.moveBudget}ft`;
+            } else {
+                RangeRingManager.update(null);
+                state.controlledToken = null;
+                document.getElementById('focus-label').innerText = "No Targets";
+            }
+        }
+
+        function cycleFocus(direction) {
+            if (state.focusList.length === 0) return;
+            state.focusIndex += direction;
+            if (state.focusIndex >= state.focusList.length) state.focusIndex = 0;
+            if (state.focusIndex < 0) state.focusIndex = state.focusList.length - 1;
+            
+            const token = state.focusList[state.focusIndex];
+            snapCameraTo(token);
+            state.controlledToken = token;
+            state.moveBudget = 30;
+            RangeRingManager.update(state.controlledToken, 'movement');
+            document.getElementById('move-badge').style.display = 'block';
+            document.getElementById('move-badge').innerText = `Movement: ${state.moveBudget}ft`;
+        }
+
         function handleRaycast() {
-            if(!controls.isLocked && state.mode!=='view') return;
-            raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+            if(!controls.isLocked && state.mode!=='view' && state.gameMode !== 'players' && state.gameMode !== 'enemies' && state.gameMode !== 'dm') return;
+            
+            // RAYCAST FIX: If unlocked, use mouse position. If locked, use center (0,0)
+            if (controls.isLocked) {
+                raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+            } else {
+                raycaster.setFromCamera(mouse, camera);
+            }
+            
             const hits = raycaster.intersectObjects([...state.mapData.values(), ...state.tokenData.values(), scene.getObjectByName('ground')]);
             if(hits.length) {
                 const hit = hits[0]; UIManager.updateTooltip(hit.object.name==='ground'?null:hit.object);
-                if (state.gameMode === 'dm') {
+                if (state.gameMode === 'dm' || state.gameMode === 'players' || state.gameMode === 'enemies') {
                     rollover.visible = false; tokenRoll.visible = false;
                     if (state.controlledToken) {
                         if(hit.object.userData.isVoxel || hit.object.name === 'ground') {
@@ -343,13 +553,41 @@
             } else { rollover.visible=false; tokenRoll.visible=false; UIManager.updateTooltip(null); return {interactable:false}; }
         }
 
+        // --- MOUSE MOVEMENT TRACKING FOR UNLOCKED CURSOR ---
+        document.addEventListener('mousemove', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            if (isRightMouseDown && !controls.isLocked) {
+                const movementX = event.clientX - lastMouseX;
+                const movementY = event.clientY - lastMouseY;
+                
+                // Manually rotate camera
+                camera.rotation.y -= movementX * 0.002;
+                camera.rotation.x -= movementY * 0.002;
+                camera.rotation.x = Math.max( - Math.PI / 2, Math.min( Math.PI / 2, camera.rotation.x ) );
+            }
+            
+            lastMouseX = event.clientX;
+            lastMouseY = event.clientY;
+        });
+
         document.addEventListener('keydown', e => {
             if(e.repeat) return;
             if(e.code === 'KeyW') move.f=true; if(e.code === 'KeyS') move.b=true; if(e.code === 'KeyA') move.l=true; if(e.code === 'KeyD') move.r=true;
             if(e.code === 'Space') { if(isFlying || state.gameMode === 'dm') move.u=true; else if(canJump) { velocity.y+=15; canJump=false; } }
             if(e.code === 'KeyC') { if(isFlying || state.gameMode === 'dm') move.d=true; } 
             if(e.code === 'KeyF') { isFlying=!isFlying; velocity.y=0; }
-            if(e.code === 'Tab') { e.preventDefault(); if(controls.isLocked) { controls.unlock(); state.mode='menu'; document.getElementById('mouse-mode-badge').style.display='block'; } else { controls.lock(); state.mode='view'; document.getElementById('mouse-mode-badge').style.display='none'; } }
+            if(e.code === 'Tab') {
+                e.preventDefault();
+                if (state.gameMode === 'players' || state.gameMode === 'enemies') {
+                    if (state.focusList && state.focusList.length > 0) {
+                         snapCameraTo(state.focusList[state.focusIndex]);
+                    }
+                } else {
+                    if(controls.isLocked) { controls.unlock(); state.mode='menu'; document.getElementById('mouse-mode-badge').style.display='block'; } else { controls.lock(); state.mode='view'; document.getElementById('mouse-mode-badge').style.display='none'; }
+                }
+            }
             if(e.code === 'Escape') { if(state.controlledToken) { state.controlledToken = null; state.moveBudget = 30; RangeRingManager.update(null); document.getElementById('move-badge').style.display='none'; } }
             if (e.key >= '0' && e.key <= '9') { const i = e.key==='0'?9:parseInt(e.key)-1; state.heldKeys[i]=true; state.activeCategoryIdx=i; UIManager.renderHotbar(); }
         });
@@ -360,53 +598,72 @@
         });
 
         document.addEventListener('mousedown', e => {
-            if(!controls.isLocked) return;
+            if (e.button === 2) {
+                isRightMouseDown = true;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+
+            if(!controls.isLocked && state.mode !== 'view' && state.gameMode !== 'players' && state.gameMode !== 'enemies' && state.gameMode !== 'dm') return;
             const res = handleRaycast();
             if(!res.interactable) { if(e.button===0) { state.controlledToken = null; state.focusedToken = null; RangeRingManager.update(null); document.getElementById('move-badge').style.display='none'; } return; }
             const {hit} = res;
-            if (e.shiftKey && e.button === 2 && hit.object.userData.isToken) { state.focusedToken = hit.object; RangeRingManager.update(state.focusedToken, 'conditions'); const p = hit.object.position; controls.getObject().position.set(p.x, p.y+5, p.z+5); controls.getObject().lookAt(p); return; }
-            if (state.gameMode === 'dm') {
-                if (e.button === 2) { 
-                    if (hit.object.userData.isToken) {
-                        state.controlledToken = hit.object; state.focusedToken = null; state.moveBudget = 30; RangeRingManager.update(state.controlledToken, 'movement');
-                        document.getElementById('move-badge').style.display = 'block'; document.getElementById('move-badge').innerText = `Movement: ${state.moveBudget}ft`;
-                        const originalColor = hit.object.material.color.getHex(); hit.object.material.color.setHex(0xffffff); setTimeout(() => hit.object.material.color.setHex(originalColor), 100);
-                    } else { state.controlledToken = null; RangeRingManager.update(null); document.getElementById('move-badge').style.display='none'; }
-                } else if (e.button === 0) {
+            
+            // In Player/Enemy/DM mode, handle movement
+            if (state.gameMode === 'players' || state.gameMode === 'enemies' || state.gameMode === 'dm') {
+                if (e.button === 0) { // Left Click to MOVE
                     if (state.controlledToken && (hit.object.userData.isVoxel || hit.object.name === 'ground')) {
                         let floorY = hit.object.name==='ground'?0:Math.round(hit.point.y); if(hit.face.normal.y<0.9 && hit.object.userData.isVoxel) floorY=Math.floor(hit.point.y);
                         const tx = Math.floor(hit.point.x + hit.face.normal.x*0.1) + 0.5, tz = Math.floor(hit.point.z + hit.face.normal.z*0.1) + 0.5;
                         const targetPos = new THREE.Vector3(tx, floorY + 0.1, tz);
                         const cost = Math.ceil(state.controlledToken.position.distanceTo(targetPos)) * 5;
-                        if (cost <= state.moveBudget) { state.controlledToken.position.copy(targetPos); state.moveBudget -= cost; document.getElementById('move-badge').innerText = `Movement: ${state.moveBudget}ft`; RangeRingManager.update(state.controlledToken, 'movement'); EntityManager.savePos(); }
+                        if (cost <= state.moveBudget) { 
+                            state.controlledToken.position.copy(targetPos); 
+                            state.moveBudget -= cost; 
+                            document.getElementById('move-badge').innerText = `Movement: ${state.moveBudget}ft`; 
+                            RangeRingManager.update(state.controlledToken, 'movement'); 
+                            MapStorageManager.saveMap();
+                        }
                     }
+                    return;
                 }
-                return;
             }
-            const cat = CATEGORIES[state.activeCategoryIdx];
-            if(e.button === 2) {
-                if(cat.type==='block') state.dragStart = {pos:getVoxelPos(hit.point, hit.face.normal, 'build'), mode:'build'};
-                else if(cat.type==='token' || cat.type==='loot') {
-                    const d = cat.items[state.subSelections[state.activeCategoryIdx]];
-                    if(d) {
-                         const p = tokenRoll.position.clone();
-                         if(cat.type==='token') {
-                             if(state.tokenData.has(d.id)) state.tokenData.get(d.id).position.copy(p);
-                             else { const posData = JSON.parse(localStorage.getItem('dm-tracker-map-positions')||'{}'); posData[d.id] = {x:p.x,y:p.y,z:p.z}; localStorage.setItem('dm-tracker-map-positions',JSON.stringify(posData)); EntityManager.sync(); }
-                         } else {
-                             const m = new THREE.Mesh(lootGeo, new THREE.MeshLambertMaterial({color:0xFFD700})); m.position.copy(tokenRoll.position); m.userData={isLoot:true, id:`l${Date.now()}`, data:d};
-                             scene.add(m); state.tokenData.set(m.userData.id, m);
-                         }
-                         EntityManager.savePos();
+
+            // Right click select (if not dragging camera)
+            if (e.shiftKey && e.button === 2 && hit.object.userData.isToken) { state.focusedToken = hit.object; RangeRingManager.update(state.focusedToken, 'conditions'); const p = hit.object.position; controls.getObject().position.set(p.x, p.y+5, p.z+5); controls.getObject().lookAt(p); return; }
+            if (state.gameMode === 'dm') {
+               // DM Specific selection logic if needed
+            }
+            
+            // Building Logic (Only if Mode is Build)
+            if (state.gameMode === 'build') {
+                const cat = CATEGORIES[state.activeCategoryIdx];
+                if(e.button === 2) {
+                    if(cat.type==='block') state.dragStart = {pos:getVoxelPos(hit.point, hit.face.normal, 'build'), mode:'build'};
+                    else if(cat.type==='token' || cat.type==='loot') {
+                        // Token Placement Logic
+                        const d = cat.items[state.subSelections[state.activeCategoryIdx]];
+                        if(d) {
+                             const p = tokenRoll.position.clone();
+                             if(cat.type==='token') {
+                                 if(state.tokenData.has(d.id)) state.tokenData.get(d.id).position.copy(p);
+                             } else {
+                                 const m = new THREE.Mesh(lootGeo, new THREE.MeshLambertMaterial({color:0xFFD700})); m.position.copy(tokenRoll.position); m.userData={isLoot:true, id:`l${Date.now()}`, data:d};
+                                 scene.add(m); state.tokenData.set(m.userData.id, m);
+                             }
+                             MapStorageManager.saveMap();
+                        }
                     }
+                } else if(e.button===0) {
+                    if(cat.type==='block' && hit.object.userData.isVoxel) state.dragStart={pos:getVoxelPos(hit.point, hit.face.normal, 'delete'), mode:'delete'};
+                    else if(hit.object.userData.isLoot) { scene.remove(hit.object); state.tokenData.delete(hit.object.userData.id); MapStorageManager.saveMap(); }
                 }
-            } else if(e.button===0) {
-                if(cat.type==='block' && hit.object.userData.isVoxel) state.dragStart={pos:getVoxelPos(hit.point, hit.face.normal, 'delete'), mode:'delete'};
-                else if(hit.object.userData.isLoot) { scene.remove(hit.object); state.tokenData.delete(hit.object.userData.id); EntityManager.savePos(); }
             }
         });
 
-        document.addEventListener('mouseup', () => {
+        document.addEventListener('mouseup', (e) => {
+            if (e.button === 2) isRightMouseDown = false;
+
             if(!state.dragStart) return;
             const res = handleRaycast();
             if(res.interactable) {
@@ -416,14 +673,35 @@
                 if((maxX-minX)*(maxY-minY)*(maxZ-minZ) > 5000) { alert("Too big"); state.dragStart=null; rollover.scale.set(1,1,1); return; }
                 let chg=0;
                 for(let x=minX; x<=maxX; x++) for(let y=minY; y<=maxY; y++) for(let z=minZ; z<=maxZ; z++) {
-                    if(state.dragStart.mode==='build') { if(mat!==undefined){WorldManager.add(x,y,z,mat); chg++;} } else { const m=state.mapData.get(`${x},${y},${z}`); if(m){WorldManager.remove(m); chg++;} }
+                    if(state.dragStart.mode==='build') { if(mat!==undefined){WorldManager.add(x,y,z,mat,false); chg++;} } 
+                    else { const m=state.mapData.get(`${x},${y},${z}`); if(m){WorldManager.remove(m); chg++;} }
                 }
-                if(chg) WorldManager.save();
+                
+                // Batch update visuals
+                for(let x=minX-1; x<=maxX+1; x++) for(let y=minY-1; y<=maxY+1; y++) for(let z=minZ-1; z<=maxZ+1; z++) WorldManager.updateGeo(x,y,z);
+                document.getElementById('block-count').innerText = `${state.mapData.size} Blocks`;
+                
+                if(chg) MapStorageManager.saveMap();
             }
             state.dragStart=null; rollover.scale.set(1,1,1);
         });
 
         document.addEventListener('wheel', e => {
+            if (state.gameMode === 'players' || state.gameMode === 'enemies') {
+                const zoomSpeed = 0.5;
+                const zoomDir = new THREE.Vector3();
+                camera.getWorldDirection(zoomDir);
+                
+                // Reverse direction for zoom out if deltaY is positive
+                if (e.deltaY > 0) {
+                    zoomDir.negate();
+                }
+
+                // Apply zoom
+                camera.position.add(zoomDir.multiplyScalar(zoomSpeed));
+                return;
+            }
+
             const i = Object.keys(state.heldKeys).find(k=>state.heldKeys[k]);
             const target = i !== undefined ? i : state.activeCategoryIdx;
             const c = CATEGORIES[target]; if(!c.items.length) return;
@@ -433,22 +711,95 @@
 
         document.getElementById('instructions').onclick = () => controls.lock();
         controls.addEventListener('lock', () => { document.getElementById('instructions').style.display='none'; document.getElementById('ui-layer').classList.remove('interactive'); });
-        controls.addEventListener('unlock', () => { if(state.mode==='menu') document.getElementById('ui-layer').classList.add('interactive'); else document.getElementById('instructions').style.display='block'; });
-        document.getElementById('mode-build').onclick = () => setMode('build'); document.getElementById('mode-dm').onclick = () => setMode('dm');
+        controls.addEventListener('unlock', () => { 
+            // In Player/Enemy mode, we want the UI interactive but maybe not full lock instructions if we just snapped
+            if(state.mode==='menu' || state.gameMode === 'players' || state.gameMode === 'enemies' || state.gameMode === 'dm') {
+                document.getElementById('ui-layer').classList.add('interactive'); 
+            } else {
+                document.getElementById('instructions').style.display='block'; 
+            }
+        });
+        
+        document.getElementById('mode-build').onclick = () => setMode('build'); 
+        document.getElementById('mode-dm').onclick = () => setMode('dm');
+        document.getElementById('mode-players').onclick = () => setMode('players');
+        document.getElementById('mode-enemies').onclick = () => setMode('enemies');
+        
+        document.getElementById('focus-next').onclick = () => cycleFocus(1);
+        document.getElementById('focus-prev').onclick = () => cycleFocus(-1);
+        
+        document.getElementById('next-turn-btn').onclick = () => {
+            EntityManager.advanceTurn();
+        };
+
+        // --- NEW SLOTS LOGIC ---
+        document.getElementById('btn-slots').onclick = () => { UIManager.renderSlots(); document.getElementById('slots-modal').classList.add('open'); };
+        document.getElementById('close-slots').onclick = () => document.getElementById('slots-modal').classList.remove('open');
+        document.getElementById('create-map-btn').onclick = () => {
+            const name = document.getElementById('new-map-name').value;
+            if(name) {
+                const id = MapStorageManager.createMap(name);
+                MapStorageManager.loadMap(id);
+                WorldManager.clear(true); // New map is empty
+                UIManager.renderSlots();
+                document.getElementById('new-map-name').value = '';
+            }
+        };
+
         function setMode(m) {
-            state.gameMode = m; document.getElementById('mode-build').className = `mode-btn ${m==='build'?'active':''}`; document.getElementById('mode-dm').className = `mode-btn ${m==='dm'?'active':''}`;
-            document.getElementById('instr-build').style.display = m==='build'?'grid':'none'; document.getElementById('instr-dm').style.display = m==='dm'?'grid':'none';
-            if(m==='dm') { isFlying=true; velocity.y=0; } UIManager.renderHotbar();
+            state.gameMode = m; 
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`mode-${m}`).classList.add('active');
+            
+            document.getElementById('instr-build').style.display = m==='build'?'grid':'none'; 
+            document.getElementById('instr-dm').style.display = m==='dm'?'grid':'none';
+            document.getElementById('instr-focus').style.display = (m==='players'||m==='enemies')?'grid':'none';
+            
+            const focusControls = document.getElementById('focus-controls');
+            if (m === 'players' || m === 'enemies') {
+                focusControls.classList.add('visible');
+                updateFocusMode(m);
+            } else {
+                focusControls.classList.remove('visible');
+                RangeRingManager.update(null);
+                // Unlock fly/move for build/dm
+                if(m==='dm') { isFlying=true; velocity.y=0; }
+            }
+            
+            UIManager.renderHotbar();
         }
-        document.getElementById('btn-sync').onclick = EntityManager.sync; document.getElementById('btn-clear').onclick = () => { if(confirm("Nuke world?")) WorldManager.clear(); };
-        document.getElementById('btn-save').onclick = () => { const b=new Blob([localStorage.getItem('dnd-voxel-map')],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='map.json'; a.click(); };
-        document.getElementById('btn-load').onclick = () => document.getElementById('file-input').click();
-        document.getElementById('file-input').onchange = (e) => { const r=new FileReader(); r.onload=ev=>{localStorage.setItem('dnd-voxel-map',ev.target.result); WorldManager.load();}; r.readAsText(e.target.files[0]); };
+        document.getElementById('btn-sync').onclick = EntityManager.sync; 
+        document.getElementById('btn-clear').onclick = () => { if(confirm("Nuke this map?")) { WorldManager.clear(); MapStorageManager.saveMap(); } };
+        
+        // Export/Import JSON for Backup
+        document.getElementById('btn-export').onclick = () => { 
+            const data = {
+                voxels: JSON.parse(localStorage.getItem(`akashic_map_${state.currentMapId}_voxels`)),
+                positions: JSON.parse(localStorage.getItem(`akashic_map_${state.currentMapId}_positions`))
+            };
+            const b=new Blob([JSON.stringify(data)],{type:'application/json'}); 
+            const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`map_${state.currentMapId}.json`; a.click(); 
+        };
+        document.getElementById('btn-import').onclick = () => document.getElementById('file-input').click();
+        document.getElementById('file-input').onchange = (e) => { 
+            const r=new FileReader(); 
+            r.onload=ev=>{
+                try {
+                    const d = JSON.parse(ev.target.result);
+                    localStorage.setItem(`akashic_map_${state.currentMapId}_voxels`, JSON.stringify(d.voxels));
+                    localStorage.setItem(`akashic_map_${state.currentMapId}_positions`, JSON.stringify(d.positions));
+                    MapStorageManager.loadMap(state.currentMapId);
+                } catch(e) { alert("Invalid Map File"); }
+            }; 
+            r.readAsText(e.target.files[0]); 
+        };
 
         function animate() {
             requestAnimationFrame(animate);
             const dt = (performance.now()-prevTime)/1000; prevTime=performance.now();
-            if(controls.isLocked) {
+            
+            // Only handle movement physics if locked AND NOT in focus mode
+            if(controls.isLocked && state.gameMode !== 'players' && state.gameMode !== 'enemies') {
                 velocity.x -= velocity.x * 10.0 * dt; velocity.z -= velocity.z * 10.0 * dt;
                 if (state.gameMode === 'dm') velocity.y -= velocity.y * 5.0 * dt; else velocity.y -= isFlying ? velocity.y * 5.0 * dt : 9.8 * 2.0 * dt;
                 const dir = new THREE.Vector3(); dir.z = Number(move.f) - Number(move.b); dir.x = Number(move.r) - Number(move.l); dir.normalize();
@@ -466,7 +817,14 @@
             renderer.render(scene, camera);
         }
 
-        WorldManager.load(); EntityManager.sync(); UIManager.renderHotbar();
+        // INIT LOAD
+        if (!MapStorageManager.loadMap('default')) {
+            // First time setup if empty
+            MapStorageManager.saveIndex({'default': 'Default Map'});
+            MapStorageManager.loadMap('default');
+        }
+        EntityManager.sync(); 
+        UIManager.renderHotbar();
         window.addEventListener('resize', () => { camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
         animate();
     </script>
