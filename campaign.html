@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Hallowed Demesne: Complete Module</title>
-    <!-- Tailwind CSS for the App Bar -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* OFFICIAL UNIFIED MODULE STYLE - AKASHIC DARK MODE */
@@ -217,6 +216,38 @@
             border-radius: 8px;
         }
 
+        /* AUDIO PLAYER STYLES */
+        .song-card {
+            background-color: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .song-title {
+            color: var(--accent-gold);
+            font-weight: bold;
+            font-family: 'Cinzel', serif;
+            font-size: 1.1em;
+        }
+        .song-meta {
+            font-size: 0.85em;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        audio {
+            width: 100%;
+            height: 40px;
+            margin-top: 5px;
+        }
+        /* Custom Audio Controls Coloring (Webkit only) */
+        audio::-webkit-media-controls-panel {
+            background-color: #cbd5e1;
+        }
+
         /* MOBILE RESPONSIVENESS */
         @media (max-width: 768px) {
             .page, .toc-container {
@@ -258,18 +289,15 @@
 </head>
 <body>
 
-    <!-- UNIFIED APP NAVIGATION -->
     <header class="app-bar">
         <div class="flex items-center gap-3">
             <div class="bg-slate-900 p-1.5 rounded-lg border border-emerald-600 shadow-sm">
-                <!-- Book Icon -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             </div>
             <h1 style="margin:0; border:none; font-size:1.25rem; text-align:left; text-shadow:none; color: white;" class="font-sans font-bold tracking-tight">Campaign Reader</h1>
         </div>
         
         <div class="flex gap-2 items-center">
-            <!-- HOME BUTTON -->
             <a href="./index.html" class="flex items-center gap-2 bg-slate-900 hover:bg-slate-700 text-slate-400 hover:text-white px-3 py-1.5 rounded-full text-xs font-bold transition-all border border-slate-700 no-underline" title="Back to Hub">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                 <span>Home</span>
@@ -284,7 +312,7 @@
 
     <div class="toc-container">
         <h1 style="border-bottom: none; margin-bottom: 10px;">The Hallowed Demesne</h1>
-        <h3 style="margin-top:0; color: #94a3b8; font-size: 0.9em;">Module Version 1.0</h3>
+        <h3 style="margin-top:0; color: #94a3b8; font-size: 0.9em;">Module Version 1.1</h3>
         <hr style="border-color: #334155; margin: 20px 0;">
         <a class="toc-link" href="#ch1-creation">Chapter 1: Character Creation</a>
         <a class="toc-link" href="#ch1-hooks">Chapter 1: Hooks & Identities</a>
@@ -298,6 +326,7 @@
         <a class="toc-link" href="#ch5-finale">Chapter 5: The Singularity (Finale)</a>
         <a class="toc-link" href="#app-gib">Appendix A: The Legend of Gib</a>
         <a class="toc-link" href="#app-subclasses">Appendix B: The Formless Archetypes</a>
+        <a class="toc-link" href="#app-music">Appendix C: Gib's Musical Tales (Audio)</a>
     </div>
 
     <div id="ch1-creation" class="page">
@@ -1176,12 +1205,10 @@
         </div>
     </div>
 
-    <!-- NEW SECTION: APPENDIX B -->
     <div id="app-subclasses" class="page">
         <h1>Appendix B: The Formless Archetypes</h1>
         <p>These 13 subclasses represent the specific mutations and adaptations of Subject 44. To use these, please ensure the corresponding HTML files are located in a folder named <code>Subclasses</code> within your main directory.</p>
 
-        <!-- ARTIFICER -->
         <div class="mechanic-box" style="border-left: 4px solid var(--accent-gold);">
             <h3 style="margin-top:0; color: var(--accent-gold);">Artificer: Biochemist Specialist</h3>
             <p><em>"Life is just chemistry waiting to be optimized."</em></p>
@@ -1192,7 +1219,6 @@
             </a>
         </div>
 
-        <!-- BARBARIAN -->
         <div class="mechanic-box" style="border-left: 4px solid var(--accent-red);">
             <h3 style="margin-top:0; color: var(--accent-red);">Barbarian: Path of the Mimicked Might</h3>
             <p><em>"My rage is not anger. It is biological destabilization."</em></p>
@@ -1203,7 +1229,6 @@
             </a>
         </div>
 
-        <!-- BARD -->
         <div class="mechanic-box" style="border-left: 4px solid var(--accent-indigo);">
             <h3 style="margin-top:0; color: var(--accent-indigo);">Bard: College of the Unseen Lure</h3>
             <p><em>"The song isn't for you. It's for the thing waiting in the dark."</em></p>
@@ -1214,7 +1239,6 @@
             </a>
         </div>
 
-        <!-- CLERIC -->
         <div class="mechanic-box" style="border-left: 4px solid #cbd5e1;">
             <h3 style="margin-top:0; color: #cbd5e1;">Cleric: Unity Domain</h3>
             <p><em>"Individuality is a sickness. Join the Bastion."</em></p>
@@ -1225,7 +1249,6 @@
             </a>
         </div>
 
-        <!-- DRUID -->
         <div class="mechanic-box" style="border-left: 4px solid #10b981;">
             <h3 style="margin-top:0; color: #10b981;">Druid: Circle of the Deceptive Form</h3>
             <p><em>"Why be a bear when you can be a chest of gold that eats people?"</em></p>
@@ -1236,7 +1259,6 @@
             </a>
         </div>
 
-        <!-- FIGHTER -->
         <div class="mechanic-box" style="border-left: 4px solid var(--accent-red);">
             <h3 style="margin-top:0; color: var(--accent-red);">Fighter: Abyssal Juggernaut</h3>
             <p><em>"I am the wall that bites back."</em></p>
@@ -1247,7 +1269,6 @@
             </a>
         </div>
 
-        <!-- MONK -->
         <div class="mechanic-box" style="border-left: 4px solid var(--accent-cyan);">
             <h3 style="margin-top:0; color: var(--accent-cyan);">Monk: Way of the Shifting Shell</h3>
             <p><em>"Be like water? No. Be like acid."</em></p>
@@ -1258,7 +1279,6 @@
             </a>
         </div>
 
-        <!-- PALADIN -->
         <div class="mechanic-box" style="border-left: 4px solid var(--accent-gold);">
             <h3 style="margin-top:0; color: var(--accent-gold);">Paladin: Oath of the Maw</h3>
             <p><em>"The universe is a mouth. I am the teeth."</em></p>
@@ -1269,7 +1289,6 @@
             </a>
         </div>
 
-        <!-- RANGER -->
         <div class="mechanic-box" style="border-left: 4px solid #10b981;">
             <h3 style="margin-top:0; color: #10b981;">Ranger: Mimic Predator Conclave</h3>
             <p><em>"The forest isn't watching you. I am the forest."</em></p>
@@ -1280,7 +1299,6 @@
             </a>
         </div>
 
-        <!-- ROGUE -->
         <div class="mechanic-box" style="border-left: 4px solid #94a3b8;">
             <h3 style="margin-top:0; color: #94a3b8;">Rogue: Mimicry Specialist</h3>
             <p><em>"Is that a coin on the floor? Pick it up. I dare you."</em></p>
@@ -1291,7 +1309,6 @@
             </a>
         </div>
 
-        <!-- SORCERER -->
         <div class="mechanic-box" style="border-left: 4px solid var(--accent-indigo);">
             <h3 style="margin-top:0; color: var(--accent-indigo);">Sorcerer: The Mimic Soul</h3>
             <p><em>"Magic isn't a force. It's a hunger."</em></p>
@@ -1302,7 +1319,6 @@
             </a>
         </div>
 
-        <!-- WARLOCK -->
         <div class="mechanic-box" style="border-left: 4px solid var(--accent-indigo);">
             <h3 style="margin-top:0; color: var(--accent-indigo);">Warlock: Patron of The Mimicked</h3>
             <p><em>"The Void stares back, and it looks like me."</em></p>
@@ -1313,7 +1329,6 @@
             </a>
         </div>
 
-        <!-- WIZARD -->
         <div class="mechanic-box" style="border-left: 4px solid var(--accent-cyan);">
             <h3 style="margin-top:0; color: var(--accent-cyan);">Wizard: School of Unstable Forms</h3>
             <p><em>"Hypothesis: Reality is optional."</em></p>
@@ -1322,6 +1337,103 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
                 View Details
             </a>
+        </div>
+
+    </div>
+
+    <div id="app-music" class="page">
+        <h1>Appendix C: Gib's Musical Tales</h1>
+        <p>In the quiet corners of the Animus Tavern, or amidst the roaring wind of the Wasteland, Gib plays these songs. Some are warnings, some are memories, and some are glitches bleeding through from the other side.</p>
+        
+        <p><strong>DM Note:</strong> Use these tracks to set the mood for specific scenes.</p>
+        
+        <h2>The Tavern Selection</h2>
+        <p>Play these when the players are safe... or think they are safe.</p>
+
+        <div class="song-card">
+            <div class="song-title">1. Artificer King</div>
+            <div class="song-meta">The Main Theme | Play during Chapter 1 Intro</div>
+            <div class="glitch-text" style="margin:0; padding:5px; font-size:0.8em; border:none; background:none;">"A warning about the man in the rafters. Listen closely to the lyrics about the 'hollow man'."</div>
+            <audio controls>
+                <source src="songs/Artificer King.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+
+        <div class="song-card">
+            <div class="song-title">2. Drink Up Your Animus</div>
+            <div class="song-meta">Drinking Song | Play during the Tavern Brawl</div>
+            <div class="song-meta">"A jaunty tune about the horrifying reality of drinking processed monster fluid."</div>
+            <audio controls>
+                <source src="songs/Drink up your Animus.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+
+        <div class="song-card">
+            <div class="song-title">3. Tallest Man in the Room</div>
+            <div class="song-meta">Gib's Theme | Play when Gib enters the scene</div>
+            <div class="song-meta">"A funky track about Gib's totally convincing disguise. He is definitely tall. Very tall."</div>
+            <audio controls>
+                <source src="songs/Tallest Man in the Room.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+
+        <h2>The Lore & The Glitch</h2>
+        <p>Play these during exposition dumps or moments of psychological horror.</p>
+
+        <div class="song-card">
+            <div class="song-title">4. The Cradle's Lie</div>
+            <div class="song-meta">The Anchor's Theme | Play in the Apothecary</div>
+            <div class="song-meta">"A haunting lullaby. Perfect for when The Anchor (Elara) is trying to convince the party to stay and sleep."</div>
+            <audio controls>
+                <source src="songs/The Cradle's Lie.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+
+        <div class="song-card">
+            <div class="song-title">5. Severed Kalashtar</div>
+            <div class="song-meta">Thorin's Backstory | Play in Chapter 4 (The Lab)</div>
+            <div class="song-meta">"A tragic ballad revealing the Creator's true identity and his loss."</div>
+            <audio controls>
+                <source src="songs/Severed Kalashtar.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+        
+        <div class="song-card">
+            <div class="song-title">6. The Broken Record</div>
+            <div class="song-meta">The Glitch Theme | Play during reality breaks</div>
+            <div class="glitch-text" style="margin:0; padding:5px; font-size:0.8em; border:none; background:none;">"It skips. It repeats. It's wrong. Play this when the simulation starts to fail."</div>
+            <audio controls>
+                <source src="songs/The Broken Record.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+
+        <h2>Battle & The Wastes</h2>
+        <p>Play these during combat or exploration of the dangerous zones.</p>
+
+        <div class="song-card">
+            <div class="song-title">7. Feed the Steel</div>
+            <div class="song-meta">The Armorer's Theme | Play during Boss Fights</div>
+            <div class="song-meta">"Industrial, heavy, and aggressive. The anthem of the Maw faction."</div>
+            <audio controls>
+                <source src="songs/Feed the Steel.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+
+        <div class="song-card">
+            <div class="song-title">8. Blue Gold</div>
+            <div class="song-meta">Exploration Theme | Play in the Wasteland</div>
+            <div class="song-meta">"A song about greed and the dangerous hunt for Animus in the grey wastes."</div>
+            <audio controls>
+                <source src="songs/Blue Gold.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
         </div>
 
     </div>
