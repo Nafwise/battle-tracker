@@ -86,16 +86,18 @@
         /* Virtual Joystick Area */
         #mobile-controls { display: none; pointer-events: none; position: absolute; bottom: 20px; left: 20px; right: 20px; height: 150px; justify-content: space-between; align-items: end; z-index: 40; }
         @media (max-width: 768px) { #mobile-controls { display: flex; } }
-        .touch-zone { width: 120px; height: 120px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 50%; pointer-events: auto; position: relative; backdrop-filter: blur(2px); }
-        .touch-stick { width: 50px; height: 50px; background: rgba(56, 189, 248, 0.5); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 10px rgba(56,189,248,0.3); pointer-events: none; }
-        .touch-action-btn { width: 60px; height: 60px; background: rgba(16, 185, 129, 0.2); border: 2px solid #10b981; border-radius: 50%; display: flex; items-center; justify-content: center; color: #10b981; font-weight: bold; pointer-events: auto; margin-bottom: 20px; backdrop-filter: blur(4px); }
-        .touch-action-btn:active { background: #10b981; color: white; }
-
+        .touch-zone { width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; pointer-events: auto; position: relative; backdrop-filter: blur(4px); touch-action: none; }
+        .touch-stick { width: 50px; height: 50px; background: rgba(56, 189, 248, 0.8); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 15px rgba(56,189,248,0.5); pointer-events: none; transition: transform 0.05s; }
+        
         /* Mobile Build Actions */
-        #mobile-build-actions { display: none; flex-direction: column; gap: 10px; pointer-events: auto; position: absolute; bottom: 160px; right: 20px; }
+        #mobile-build-actions { display: none; flex-direction: column; gap: 15px; pointer-events: auto; position: absolute; bottom: 160px; right: 20px; z-index: 50; }
         @media (max-width: 768px) { #mobile-build-actions { display: flex; } }
-        .build-btn { width: 50px; height: 50px; background: rgba(30, 41, 59, 0.9); border: 1px solid #475569; border-radius: 12px; color: white; display: flex; items-center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .build-btn.active { border-color: #38BDF8; color: #38BDF8; }
+        .build-btn { width: 60px; height: 60px; background: rgba(30, 41, 59, 0.95); border: 2px solid #475569; border-radius: 50%; color: white; display: flex; items-center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: transform 0.1s; }
+        .build-btn:active { transform: scale(0.95); }
+        .build-btn.place-btn { border-color: #10b981; color: #10b981; background: rgba(6, 78, 59, 0.9); }
+        .build-btn.break-btn { border-color: #ef4444; color: #ef4444; background: rgba(127, 29, 29, 0.9); }
+        .build-btn.fly-btn { border-color: #eab308; color: #fef08a; background: rgba(113, 63, 18, 0.9); font-size: 10px; font-weight: bold; }
+        .build-btn.fly-btn.active { background: #eab308; color: black; box-shadow: 0 0 15px rgba(234, 179, 8, 0.6); }
 
     </style>
 </head>
@@ -195,9 +197,9 @@
                 <div id="stick-move" class="touch-stick"></div>
             </div>
             <div id="mobile-build-actions">
-                <button id="mob-place" class="build-btn bg-emerald-900/80 border-emerald-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
-                <button id="mob-break" class="build-btn bg-red-900/80 border-red-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-                <button id="mob-fly" class="build-btn bg-yellow-900/80 border-yellow-500 text-yellow-200 text-xs font-bold">FLY</button>
+                <button id="mob-place" class="build-btn place-btn"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                <button id="mob-break" class="build-btn break-btn"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                <button id="mob-fly" class="build-btn fly-btn">FLY</button>
             </div>
         </div>
 
@@ -274,7 +276,7 @@
 
         const scene = new THREE.Scene(); scene.background = new THREE.Color(CONFIG.colors.bgNight); scene.fog = new THREE.Fog(CONFIG.colors.bgNight, 10, 60);
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(0, 5, 10);
-        const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(window.devicePixelRatio > 1 ? 2 : 1); renderer.shadowMap.enabled = true; document.body.appendChild(renderer.domElement);
+        const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); renderer.shadowMap.enabled = true; document.body.appendChild(renderer.domElement);
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); scene.add(ambientLight);
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.5); dirLight.position.set(50, 100, 50); scene.add(dirLight);
         const torchLight = new THREE.PointLight(0xffaa00, 1.5, 20); camera.add(torchLight); scene.add(camera);
@@ -686,6 +688,8 @@
             state.touch.id = touch.identifier;
             joystick.active = true;
             // Capture touch start relative to viewport
+            const rect = joystick.el.getBoundingClientRect();
+            // Center logic - stick moves relative to touch start
             state.touch.startX = touch.clientX;
             state.touch.startY = touch.clientY;
             joystick.stick.style.transform = `translate(-50%, -50%)`;
@@ -751,27 +755,29 @@
             const event = new MouseEvent(type, {
                 bubbles: true, cancelable: true, view: window, button: btn
             });
-            // We need to target the canvas or center of screen ideally, 
-            // but dispatching on document generally works for our global listeners
             document.dispatchEvent(event);
         };
 
-        document.getElementById('mob-place').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            simulateClick(2, 'mousedown');
-            setTimeout(() => simulateClick(2, 'mouseup'), 100);
-        });
-        
-        document.getElementById('mob-break').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            simulateClick(0, 'mousedown');
-            setTimeout(() => simulateClick(0, 'mouseup'), 100);
-        });
-        
-        document.getElementById('mob-fly').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            isFlying = !isFlying; velocity.y = 0;
-            e.target.classList.toggle('bg-yellow-700');
+        // Fix touch listener for buttons to prevent default and ensure tap registers
+        const touchBtns = ['mob-place', 'mob-break', 'mob-fly'];
+        touchBtns.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.addEventListener('touchstart', (e) => {
+                    e.preventDefault(); // Stop zoom/scroll
+                    e.stopPropagation();
+                    if (id === 'mob-place') {
+                        simulateClick(2, 'mousedown');
+                        setTimeout(() => simulateClick(2, 'mouseup'), 50);
+                    } else if (id === 'mob-break') {
+                        simulateClick(0, 'mousedown');
+                        setTimeout(() => simulateClick(0, 'mouseup'), 50);
+                    } else if (id === 'mob-fly') {
+                        isFlying = !isFlying; velocity.y = 0;
+                        el.classList.toggle('bg-yellow-700');
+                    }
+                }, { passive: false });
+            }
         });
 
 
@@ -783,6 +789,7 @@
             if(e.code === 'KeyF') { isFlying=!isFlying; velocity.y=0; }
             if(e.code === 'Tab') {
                 e.preventDefault();
+                // --- FIX: Check for Tab functionality based on mode ---
                 if (state.gameMode === 'players' || state.gameMode === 'enemies') {
                     if (state.focusList && state.focusList.length > 0) {
                          snapCameraTo(state.focusList[state.focusIndex]);
@@ -790,6 +797,7 @@
                 } else {
                     if(controls.isLocked) { controls.unlock(); state.mode='menu'; document.getElementById('mouse-mode-badge').style.display='block'; } else { controls.lock(); state.mode='view'; document.getElementById('mouse-mode-badge').style.display='none'; }
                 }
+                // -----------------------------------------------------
             }
             if(e.code === 'Escape') { if(state.controlledToken) { state.controlledToken = null; state.moveBudget = 30; RangeRingManager.update(null); document.getElementById('move-badge').style.display='none'; } }
             if (e.key >= '0' && e.key <= '9') { const i = e.key==='0'?9:parseInt(e.key)-1; state.heldKeys[i]=true; state.activeCategoryIdx=i; UIManager.renderHotbar(); }
@@ -932,7 +940,20 @@
             }
         };
 
-        document.getElementById('instructions').onclick = () => controls.lock();
+        // --- FIX: Updated Click Handler for Instructions ---
+        document.getElementById('instructions').onclick = () => {
+            if (state.gameMode === 'players' || state.gameMode === 'enemies') {
+                // In token modes, just hide instructions and allow interaction
+                // Do NOT lock pointer, as that hides the cursor which we need for UI
+                document.getElementById('instructions').style.display='none';
+                document.getElementById('ui-layer').classList.add('interactive');
+            } else {
+                // In Build/DM modes, use pointer lock
+                controls.lock();
+            }
+        };
+        // ----------------------------------------------------
+
         controls.addEventListener('lock', () => { document.getElementById('instructions').style.display='none'; document.getElementById('ui-layer').classList.remove('interactive'); });
         controls.addEventListener('unlock', () => { 
             // In Player/Enemy mode, we want the UI interactive but maybe not full lock instructions if we just snapped
