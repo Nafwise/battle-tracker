@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ranger Archetype: Mimic Predator Conclave</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Roboto:wght@400;700&display=swap');
+        :root { --parchment: #f0e6c5; --dark-text: #2c2538; --border-brown: #a67c52; --ranger-base: #556b2f; --ranger-accent: #8fbc8f; --box-background: #e9e0c5; --header-font: 'Cinzel', serif; --body-font: 'Roboto', sans-serif; }
+        body { font-family: var(--body-font); background-color: var(--dark-text); color: var(--dark-text); margin: 0; padding: 20px; }
+        .subclass-block { max-width: 700px; margin: 0 auto; background-color: var(--box-background); border: 5px solid var(--border-brown); padding: 20px 30px; border-radius: 5px; }
+        h2 { color: var(--ranger-base); text-align: center; font-family: var(--header-font); border-bottom: 2px solid var(--border-brown); }
+        h3 { font-family: var(--header-font); border-bottom: 1px dashed var(--border-brown); }
+        .level-header { font-style: italic; font-weight: 700; color: var(--ranger-base); margin-top: 15px; }
+        ul { list-style-type: none; padding-left: 0; }
+        li::before { content: "❖"; color: var(--ranger-base); font-weight: bold; margin-right: 5px; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; background-color: rgba(255,255,255,0.3); }
+        th, td { border: 1px solid var(--border-brown); padding: 8px; text-align: center; }
+        th { background-color: #d1c8a7; }
+        
+        /* IMAGE STYLE */
+        .main-image { width: 100%; height: auto; border-radius: 5px; border: 2px solid var(--ranger-base); margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: block; }
+    </style>
+</head>
+<body>
+    <div class="subclass-block">
+        <h2>Mimic Predator Conclave</h2>
+        <p>Rangers of the Mimic Predator Conclave have bonded with an unstable, shifting parasitic entity. They do not just track prey; they turn the environment itself into a weapon, throwing living traps and dissolving their enemies with corrosive biology.</p>
+        
+        <img src="Ranger_mimic.jpg" alt="Ranger using Hungry Terrain" class="main-image">
+
+        <h3>Mimicry Magic</h3>
+        <p class="level-header">3rd-Level Feature</p>
+        <p>You learn additional spells: <i>Disguise Self</i> (3rd), <i>Web</i> (5th), <i>Meld into Stone</i> (9th), <i>Giant Insect (Mimic variant)</i> (13th), <i>Seeming</i> (17th).</p>
+
+        <h3>Mimic Larva</h3>
+        <p class="level-header">3rd-Level Feature</p>
+        <p><b>Bonus Action:</b> Throw a disguised glob (Mimic Larva) up to 30 feet. The first creature to move within 5 feet must make a Dexterity Save. On a fail: <b>1d6 acid damage</b> and <b>Grappled</b>. While grappled, they take 1d6 acid at the start of their turn. You can have PB active larvae.</p>
+
+        <h3>Aberrant Traversal</h3>
+        <p class="level-header">7th-Level Feature</p>
+        <ul>
+            <li>Gain climbing speed equal to walking speed (spider climb).</li>
+            <li>Cast <i>Meld into Stone</i> as an action without a spell slot (1/Long Rest).</li>
+        </ul>
+
+        <h3>Corrosive Ambush</h3>
+        <p class="level-header">11th-Level Feature</p>
+        <ul>
+            <li>Mimic Larva damage increases to <b>2d6</b>.</li>
+            <li>Weapon attacks deal extra <b>1d8 acid damage</b>. If the target is Grappled or Restrained, this increases to <b>2d8</b>.</li>
+        </ul>
+
+        <h3>Apex Camouflage</h3>
+        <p class="level-header">15th-Level Feature</p>
+        <ul>
+            <li><b>Sudden Vanishing.</b> Reaction when damaged: Become Invisible and move half speed without opportunity attacks.</li>
+            <li><b>Hungry Terrain.</b> Cast <i>Evard's Black Tentacles</i> without a slot (appears as tongues/pseudopods). 1/Long Rest.</li>
+        </ul>
+    </div>
+</body>
+</html>

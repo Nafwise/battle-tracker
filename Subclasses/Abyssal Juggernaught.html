@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fighter Archetype: Abyssal Juggernaut</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Roboto:wght@400;700&display=swap');
+        :root { --parchment: #f0e6c5; --dark-text: #2c2538; --border-brown: #a67c52; --fighter-steel: #778899; --fighter-crimson: #8b0000; --box-background: #e9e0c5; --header-font: 'Cinzel', serif; --body-font: 'Roboto', sans-serif; }
+        body { font-family: var(--body-font); background-color: var(--dark-text); color: var(--dark-text); margin: 0; padding: 20px; }
+        .subclass-block { max-width: 700px; margin: 0 auto; background-color: var(--box-background); border: 5px solid var(--border-brown); padding: 20px 30px; border-radius: 5px; }
+        h2 { color: var(--fighter-crimson); text-align: center; font-family: var(--header-font); border-bottom: 2px solid var(--border-brown); }
+        h3 { font-family: var(--header-font); border-bottom: 1px dashed var(--border-brown); }
+        .level-header { font-style: italic; font-weight: 700; color: var(--fighter-crimson); margin-top: 15px; }
+        ul { list-style-type: none; padding-left: 0; }
+        li::before { content: "⚔"; color: var(--fighter-crimson); font-weight: bold; margin-right: 5px; }
+        
+        /* IMAGE STYLE */
+        .main-image { width: 100%; height: auto; border-radius: 5px; border: 2px solid var(--fighter-crimson); margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: block; }
+    </style>
+</head>
+<body>
+    <div class="subclass-block">
+        <h2>Fighter Archetype: Abyssal Juggernaut</h2>
+        <p>Abyssal Juggernauts are Fighters who have mastered an aberrant fighting style, allowing them to channel a temporary, unstable ooze material through their body and weapons. They specialize in <strong>Sticky Control</strong>.</p>
+        
+        <img src="Fighter_mimic.jpg" alt="Abyssal Juggernaut Grappling" class="main-image">
+
+        <h3>Formless Aggression</h3>
+        <p class="level-header">3rd-Level Feature</p>
+        <ul>
+            <li><strong>Pseudopod Strike.</strong> Bonus action to make an unarmed strike. Deals 1d4 + Str + PB bludgeoning. Counts as magical.</li>
+            <li><strong>Adhesive Grip.</strong> Gain proficiency in Athletics (or Expertise). You count as one size larger for grappling. Creatures you grapple have disadvantage on checks to escape.</li>
+        </ul>
+
+        <h3>Corrosive Manifestation</h3>
+        <p class="level-header">7th-Level Feature</p>
+        <ul>
+            <li><strong>Dissolving Edge.</strong> Attacks ignore Acid resistance. Once per turn, deal extra 1d6 acid damage on weapon hit.</li>
+            <li><strong>Sticky Entanglement.</strong> When you hit with Pseudopod Strike, force a Strength Save (DC 8+PB+Str). On fail, target is <strong>Restrained</strong> until start of your next turn. PB uses/rest.</li>
+        </ul>
+
+        <h3>Reactive Shell</h3>
+        <p class="level-header">10th-Level Feature</p>
+        <ul>
+            <li><strong>Chitinous Resilience.</strong> Reaction when hit: reduce damage by 1d10 + Con + Fighter Level.</li>
+            <li><strong>Corrosive Barrage.</strong> When you Action Surge, make an additional Pseudopod Strike as part of the bonus action.</li>
+        </ul>
+
+        <h3>Amorphous Juggernaut</h3>
+        <p class="level-header">15th-Level Feature</p>
+        <ul>
+            <li><strong>Unstable Adaptation.</strong> When a grappled creature fails to escape, it takes 2d8 acid damage.</li>
+            <li><strong>Rapid Shift.</strong> Gain resistance to Acid, Cold, Fire, or Lightning. Switch as a bonus action.</li>
+        </ul>
+
+        <h3>Total Consumption</h3>
+        <p class="level-header">18th-Level Feature</p>
+        <ul>
+            <li><strong>Juggernaut's Grasp.</strong> You can grapple two creatures at once. No speed penalty for grappling. Start of turn: regain 2d6 + Con HP if grappling.</li>
+            <li><strong>Apex Assault.</strong> Once per rest: Weapon hit deals extra 4d12 acid and Restrains target (no save).</li>
+        </ul>
+    </div>
+</body>
+</html>

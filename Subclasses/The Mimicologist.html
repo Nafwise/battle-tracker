@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Arcane Tradition: School of Unstable Forms</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Roboto:wght@400;700&display=swap');
+        :root { --parchment: #f0e6c5; --dark-text: #2c2538; --border-brown: #a67c52; --wizard-base: #1f3a93; --wizard-accent: #7fffd4; --box-background: #e9e0c5; --header-font: 'Cinzel', serif; --body-font: 'Roboto', sans-serif; }
+        body { font-family: var(--body-font); background-color: var(--dark-text); color: var(--dark-text); margin: 0; padding: 20px; }
+        .subclass-block { max-width: 700px; margin: 0 auto; background-color: var(--box-background); color: var(--dark-text); border: 5px solid var(--border-brown); padding: 20px 30px; border-radius: 5px; }
+        h2 { color: var(--wizard-base); text-align: center; font-family: var(--header-font); border-bottom: 2px solid var(--border-brown); }
+        h3 { font-family: var(--header-font); border-bottom: 1px dashed var(--border-brown); }
+        .level-header { font-style: italic; font-weight: 700; color: var(--wizard-base); margin-top: 15px; }
+        ul { list-style-type: none; padding-left: 0; }
+        li::before { content: "❖"; color: var(--wizard-base); font-weight: bold; margin-right: 5px; }
+        
+        /* IMAGE STYLE */
+        .main-image { width: 100%; height: auto; border-radius: 5px; border: 2px solid var(--wizard-accent); margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: block; }
+    </style>
+</head>
+<body>
+    <div class="subclass-block">
+        <h2>Arcane Tradition: School of Unstable Forms</h2>
+        <p>Wizards of the School of Unstable Forms dedicate their studies to the strange biology of the mimic. They learn to apply the "properties" of a mimic—adhesion, hardening, and ambush—to the very weave of magic itself.</p>
+        
+        <img src="Wizard_mimic.jpg" alt="Living Magic Spell" class="main-image">
+
+        <h3>School of Mimicry</h3>
+        <p class="level-header">2nd-Level Feature</p>
+        <ul>
+            <li><b>Object Lesson.</b> Action: Transform into a mundane object (incapacitated, invisible to detection).</li>
+            <li><b>Reactive Shell.</b> Reaction when hit: +Int Mod to AC against that attack and others for the round.</li>
+        </ul>
+
+        <h3>Viscous Spellcasting</h3>
+        <p class="level-header">6th-Level Feature</p>
+        <p>When you deal damage with a leveled spell, force a Strength save. On fail, target is <b>Restrained</b> until your next turn. (PB uses/rest).</p>
+
+        <h3>Amorphous Physiology</h3>
+        <p class="level-header">10th-Level Feature</p>
+        <ul>
+            <li><b>Fluid Form.</b> Immune to Grappled/Restrained.</li>
+            <li><b>Chemical Adaptation.</b> Resistance to Acid. Acid spells grant Temp HP.</li>
+        </ul>
+
+        <h3>Living Magic</h3>
+        <p class="level-header">14th-Level Feature</p>
+        <p>Awaken a Concentration area spell (like <i>Web</i> or <i>Cloudkill</i>). It becomes a living creature:
+        <br>— <b>Digestive Magic:</b> Deals 2d10 Acid damage to enemies starting turn inside.
+        <br>— <b>Moving Spell:</b> Bonus action to move the area 20ft.</p>
+    </div>
+</body>
+</html>

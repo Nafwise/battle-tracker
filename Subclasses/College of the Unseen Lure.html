@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>College of the Unseen Lure</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Roboto:wght@400;700&display=swap');
+        :root { --parchment: #f0e6c5; --dark-text: #2c2538; --border-brown: #a67c52; --accent-purple: #8e3b97; --box-background: #e9e0c5; }
+        body { font-family: 'Roboto', sans-serif; background-color: var(--dark-text); color: var(--dark-text); margin: 0; padding: 20px; }
+        .subclass-block { max-width: 800px; margin: 0 auto; background-color: var(--box-background); border: 5px double var(--border-brown); padding: 30px 40px; border-radius: 5px; }
+        h2 { font-family: 'Cinzel', serif; color: var(--accent-purple); text-align: center; border-bottom: 2px solid var(--border-brown); }
+        h3 { font-family: 'Cinzel', serif; color: var(--dark-text); border-bottom: 1px dashed var(--border-brown); }
+        .level-header { font-family: 'Cinzel', serif; font-weight: 700; color: var(--accent-purple); margin-top: 15px; }
+        ul { list-style-type: none; padding-left: 10px; }
+        li::before { content: "❖"; color: var(--accent-purple); font-weight: bold; padding-right: 8px; }
+        
+        /* IMAGE STYLE */
+        .main-image { width: 100%; height: auto; border-radius: 5px; border: 2px solid var(--accent-purple); margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: block; }
+    </style>
+</head>
+<body>
+    <div class="subclass-block">
+        <h2>College of the Unseen Lure</h2>
+        <p>Bards of the College of the Unseen Lure don't just entertain; they weave sonic illusions and hypnotic suggestions to guide their victims exactly where they want them to be—usually right into the jaws of an ambush.</p>
+        
+        <img src="Bard_mimic.jpg" alt="Bard using Adhesive Strike" class="main-image">
+
+        <h3>Living Instrument</h3>
+        <p class="level-header">3rd-Level Feature</p>
+        <ul>
+            <li><b>Mimicked Performance.</b> Healing spells grant extra Temp HP equal to Bard level. Nearby enemy takes Psychic damage equal to Temp HP gained.</li>
+            <li><b>Lurker's Echo.</b> Mimic any sound. Cast <i>Minor Illusion</i> (audible only) at will.</li>
+        </ul>
+
+        <h3>Deceptive Resonance</h3>
+        <p class="level-header">3rd-Level Feature</p>
+        <p>When a creature uses your Bardic Inspiration, trigger one effect on an enemy within 60 feet:</p>
+        <ul>
+            <li><b>Sticky Footing.</b> Save or Speed -10ft.</li>
+            <li><b>Misplaced Focus.</b> Save or Disadvantage on next attack.</li>
+            <li><b>Illusory Prize.</b> Disadvantage on Perception/Insight.</li>
+        </ul>
+
+        <h3>Resonant Trap</h3>
+        <p class="level-header">6th-Level Feature</p>
+        <ul>
+            <li><b>Remote Anchor.</b> Bonus action: Instrument floats and anchors to surface. Cast spells from its location.</li>
+            <li><b>Adhesive Strike.</b> Reaction when hit: Instrument makes contested Grapple check.</li>
+            <li><b>Caustic Grip (Lvl 10).</b> Grappled creature takes Acid damage equal to Cha mod at start of your turn.</li>
+        </ul>
+
+        <h3>Perfect Ambush Harmony</h3>
+        <p class="level-header">14th-Level Feature</p>
+        <ul>
+            <li><b>Concealed Performance.</b> Action: You and 5 allies become Hidden from enemies affected by your traps/resonance.</li>
+            <li><b>Consume the Distracted.</b> Expend Bardic Inspiration when you hit a trapped enemy to make them <b>Vulnerable</b> to that attack's damage.</li>
+        </ul>
+    </div>
+</body>
+</html>

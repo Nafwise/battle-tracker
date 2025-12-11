@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rogue Archetype: Mimicry Specialist</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Roboto:wght@400;700&display=swap');
+        :root { --parchment: #f0e6c5; --dark-text: #2c2538; --border-brown: #a67c52; --rogue-dark: #303030; --rogue-accent: #1e8449; --box-background: #e9e0c5; --header-font: 'Cinzel', serif; --body-font: 'Roboto', sans-serif; }
+        body { font-family: var(--body-font); background-color: var(--rogue-dark); color: var(--box-background); margin: 0; padding: 20px; }
+        .subclass-block { max-width: 700px; margin: 0 auto; background-color: var(--box-background); color: var(--dark-text); border: 5px solid var(--border-brown); padding: 20px 30px; border-radius: 5px; }
+        h2 { color: var(--rogue-accent); text-align: center; font-family: var(--header-font); border-bottom: 2px solid var(--border-brown); }
+        h3 { font-family: var(--header-font); border-bottom: 1px dashed var(--border-brown); }
+        .level-header { font-style: italic; font-weight: 700; color: var(--rogue-accent); margin-top: 15px; }
+        ul { list-style-type: none; padding-left: 0; }
+        li::before { content: "❖"; color: var(--rogue-accent); font-weight: bold; margin-right: 5px; }
+        
+        /* IMAGE STYLE */
+        .main-image { width: 100%; height: auto; border-radius: 5px; border: 2px solid var(--rogue-accent); margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: block; }
+    </style>
+</head>
+<body>
+    <div class="subclass-block">
+        <h2>Rogue Archetype: Mimicry Specialist</h2>
+        <p>Mimicry Specialists are Rogues who have learned to imbue their small tools and mundane objects with temporary, unstable life. They are masters of infiltration and battlefield disruption, using seemingly harmless items to trip, trap, and bite their targets.</p>
+        
+        <img src="Rogue_mimic.jpg" alt="Mimicry Specialist animating tools" class="main-image">
+
+        <h3>Deceptive Tools</h3>
+        <p class="level-header">3rd-Level Feature</p>
+        <ul>
+            <li><b>Mimicked Proficiency.</b> Proficiency with Disguise Kit and Sleight of Hand (Expertise if already proficient).</li>
+            <li><b>Living Tools.</b> Cunning Action (Bonus Action) to animate a Tiny object:
+                <br>— <b>Adhesive Trap:</b> Strength save or Grappled.
+                <br>— <b>Distracting Bite:</b> Ranged spell attack (Int). 1d6 Acid damage + Advantage on next attack against target.
+            </li>
+        </ul>
+
+        <h3>Mimic Skin</h3>
+        <p class="level-header">3rd-Level Feature</p>
+        <p>Reaction when hit: Harden skin to gain <b>+3 AC</b> against that attack.</p>
+
+        <h3>Ambush Predator</h3>
+        <p class="level-header">9th-Level Feature</p>
+        <ul>
+            <li><b>Object Jump.</b> Bonus action: Teleport to your animated object (60 ft).</li>
+            <li><b>Surprise Attack.</b> If you teleport and attack a creature within 5 feet, you have Advantage.</li>
+        </ul>
+
+        <h3>Corrosive Varnish</h3>
+        <p class="level-header">13th-Level Feature</p>
+        <ul>
+            <li><b>Acidic Sneak Attack.</b> Change Sneak Attack to Acid damage. Target takes extra 1d6 acid next turn.</li>
+            <li><b>Piercing Gaze.</b> See through solid objects (30 ft) Int mod times/long rest.</li>
+        </ul>
+
+        <h3>Apex Deceiver</h3>
+        <p class="level-header">17th-Level Feature</p>
+        <ul>
+            <li><b>Unstable Evasion.</b> Reaction on Dex save: Turn into goo. Take 0 damage on success, half on fail. Immune to Grapple/Restrain.</li>
+            <li><b>Grasping Environment.</b> Adhesive Trap now causes <b>Restrained</b> condition. Restrained target takes 4d6 acid damage per turn.</li>
+        </ul>
+    </div>
+</body>
+</html>

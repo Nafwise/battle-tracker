@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biochemist Subclass</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Roboto:wght@300;400;500&display=swap');
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #2c2538;
+            color: #E0D6C1;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #4a3a30;
+            border: 5px double #a67c52;
+            padding: 20px 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.7);
+        }
+        h1, h2, h3 {
+            font-family: 'Libre Baskerville', serif;
+            color: #9c4bad;
+            text-shadow: 1px 1px 3px #111;
+        }
+        h1 { text-align: center; font-size: 36px; border-bottom: 2px solid #a67c52; padding-bottom: 10px; }
+        h2 { font-size: 24px; border-bottom: 1px solid #7a5c3d; padding-bottom: 5px; margin-top: 30px; }
+        h3 { font-size: 18px; font-style: italic; }
+        p, li { line-height: 1.6; font-size: 16px; }
+        .flavor-box { background-color: rgba(0,0,0,0.2); border-left: 4px solid #9c4bad; padding: 1px 15px; margin: 20px 0; border-radius: 5px; }
+        table { width: 100%; margin-top: 15px; border-collapse: collapse; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #7a5c3d; }
+        th { background-color: #382d25; }
+        .stat-block { background-color: #4a273a; border: 2px solid #a67c52; padding: 15px; border-radius: 5px; margin-top: 15px; }
+        .main-image { width: 100%; border-radius: 5px; border: 2px solid #a67c52; margin: 20px 0; }
+        .companion-section { display: flex; gap: 20px; align-items: flex-start; }
+        .companion-art { width: 150px; flex-shrink: 0; border-radius: 5px; border: 2px solid #a67c52; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Artificer Specialist: Biochemist</h1>
+        <p>
+            While other artificers see perfection in the predictable mechanics of clockwork and steel, the Biochemist finds it in the infinite adaptability of life itself. They are masters of bio-alchemy and symbiotic engineering, having formed a bond with a rare and intelligent creature—a sentient, shapeshifting ooze. This partnership of inventor and living weapon allows them to solve problems with a unique and biological arsenal.
+        </p>
+        
+        <img src="https://i.ibb.co/V0H80jvt/Biomancer.png" alt="Artwork of a Biochemist" class="main-image">
+
+        <div class="flavor-box">
+            <h3>A Note on Your Partnership</h3>
+            <p>The core of this subclass is your bond with your companion. Unlike a pet, this creature has its own thoughts and personality. Consider the origin of your partnership.</p>
+        </div>
+
+        <h2>3rd-Level: Tool Proficiency</h2>
+        <p>You gain proficiency with Alchemist's Supplies. If you already have this proficiency, you gain proficiency with one other type of artisan's tools of your choice.</p>
+
+        <h2>3rd-Level: Biochemist Spells</h2>
+        <p>You always have certain spells prepared after you reach particular levels in this class, as shown in the Biochemist Spells table. These spells count as artificer spells for you, but they don’t count against the number of artificer spells you prepare.</p>
+        <table>
+            <tr><th>Artificer Level</th><th>Spells</th></tr>
+            <tr><td>3rd</td><td><em>Longstrider, Tasha's Caustic Brew</em></td></tr>
+            <tr><td>5th</td><td><em>Web, Melf's Acid Arrow</em></td></tr>
+            <tr><td>9th</td><td><em>Vampiric Touch, Haste</em></td></tr>
+            <tr><td>13th</td><td><em>Blight, Evard's Black Tentacles</em></td></tr>
+            <tr><td>17th</td><td><em>Cloudkill, Enervation</em></td></tr>
+        </table>
+        
+        <h2>3rd-Level: Gelatinous Companion</h2>
+        <div class="companion-section">
+            <div>
+                <p>You have forged an inseparable bond with a sentient, shapeshifting ooze that has become your steadfast partner. It is friendly to you and your companions and obeys your commands.</p>
+                <p>In combat, the companion shares your initiative count, but it takes its turn immediately after yours. It can move and use its reaction on its own, but the only action it takes on its turn is the Dodge action, unless you take a bonus action on your turn to command it to take one of the actions in its stat block or the Dash, Disengage, Help, or Hide action.</p>
+                <p>If the companion is slain, you can grow a new one over the course of a long rest. Doing so requires you to expend a spell slot of 1st level or higher and use your Alchemist's Supplies for 1 hour to provide a suitable environment for a piece of it to regenerate.</p>
+            </div>
+            <img src="https://i.ibb.co/zWFvpPMY/Sentient-mimic-companion.png" alt="Artwork of the Gelatinous Companion" class="companion-art">
+        </div>
+        <div class="stat-block">
+             <h3>Gelatinous Companion</h3>
+            <em>Small monstrosity (shapechanger), your alignment</em>
+            <hr>
+            <strong>Armor Class:</strong> 13 + PB (natural armor)<br>
+            <strong>Hit Points:</strong> 5 + five times your artificer level + your Intelligence modifier<br>
+            <strong>Speed:</strong> 30 ft., climb 30 ft.<br>
+            <hr>
+            <strong>STR</strong> 14 (+2) | <strong>DEX</strong> 12 (+1) | <strong>CON</strong> 15 (+2) | <strong>INT</strong> 10 (+0) | <strong>WIS</strong> 12 (+1) | <strong>CHA</strong> 10 (+0)<br>
+            <hr>
+            <strong>Saving Throws:</strong> Con +2 + PB, Wis +1 + PB<br>
+            <strong>Skills:</strong> Stealth +1 + PB, Deception +0 + PB<br>
+            <strong>Damage Immunities:</strong> Acid, Poison<br>
+            <strong>Condition Immunities:</strong> Poisoned, Prone<br>
+            <strong>Senses:</strong> Darkvision 60 ft., passive Perception 11<br>
+            <strong>Languages:</strong> understands the languages you speak and can communicate through basic telepathic images and emotions.<br>
+            <hr>
+            <strong>Adhesive.</strong> When the companion hits a <strong>Medium or smaller</strong> creature with its pseudopod attack, or when a creature touches the companion, the companion can choose to adhere to it. If it does, the creature is grappled. To escape, the creature must succeed on a Strength (Athletics) or Dexterity (Acrobatics) check contested by the companion’s Strength (Athletics) check. The companion adds your proficiency bonus to this check.<br>
+            <strong>Amorphous.</strong> The companion can move through a space as narrow as 1 inch wide without squeezing.<br>
+            <strong>Symbiotic Bond.</strong> You can communicate telepathically with your companion while it is within 100 feet of you. As a reaction when the companion takes damage, you can grant it resistance to that instance of damage.<br>
+            <hr>
+            <h4>Actions</h4>
+            <strong>Pseudopod.</strong> <em>Melee Weapon Attack:</em> your spell attack modifier to hit, reach 5 ft., one target. <em>Hit:</em> 1d8 + PB bludgeoning damage. If the target is a creature, it is subject to the Adhesive trait.<br>
+            <strong>Object Mimicry.</strong> The companion transforms into a Small object. Its AC becomes 18, and it has resistance to all damage except force and psychic damage. It reverts to its true form if it moves or takes any action.<br>
+            <strong>Engulf.</strong> The companion attempts to engulf a creature it is grappling that is Medium or smaller. <strong>Driven by instinct, the companion can take this action on its turn without a command.</strong> The creature must make a Strength saving throw against your spell save DC. On a failed save, the creature is engulfed and takes <strong>1d6 acid damage</strong>. An engulfed creature is restrained, blinded, and unable to breathe. At the start of each of the companion's turns, the engulfed creature takes <strong>1d6 acid damage</strong>. The creature can use its action to repeat the saving throw, escaping on a success.
+        </div>
+
+        <h2>3rd-Level: Living Tools</h2>
+        <p>You have trained your gelatinous companion to mimic the precise forms of artisan's tools. As an action, you can command your companion to transform into any set of artisan's tools. While you are holding it in this form, you can add half your proficiency bonus (rounded down) to any ability check you make with it. If you are already proficient with that tool, you can add your full proficiency bonus instead.</p>
+        <p>The bonus you gain from this feature increases as you gain levels in this class. At <strong>5th level</strong>, you can add your full proficiency bonus to any check made with the tools, even if you are not proficient. At <strong>9th level</strong>, you have mastered this synergy, and you now add double your proficiency bonus to any ability check you make using your companion in its tool form.</p>
+
+        <h2>5th-Level: Symbiotic Armaments</h2>
+        <p>As a bonus action on your turn, you can have a portion of your gelatinous companion symbiotically graft onto you, forming one of the following living weapons. This transformation lasts for 10 minutes, until you are incapacitated, or until you dismiss it (no action required). You can use this feature a number of times equal to your proficiency bonus, and you regain all expended uses when you finish a long rest.</p>
+        <ul>
+            <li><strong>Biotic Claws.</strong> Your hands transform into sharp claws. They count as a simple melee weapon with which you are proficient. They deal 1d8 slashing or piercing damage on a hit. When you attack with these claws, you can use your Intelligence modifier, instead of Strength or Dexterity, for the attack and damage rolls. When you hit a creature with this weapon, you can force it to make a Strength saving throw against your spell save DC. On a failed save, the creature is grappled by you.</li>
+            <li><strong>Spine Launcher.</strong> Your arm morphs into a ranged weapon with a normal range of 30 feet and a long range of 60 feet. It counts as a simple ranged weapon with which you are proficient, and it does not require ammunition. It deals 1d8 piercing damage on a hit. When you attack with this launcher, you can use your Intelligence modifier, instead of Dexterity, for the attack and damage rolls.</li>
+        </ul>
+        <p>Additionally, when you take the Attack action on your turn, your gelatinous companion can use its reaction to make one Pseudopod attack against a creature within 5 feet of it.</p>
+
+        <h2>9th-Level: Adaptive Morphology</h2>
+        <p>At 9th level, your gelatinous companion undergoes a significant evolution, growing stronger and more resilient. It gains the following innate benefits:</p>
+        <ul>
+            <li><strong>Symbiotic Growth.</strong> The companion's hit point maximum increases by an amount equal to twice your artificer level. This increase applies retroactively and again every time you gain a level in this class.</li>
+            <li><strong>Vicious Pseudopod.</strong> The damage die for the companion's Pseudopod attack increases from a d8 to a d10.</li>
+            <li><strong>Enhanced Adhesive.</strong> The companion's base form can now be either <strong>Small or Medium</strong> (your choice when you finish a long rest), and its Adhesive trait now affects <strong>Large or smaller</strong> creatures.</li>
+            <li><strong>Evolving Engulf.</strong> The acid damage dealt by the companion's Engulf action increases to <strong>2d6</strong>. This increase applies to both the damage dealt on a failed initial save and the damage dealt at the start of the companion's turns. Additionally, if you have chosen for the companion to be Medium-sized, it can now engulf Large or smaller creatures. The damage increases again to 3d6 at 15th level.</li>
+        </ul>
+        <p>In addition to this natural growth, you can guide its evolution further by choosing <strong>two</strong> of the following adaptations for your companion.</p>
+        <p><strong>Infuse Adaptation.</strong> You can choose to forgo one of your available Artificer Infusion slots for the day to grant your companion an additional adaptation from this list. You can do this up to twice, allowing you to have a maximum of four adaptations active at once by sacrificing two infusion slots. You choose which adaptations to gain or lose whenever you finish a long rest.</p>
+        <ul>
+            <li><strong>Caustic Clutch.</strong> When a creature is damaged by your companion's Pseudopod attack, it takes an extra 1d6 acid damage.</li>
+            <li><strong>Armored Carapace.</strong> Your companion's flesh hardens into a chitinous shell. Its Armor Class increases by 2.</li>
+            <li><strong>Evolved Biotic Claw.</strong> Your Biotic Claws become more lethal. Their damage die increases to 1d10, and their reach increases to 10 feet.</li>
+            <li><strong>Evolved Spine Launcher.</strong> Your Spine Launcher now fires explosive projectiles. Its damage die increases to 1d10. Additionally, when you take the Attack action with the launcher, you can replace one of your attacks to launch a glob of acid at a point you can see within 30 feet. Each creature in a 10-foot-radius sphere centered on that point must make a Dexterity saving throw against your spell save DC. A creature takes 2d8 acid damage on a failed save, or half as much damage on a successful one. The acid damage increases to 3d8 at 11th level, and 4d8 at 17th level. You can use this special attack a number of times equal to your proficiency bonus, and you regain all expended uses when you finish a long rest.</li>
+            <li><strong>Mitosis.</strong> As an action, you can command your companion to split into two smaller bodies (Medium becomes two Small, Small becomes two Tiny). They share a single pool of hit points and act on the same turn, but can move independently and share a single action and reaction between them. While this adaptation is active, your Symbiotic Armaments are enhanced: your Biotic Claws can make one additional attack as part of the Attack action, and your Spine Launcher gains additional uses of Caustic Burst equal to half your proficiency bonus (rounded down).</li>
+        </ul>
+
+        <h2>15th-Level: Apex Evolution</h2>
+        <p>As a <strong>bonus action</strong>, you and your companion can fully merge, encasing you in a suit of living, symbiotic armor. This transformation lasts for 10 minutes, until you die, or until you end it as a bonus action. While transformed, you gain the following benefits:</p>
+        <ul>
+            <li>You gain a +2 bonus to your AC.</li>
+            <li>You have resistance to acid damage and poison damage.</li>
+            <li>You are immune to the grappled and poisoned conditions.</li>
+            <li>Your melee weapon attacks have their reach extended by 5 feet.</li>
+            <li>As an action, you can attempt to engulf a creature you are currently grappling. The creature must make a Strength saving throw against your spell save DC. On a failed save, it is engulfed. An engulfed creature is restrained, blinded, and unable to breathe. At the start of each of your turns, the engulfed creature takes 4d6 acid damage. The creature can use its action on its turn to repeat the saving throw, escaping from the engulf on a success. You can only have one creature engulfed at a time.</li>
+        </ul>
+        <p><strong>Symbiotic Reinforcement.</strong> Additionally, if your gelatinous companion has the <strong>Armored Carapace</strong> adaptation when you activate this feature, its hardened hide fuses into a resilient outer shell. You gain temporary hit points equal to your Artificer level plus your Intelligence modifier.</p>
+        <p>Once you use this feature, you can’t use it again until you finish a long rest.</p>
+        
+        <div style="text-align: right; font-style: italic; font-family: 'Libre Baskerville', serif; margin-top: 50px; opacity: 0.9;">
+            <p style="margin-bottom: 5px;"><span style="color: #E63946;">- Nafwise</span></p>
+            <p style="margin-top: 0; margin-bottom: 5px;"><span style="color: #2A9D8F;">& Samwise</span></p>
+            <p style="margin-top: 0;"><span style="color: #457B9D;">& Gemini</span></p>
+        </div>
+
+    </div>
+</body>
+</html>

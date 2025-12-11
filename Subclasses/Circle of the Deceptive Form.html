@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Circle of the Deceptive Form</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Roboto:wght@400;700&display=swap');
+        :root { --parchment: #f0e6c5; --dark-text: #2c2538; --border-brown: #a67c52; --druid-green: #228b22; --box-background: #e9e0c5; --header-font: 'Cinzel', serif; --body-font: 'Roboto', sans-serif; }
+        body { font-family: var(--body-font); background-color: var(--dark-text); color: var(--dark-text); margin: 0; padding: 20px; }
+        .subclass-block { max-width: 700px; margin: 0 auto; background-color: var(--box-background); border: 5px solid var(--border-brown); padding: 20px 30px; border-radius: 5px; }
+        h2 { color: var(--druid-green); text-align: center; font-family: var(--header-font); border-bottom: 2px solid var(--border-brown); }
+        h3 { font-family: var(--header-font); border-bottom: 1px dashed var(--border-brown); }
+        .level-header { font-style: italic; font-weight: 700; color: var(--druid-green); margin-top: 15px; }
+        ul { list-style-type: none; padding-left: 0; }
+        li::before { content: "❖"; color: var(--druid-green); font-weight: bold; margin-right: 5px; }
+        
+        /* IMAGE STYLE */
+        .main-image { width: 100%; height: auto; border-radius: 5px; border: 2px solid var(--druid-green); margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: block; }
+    </style>
+</head>
+<body>
+    <div class="subclass-block">
+        <h2>Circle of the Deceptive Form</h2>
+        <p>Druids of this Circle embrace the unstable, aberrant nature of mimics. They learn to infuse their Wild Shape with chaotic essence, allowing them to shift into objects and weaponize surprise.</p>
+        
+        <img src="Druid_mimic.jpg" alt="Druid using Consume Identity" class="main-image">
+
+        <h3>Mimicry of the Mundane</h3>
+        <p class="level-header">2nd-Level Feature</p>
+        <ul>
+            <li><b>Mimic Shape.</b> Transform into an object (Speed 0). If you attack from this form, you get Advantage.</li>
+            <li><b>Amorphous Form.</b> Transform into a sticky blob. Immune to Prone, squeeze through 1-inch gaps, Advantage on Grapple checks. Attacks deal Acid damage.</li>
+        </ul>
+
+        <h3>Engulfing Strike</h3>
+        <p class="level-header">6th-Level Feature</p>
+        <ul>
+            <li><b>Adhesive Grasp.</b> Bonus action to Grapple when you hit with a melee attack in form.</li>
+            <li><b>Corrosive Digestion.</b> Grappled creatures take Acid damage equal to PB at start of your turn.</li>
+        </ul>
+
+        <h3>Monstrous Aspect</h3>
+        <p class="level-header">10th-Level Feature</p>
+        <p>When you Wild Shape, pick two mutations: +2 AC, Spider Climb, Proficiency in Deception, or +5ft Reach.</p>
+
+        <h3>True Formless Nature</h3>
+        <p class="level-header">14th-Level Feature</p>
+        <ul>
+            <li><b>Endless Shapes.</b> Use Mimic Shape at will (no Wild Shape cost).</li>
+            <li><b>Consume Identity.</b> Reaction when you kill a humanoid: Regain HP and steal their form (as Alter Self) perfectly.</li>
+        </ul>
+    </div>
+</body>
+</html>

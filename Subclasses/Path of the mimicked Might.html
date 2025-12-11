@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Path of the Mimicked Might</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Roboto:wght@400;700&display=swap');
+        :root { --parchment: #f0e6c5; --dark-text: #2c2538; --border-brown: #a67c52; --rage-red: #cc0033; --box-background: #e9e0c5; --header-font: 'Cinzel', serif; --body-font: 'Roboto', sans-serif; }
+        body { font-family: var(--body-font); background-color: var(--dark-text); color: var(--dark-text); margin: 0; padding: 20px; }
+        .subclass-block { max-width: 700px; margin: 0 auto; background-color: var(--box-background); border: 5px solid var(--border-brown); padding: 20px 30px; border-radius: 5px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); }
+        h2 { color: var(--rage-red); text-align: center; font-family: var(--header-font); border-bottom: 2px solid var(--border-brown); margin-top: 0; }
+        h3 { font-family: var(--header-font); border-bottom: 1px dashed var(--border-brown); }
+        .level-header { font-style: italic; font-weight: 700; color: var(--rage-red); margin-top: 15px; }
+        ul { list-style-type: none; padding-left: 0; }
+        li::before { content: "❖"; color: var(--rage-red); font-weight: bold; margin-right: 5px; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; background-color: rgba(255,255,255,0.3); }
+        th, td { border: 1px solid var(--border-brown); padding: 8px; text-align: center; }
+        th { background-color: #d1c8a7; }
+        
+        /* IMAGE STYLE */
+        .main-image { width: 100%; height: auto; border-radius: 5px; border: 2px solid var(--border-brown); margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: block; }
+    </style>
+</head>
+<body>
+    <div class="subclass-block">
+        <h2>Path of the Mimicked Might</h2>
+        <p>Barbarians who walk the Path of the Mimicked Might possess a rage that is less about pure adrenaline and more about unstable, biological metamorphosis. When their fury is unleashed, their flesh briefly hardens to stone or oozes corrosive slime.</p>
+        
+        <img src="Barbarian_mimic.jpg" alt="Barbarian in Huge Amorphous Form" class="main-image">
+
+        <h3>Adaptive Flesh</h3>
+        <p class="level-header">3rd-Level Feature</p>
+        <ul>
+            <li><b>Mimic Resilience.</b> When you enter a rage, choose one: Acid, Cold, Fire, or Lightning. You gain resistance to it.</li>
+            <li><b>Adhesive Grip.</b> While raging, you have advantage on checks to avoid/escape Grappled/Restrained conditions. You can use a <b>bonus action</b> to attempt to grapple a creature.</li>
+        </ul>
+
+        <h3>Formless Rage</h3>
+        <p class="level-header">3rd-Level Feature</p>
+        <ul>
+            <li><b>Pseudopod Strike.</b> While raging, your unarmed strikes deal damage according to the table below. They count as magical.</li>
+            <li><b>Mimicked Weapon.</b> When you hit, you can choose to deal <b>Slashing, Piercing, or Acid</b> damage instead of Bludgeoning.</li>
+        </ul>
+        <table>
+            <tr><th>Level</th><th>Damage Die</th></tr>
+            <tr><td>3rd</td><td>1d8</td></tr>
+            <tr><td>6th</td><td>1d10</td></tr>
+            <tr><td>14th</td><td>1d12</td></tr>
+        </table>
+
+        <h3>Hardened Visage</h3>
+        <p class="level-header">6th-Level Feature</p>
+        <ul>
+            <li><b>Reactive Mimicry.</b> When hit by a melee attack while raging, use your <b>reaction</b> to gain +PB to AC against that attack and subsequent attacks from that creature until your next turn.</li>
+            <li><b>Symbiotic Visage.</b> Your HP maximum increases by your Barbarian level.</li>
+        </ul>
+
+        <h3>Corrosive Retaliation</h3>
+        <p class="level-header">10th-Level Feature</p>
+        <ul>
+            <li><b>Sticky Entrapment.</b> When you grapple a creature while raging, you can expend a use of Reactive Mimicry (no action). The creature takes <b>2d8 acid damage</b> immediately and at the start of your turns.</li>
+            <li><b>Object Absorption.</b> Bonus action while raging: destroy a small object to regain <b>1d12 + Con mod</b> HP.</li>
+        </ul>
+
+        <h3>Total Transformation</h3>
+        <p class="level-header">14th-Level Feature</p>
+        <ul>
+            <li><b>Unstable Adaptation.</b> Bonus action to change your Mimic Resilience type.</li>
+            <li><b>Apex Mimicry.</b> When you rage, choose one:
+                <br>— <b>Immovable Object:</b> Immune to Prone/Restrained, Advantage vs. forced movement.
+                <br>— <b>Monstrous Appendages:</b> +5 ft reach. Add PB to damage against grappled targets.
+            </li>
+        </ul>
+    </div>
+</body>
+</html>

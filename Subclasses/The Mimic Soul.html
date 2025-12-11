@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sorcerous Origin: The Mimic Soul</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Roboto:wght@400;700&display=swap');
+        :root { --parchment: #f0e6c5; --dark-text: #2c2538; --border-brown: #a67c52; --sorcerer-base: #8e1e46; --sorcerer-accent: #84c444; --box-background: #e9e0c5; --header-font: 'Cinzel', serif; --body-font: 'Roboto', sans-serif; }
+        body { font-family: var(--body-font); background-color: var(--dark-text); color: var(--dark-text); margin: 0; padding: 20px; }
+        .subclass-block { max-width: 700px; margin: 0 auto; background-color: var(--box-background); border: 5px solid var(--border-brown); padding: 20px 30px; border-radius: 5px; }
+        h2 { color: var(--sorcerer-base); text-align: center; font-family: var(--header-font); border-bottom: 2px solid var(--border-brown); }
+        h3 { font-family: var(--header-font); border-bottom: 1px dashed var(--border-brown); }
+        .level-header { font-style: italic; font-weight: 700; color: var(--sorcerer-base); margin-top: 15px; }
+        ul { list-style-type: none; padding-left: 0; }
+        li::before { content: "❖"; color: var(--sorcerer-base); font-weight: bold; margin-right: 5px; }
+        
+        /* IMAGE STYLE */
+        .main-image { width: 100%; height: auto; border-radius: 5px; border: 2px solid var(--sorcerer-base); margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: block; }
+    </style>
+</head>
+<body>
+    <div class="subclass-block">
+        <h2>Sorcerous Origin: The Mimic Soul</h2>
+        <p>Your magic is not merely energy; it is a hungry, living thing. Your spells manifest as gnashing teeth, lashing tongues, and corrosive slime. You do not just cast magic—you feed it to your enemies.</p>
+        
+        <img src="Sorcerer_mimic.jpg" alt="Maw of the Dungeon Transformation" class="main-image">
+
+        <h3>False Appearance</h3>
+        <p class="level-header">1st-Level Feature</p>
+        <ul>
+            <li><b>Object Form.</b> Action to transform into a mundane object.</li>
+            <li><b>Ambush Caster.</b> Advantage on attack rolls if you cast from Object Form or while Hidden.</li>
+        </ul>
+
+        <h3>Ravenous Magic</h3>
+        <p class="level-header">1st-Level Feature</p>
+        <p>Immediately after casting a leveled spell that deals damage, use a <b>Bonus Action</b> to make a melee spell attack. <b>1d8 + Cha</b> Acid damage.</p>
+
+        <h3>Corrosive Potency</h3>
+        <p class="level-header">6th-Level Feature</p>
+        <p>Spend 1 SP to change spell damage to Acid. Add Cha mod to damage of Acid spells.</p>
+
+        <h3>Liquid Defense</h3>
+        <p class="level-header">14th-Level Feature</p>
+        <p>Reaction when hit: Dissolve into goo. Take half damage and move 30ft without opportunity attacks.</p>
+
+        <h3>Maw of the Dungeon</h3>
+        <p class="level-header">18th-Level Feature</p>
+        <p>Action (5 SP): Transform into a Large predator for 1 minute. Immune to Acid. Creatures within 5ft take 2d8 Acid damage when they hit you. Your Ravenous Magic makes two attacks.</p>
+    </div>
+</body>
+</html>

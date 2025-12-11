@@ -157,14 +157,14 @@
         tr:last-child td { border-bottom: none; }
         tr:nth-child(even) { background-color: rgba(255,255,255,0.02); }
 
-        /* DOWNLOAD BUTTON STYLE */
-        .pdf-link {
+        /* VIEW BUTTON STYLE (Replacing Download Button) */
+        .view-link {
             display: inline-flex;
             align-items: center;
             gap: 8px;
             margin-top: 10px;
             padding: 8px 16px;
-            background-color: var(--bg-deep);
+            background-color: rgba(6, 182, 212, 0.1);
             border: 1px solid var(--accent-cyan);
             color: var(--accent-cyan);
             text-decoration: none;
@@ -174,9 +174,10 @@
             font-size: 0.85em;
             transition: all 0.2s;
         }
-        .pdf-link:hover {
+        .view-link:hover {
             background-color: var(--accent-cyan);
             color: var(--bg-deep);
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
         }
 
         /* TOC STYLE */
@@ -1178,16 +1179,16 @@
     <!-- NEW SECTION: APPENDIX B -->
     <div id="app-subclasses" class="page">
         <h1>Appendix B: The Formless Archetypes</h1>
-        <p>These 13 subclasses represent the specific mutations and adaptations of Subject 44. To use these, please ensure the corresponding PDF files are located in a folder named <code>subclasses</code> within your main directory.</p>
+        <p>These 13 subclasses represent the specific mutations and adaptations of Subject 44. To use these, please ensure the corresponding HTML files are located in a folder named <code>Subclasses</code> within your main directory.</p>
 
         <!-- ARTIFICER -->
         <div class="mechanic-box" style="border-left: 4px solid var(--accent-gold);">
             <h3 style="margin-top:0; color: var(--accent-gold);">Artificer: Biochemist Specialist</h3>
             <p><em>"Life is just chemistry waiting to be optimized."</em></p>
             <p>You specialize in the fluid dynamics of life itself. You create living slimes, adhesive compounds, and acidic reagents to control the battlefield. Your "Homunculus" is likely a detached part of your own biomass.</p>
-            <a href="subclasses/Biochemist%20Subclass.pdf" class="pdf-link" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Open PDF
+            <a href="Subclasses/Biochemist.html" class="view-link" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                View Details
             </a>
         </div>
 
@@ -1196,9 +1197,9 @@
             <h3 style="margin-top:0; color: var(--accent-red);">Barbarian: Path of the Mimicked Might</h3>
             <p><em>"My rage is not anger. It is biological destabilization."</em></p>
             <p>Your rage manifests as a physical transformation. Your skin hardens into chitin or stone, your limbs stretch into lashing pseudopods, and you become a siege engine of flesh.</p>
-            <a href="subclasses/Path%20of%20the%20Mimicked%20Might.pdf" class="pdf-link" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Open PDF
+            <a href="Subclasses/Path%20of%20the%20mimicked%20Might.html" class="view-link" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                View Details
             </a>
         </div>
 
@@ -1207,9 +1208,9 @@
             <h3 style="margin-top:0; color: var(--accent-indigo);">Bard: College of the Unseen Lure</h3>
             <p><em>"The song isn't for you. It's for the thing waiting in the dark."</em></p>
             <p>You weave sonic illusions and hypnotic suggestions to guide victims into ambushes. Your "performance" is a trap, and your audience is prey.</p>
-            <a href="subclasses/College%20of%20the%20Unseen%20Lure.pdf" class="pdf-link" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Open PDF
+            <a href="Subclasses/College%20of%20the%20Unseen%20Lure.html" class="view-link" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                View Details
             </a>
         </div>
 
@@ -1218,9 +1219,9 @@
             <h3 style="margin-top:0; color: #cbd5e1;">Cleric: Unity Domain</h3>
             <p><em>"Individuality is a sickness. Join the Bastion."</em></p>
             <p>You channel the power of the Mother Bastion (Gellith). You preach the peace of the hive mind, utilizing psychic harmony and absolute control to pacify conflict.</p>
-            <a href="subclasses/Unity%20Domain.pdf" class="pdf-link" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Open PDF
+            <a href="Subclasses/Unity%20Domain.html" class="view-link" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                View Details
             </a>
         </div>
 
@@ -1229,9 +1230,9 @@
             <h3 style="margin-top:0; color: #10b981;">Druid: Circle of the Deceptive Form</h3>
             <p><em>"Why be a bear when you can be a chest of gold that eats people?"</em></p>
             <p>You reject the "natural" order for the aberrant one. Your Wild Shape allows you to become inanimate objects, mimicking the perfect ambush predator.</p>
-            <a href="subclasses/Circle%20of%20the%20Deceptive%20Form.pdf" class="pdf-link" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Open PDF
+            <a href="Subclasses/Circle%20of%20the%20Deceptive%20Form.html" class="view-link" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                View Details
             </a>
         </div>
 
@@ -1240,9 +1241,9 @@
             <h3 style="margin-top:0; color: var(--accent-red);">Fighter: Abyssal Juggernaut</h3>
             <p><em>"I am the wall that bites back."</em></p>
             <p>You channel unstable ooze through your weapons and armor. You specialize in "Sticky Control," grappling enemies with adhesive strikes and becoming an immovable object.</p>
-            <a href="subclasses/Fighter%20Archetype_%20Abyssal%20Juggernaut.pdf" class="pdf-link" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Open PDF
+            <a href="Subclasses/Abyssal%20Juggernaught.html" class="view-link" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                View Details
             </a>
         </div>
 
@@ -1251,9 +1252,9 @@
             <h3 style="margin-top:0; color: var(--accent-cyan);">Monk: Way of the Shifting Shell</h3>
             <p><em>"Be like water? No. Be like acid."</em></p>
             <p>You embrace the transient nature of oozes. You harden your skin into temporary armor, shift limbs into adhesive pseudopods, and flow around attacks like liquid.</p>
-            <a href="subclasses/Way%20of%20the%20Shifting%20Shell.pdf" class="pdf-link" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Open PDF
+            <a href="Subclasses/Way%20of%20the%20Shifting%20Shell.html" class="view-link" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                View Details
             </a>
         </div>
 
@@ -1262,9 +1263,9 @@
             <h3 style="margin-top:0; color: var(--accent-gold);">Paladin: Oath of the Maw</h3>
             <p><em>"The universe is a mouth. I am the teeth."</em></p>
             <p>You serve Xy'lorgmath, the optimization protocol. You hunt the stagnant and the weak, forcing the world to adapt or be consumed. You are the inevitable crunch.</p>
-            <a href="subclasses/Sacred%20Oath_%20Oath%20of%20the%20Maw.pdf" class="pdf-link" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Open PDF
+            <a href="Subclasses/Oath%20of%20the%20Maw.html" class="view-link" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                View Details
             </a>
         </div>
 
@@ -1273,9 +1274,9 @@
             <h3 style="margin-top:0; color: #10b981;">Ranger: Mimic Predator Conclave</h3>
             <p><em>"The forest isn't watching you. I am the forest."</em></p>
             <p>You have bonded with a parasitic mimic entity. You turn the environment into a weapon, throwing living traps and dissolving enemies with corrosive biology.</p>
-            <a href="subclasses/Ranger%20Archetype_%20Mimic%20Predator%20Conclave.pdf" class="pdf-link" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Open PDF
+            <a href="Subclasses/Mimic%20Predator%20Conclave.html" class="view-link" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                View Details
             </a>
         </div>
 
@@ -1284,9 +1285,9 @@
             <h3 style="margin-top:0; color: #94a3b8;">Rogue: Mimicry Specialist</h3>
             <p><em>"Is that a coin on the floor? Pick it up. I dare you."</em></p>
             <p>You imbue small tools and objects with unstable life. You are a master of infiltration, using seemingly harmless items to bite, trip, and trap your targets.</p>
-            <a href="subclasses/Rogue%20Archetype_%20Mimicry%20Specialist.pdf" class="pdf-link" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Open PDF
+            <a href="Subclasses/Mimicry%20Specialist.html" class="view-link" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                View Details
             </a>
         </div>
 
@@ -1295,9 +1296,9 @@
             <h3 style="margin-top:0; color: var(--accent-indigo);">Sorcerer: The Mimic Soul</h3>
             <p><em>"Magic isn't a force. It's a hunger."</em></p>
             <p>Your magic manifests as gnashing teeth and lashing tongues. You don't just cast spells; you feed them to your enemies. You are living, hungry magic.</p>
-            <a href="subclasses/Sorcerous%20Origin_%20The%20Mimic%20Soul.pdf" class="pdf-link" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Open PDF
+            <a href="Subclasses/The%20Mimic%20Soul.html" class="view-link" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                View Details
             </a>
         </div>
 
@@ -1306,9 +1307,9 @@
             <h3 style="margin-top:0; color: var(--accent-indigo);">Warlock: Patron of The Mimicked</h3>
             <p><em>"The Void stares back, and it looks like me."</em></p>
             <p>Your patron is a vast, primordial entity of shifting matter. You learn to use deception and unstable biology to hunt, consume, and survive.</p>
-            <a href="subclasses/Warlock%20Patron_%20The%20Mimicked.pdf" class="pdf-link" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Open PDF
+            <a href="Subclasses/The%20Mimicked.html" class="view-link" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                View Details
             </a>
         </div>
 
@@ -1317,9 +1318,9 @@
             <h3 style="margin-top:0; color: var(--accent-cyan);">Wizard: School of Unstable Forms</h3>
             <p><em>"Hypothesis: Reality is optional."</em></p>
             <p>You study the strange biology of mimics to apply "properties" like adhesion and ambushing to the Weave itself. Your spells are viscous, sticky, and alive.</p>
-            <a href="subclasses/Arcane%20Tradition_%20School%20of%20Unstable%20Forms.pdf" class="pdf-link" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Open PDF
+            <a href="Subclasses/The%20Mimicologist.html" class="view-link" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                View Details
             </a>
         </div>
 

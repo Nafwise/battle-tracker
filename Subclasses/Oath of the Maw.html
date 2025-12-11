@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sacred Oath: Oath of the Maw</title>
+    <style>
+        :root {
+            --theme-page-bg: #1f1f2e;
+            --theme-container-bg: #2c2a45;
+            --theme-main-text: #dcdcf0;
+            --theme-accent: #c17aff;
+            --theme-secondary: #7a7ab0;
+            --theme-strong-text: #f0f0ff;
+            --theme-box-bg: #24223a;
+            --theme-table-header: #3b385f;
+        }
+        body { font-family: 'Georgia', serif; line-height: 1.6; background-color: var(--theme-page-bg); color: var(--theme-main-text); margin: 0; padding: 20px; }
+        .container { max-width: 820px; margin: 20px auto; background-color: var(--theme-container-bg); border: 4px solid var(--theme-accent); border-radius: 5px; padding: 30px 40px; box-shadow: 0 0 20px rgba(193, 122, 255, 0.2); }
+        h1, h2, h3 { font-family: 'Georgia', serif; color: var(--theme-accent); border-bottom: 2px solid var(--theme-accent); font-weight: normal; margin-top: 1.5em; margin-bottom: 0.5em; font-variant: small-caps; }
+        h1 { font-size: 2.8em; text-align: center; }
+        h2 { font-size: 2.2em; }
+        h3 { font-size: 1.6em; font-style: italic; border-bottom: 1px solid var(--theme-secondary); font-variant: normal; }
+        p, li { margin-bottom: 0.5em; }
+        ul { padding-left: 20px; }
+        strong { color: var(--theme-strong-text); font-weight: bold; }
+        .tenets-list li { list-style-type: none; padding-left: 0; }
+        .tenets-list strong { display: block; font-size: 1.1em; color: var(--theme-strong-text); font-style: italic; }
+        .info-box { background-color: var(--theme-box-bg); border: 1px solid var(--theme-secondary); border-radius: 5px; padding: 1.5em; margin: 2em 0; box-shadow: 0 0 5px var(--theme-secondary) inset; }
+        .spells-table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 20px 0; border: 1px solid var(--theme-secondary); }
+        .spells-table th, .spells-table td { border-bottom: 1px solid var(--theme-secondary); padding: 10px 12px; text-align: left; }
+        .spells-table th { background-color: var(--theme-table-header); color: var(--theme-accent); font-variant: small-caps; }
+        
+        /* THE IMAGE STYLE */
+        .main-image { width: 100%; height: auto; border-radius: 5px; border: 2px solid var(--theme-accent); margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sacred Oath: Oath of the Maw</h1>
+        <p>Paladins of the Maw are the chilling arbiters of a cosmic, predatory truth. They understand that the universe is a ceaseless process of consumption and re-evaluation, and that Xy'lorgmath, the Hungry Moon, is the ultimate engine of that process. They hunt the stagnant, expose the fraudulent, and shatter the comfortable illusions that allow weakness to fester.</p>
+        
+        <img src="Paladin_mimic.jpg" alt="Avatar of the Hungry Moon" class="main-image">
+
+        <h2>Tenets of the Maw</h2>
+        <ul class="tenets-list">
+            <li><strong>Be the Trial.</strong> Your existence is a test for others. Challenge the strong, cull the weak, and force the world to adapt or be consumed.</li>
+            <li><strong>Devour Illusion.</strong> Scorn all veils. Lies, illusions, and deceptions are shields for the static and the vulnerable. Tear them down.</li>
+            <li><strong>Judge with Hunger.</strong> Do not spare that which is broken, stagnant, or unwilling to change. To be unchanging is to be prey.</li>
+        </ul>
+
+        <div class="info-box">
+            <h4>Subclass Save DC</h4>
+            <p><strong>Spell Save DC</strong> = 8 + your proficiency bonus + your Charisma modifier</p>
+        </div>
+
+        <h2>Oath Spells</h2>
+        <table class="spells-table">
+            <tr><th>Paladin Level</th><th>Spells</th></tr>
+            <tr><td>3rd</td><td><i>Dissonant Whispers, Armor of Agathys</i></td></tr>
+            <tr><td>5th</td><td><i>Blindness/Deafness, See Invisibility</i></td></tr>
+            <tr><td>9th</td><td><i>Bestow Curse, Hunger of Hadar</i></td></tr>
+            <tr><td>13th</td><td><i>Evard's Black Tentacles, Phantasmal Killer</i></td></tr>
+            <tr><td>17th</td><td><i>Contagion, Telekinesis</i></td></tr>
+        </table>
+
+        <h2>Channel Divinity</h2>
+        <h3>Cosmic Glare</h3>
+        <p>As a bonus action, you can channel the Maw's all-consuming gaze at one creature you can see within 60 feet. The target must make a Wisdom saving throw. On a failed save, the creature is <strong>frightened</strong> of you for 1 minute. While frightened, the creature's speed is reduced to 0. The creature can repeat the saving throw at the end of each of its turns.</p>
+
+        <h3>Devouring Lure</h3>
+        <p>As an action, you project a terrifying psychic lure. Each hostile creature of your choice within 30 feet of you must make a Wisdom saving throw. On a failed save, a creature is <strong>charmed</strong> by you for 1 minute or until it takes damage. While charmed, the creature must move as close to you as it can by the most direct route available.</p>
+
+        <h2>Aura of the Void</h2>
+        <p>Starting at 7th level, you emanate a constant aura of gravitational pressure to a range of 10 feet. The area within the aura is considered <strong>difficult terrain</strong> for hostile creatures. Additionally, if a hostile creature starts its turn in the aura, its speed is reduced by 10 feet until the start of its next turn. At 18th level, the range increases to 30 feet.</p>
+
+        <h2>Relentless Judge</h2>
+        <p>Starting at 15th level, when a creature within your <strong>Aura of the Void</strong> makes an attack against you or a friendly creature, you can use your reaction to make one melee weapon attack against the attacker. If the attack hits, the target takes an extra 1d8 psychic damage.</p>
+
+        <h2>Avatar of the Hungry Moon</h2>
+        <p>At 20th level, you can use your action to become a terrifying avatar of your god for 1 minute:</p>
+        <ul>
+            <li><strong>True Sight.</strong> You gain truesight out to 120 feet.</li>
+            <li><strong>Cosmic Body.</strong> You gain a flying speed of 60 feet (hover) and immunity to psychic damage.</li>
+            <li><strong>Event Horizon.</strong> Your Aura of the Void deals 10 force damage to hostile creatures starting their turn there and prevents them from regaining hit points.</li>
+            <li><strong>Gravity Shift.</strong> As a bonus action, you can teleport 30 feet. After teleporting, creatures within 10 feet of your destination must succeed on a Strength save or be knocked prone.</li>
+        </ul>
+    </div>
+</body>
+</html>

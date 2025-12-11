@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Warlock Patron: The Mimicked</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Roboto:wght@400;700&display=swap');
+        :root { --parchment: #f0e6c5; --dark-text: #2c2538; --border-brown: #a67c52; --warlock-dark: #1a0f2b; --warlock-accent: #8a2be2; --box-background: #e9e0c5; --header-font: 'Cinzel', serif; --body-font: 'Roboto', sans-serif; }
+        body { font-family: var(--body-font); background-color: var(--warlock-dark); color: var(--dark-text); margin: 0; padding: 20px; }
+        .subclass-block { max-width: 700px; margin: 0 auto; background-color: var(--box-background); color: var(--dark-text); border: 5px solid var(--border-brown); padding: 20px 30px; border-radius: 5px; }
+        h2 { color: var(--warlock-accent); text-align: center; font-family: var(--header-font); border-bottom: 2px solid var(--border-brown); }
+        h3 { font-family: var(--header-font); border-bottom: 1px dashed var(--border-brown); }
+        .level-header { font-style: italic; font-weight: 700; color: var(--warlock-accent); margin-top: 15px; }
+        ul { list-style-type: none; padding-left: 0; }
+        li::before { content: "❖"; color: var(--warlock-accent); font-weight: bold; margin-right: 5px; }
+        
+        /* IMAGE STYLE */
+        .main-image { width: 100%; height: auto; border-radius: 5px; border: 2px solid var(--warlock-accent); margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: block; }
+    </style>
+</head>
+<body>
+    <div class="subclass-block">
+        <h2>Warlock Patron: The Mimicked</h2>
+        <p>Your patron is a vast, primordial entity of shifting matter. This patron teaches you to use deception and unstable biology to hunt, consume, and survive.</p>
+        
+        <img src="Warlock_mimic.jpg" alt="The Formless Devourer" class="main-image">
+
+        <h3>Living Trap</h3>
+        <p class="level-header">1st-Level Feature</p>
+        <ul>
+            <li><b>Sticky Grip.</b> Use Charisma for Grapple checks.</li>
+            <li><b>Reactive Shell.</b> Reaction when damaged: Gain +PB to AC for the round.</li>
+        </ul>
+
+        <h3>Deceptive Feast</h3>
+        <p class="level-header">6th-Level Feature</p>
+        <ul>
+            <li><b>Feigned Form.</b> Cast <i>Alter Self</i> at will.</li>
+            <li><b>Corrosive Bonds.</b> Reaction when you grapple: Expend spell slot to deal <b>2d8 Acid per slot level</b> and Restrain target.</li>
+        </ul>
+
+        <h3>Consuming Disguise</h3>
+        <p class="level-header">10th-Level Feature</p>
+        <ul>
+            <li><b>Dungeon Sense.</b> Tremorsense 30 ft.</li>
+            <li><b>Impenetrable Form.</b> Immune to effects that force you to revert form. Resistance to Psychic damage while transformed.</li>
+        </ul>
+
+        <h3>Total Transformation</h3>
+        <p class="level-header">14th-Level Feature</p>
+        <ul>
+            <li><b>Formless Devourer.</b> Action: Transform for 1 minute.
+            <br>— Resistance to B/P/S damage.
+            <br>— <b>Living Trap:</b> You can grapple any number of creatures without hands. Creatures starting turn within 5ft must save or be Grappled. Grappled creatures take <b>4d10 Acid</b> per turn.</li>
+        </ul>
+    </div>
+</body>
+</html>

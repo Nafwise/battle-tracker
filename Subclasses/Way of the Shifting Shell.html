@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Way of the Shifting Shell</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Roboto:wght@400;700&display=swap');
+        :root { --parchment: #f0e6c5; --dark-text: #2c2538; --border-brown: #a67c52; --monk-gold: #daa520; --box-background: #e9e0c5; --header-font: 'Cinzel', serif; --body-font: 'Roboto', sans-serif; }
+        body { font-family: var(--body-font); background-color: var(--dark-text); color: var(--dark-text); margin: 0; padding: 20px; }
+        .subclass-block { max-width: 700px; margin: 0 auto; background-color: var(--box-background); border: 5px solid var(--border-brown); padding: 20px 30px; border-radius: 5px; }
+        h2 { color: var(--monk-gold); text-align: center; font-family: var(--header-font); border-bottom: 2px solid var(--border-brown); }
+        h3 { font-family: var(--header-font); border-bottom: 1px dashed var(--border-brown); }
+        .level-header { font-style: italic; font-weight: 700; color: var(--monk-gold); margin-top: 15px; }
+        ul { list-style-type: none; padding-left: 0; }
+        li::before { content: "❖"; color: var(--monk-gold); font-weight: bold; margin-right: 5px; }
+        
+        /* IMAGE STYLE */
+        .main-image { width: 100%; height: auto; border-radius: 5px; border: 2px solid var(--monk-gold); margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: block; }
+    </style>
+</head>
+<body>
+    <div class="subclass-block">
+        <h2>Way of the Shifting Shell</h2>
+        <p>Monks of the Way of the Shifting Shell embrace the transient, adaptive nature of mimics and oozes. They learn to harden their skin into temporary armor, shift their limbs into adhesive pseudopods, and rely on unpredictable defenses.</p>
+        
+        <img src="Monk_mimic.jpg" alt="Monk using Liquid Physiology" class="main-image">
+
+        <h3>Adhesive Forms</h3>
+        <p class="level-header">3rd-Level Feature</p>
+        <ul>
+            <li><b>Pseudopod Arts.</b> Use Dex (Acrobatics) for Grapple checks. Drag enemies at full speed.</li>
+            <li><b>Sticky Strike.</b> On Flurry of Blows hit: force Dex save (Grappled) or Str save (Speed 0).</li>
+        </ul>
+
+        <h3>Mimicry of the Still</h3>
+        <p class="level-header">6th-Level Feature</p>
+        <ul>
+            <li><b>Object Form.</b> Action (1 Ki): Transform into object. Resistant to damage.</li>
+            <li><b>Ambush Reflexes.</b> Attack from Object Form has Advantage and deals +2 Martial Arts die damage.</li>
+        </ul>
+
+        <h3>Corrosive Embrace</h3>
+        <p class="level-header">11th-Level Feature</p>
+        <p>Grappled creatures take Acid damage equal to your Martial Arts die at the start of your turn. You have Advantage on attacks against creatures you grapple.</p>
+
+        <h3>Amorphous Master</h3>
+        <p class="level-header">17th-Level Feature</p>
+        <ul>
+            <li><b>Liquid Physiology.</b> Immune to Grappled/Restrained/Paralyzed. Squeeze through 1-inch gaps.</li>
+            <li><b>Hungering Shell.</b> Reaction (3 Ki) when hit: Reduce damage to 0. Attacker must make Dex save or be Grappled.</li>
+        </ul>
+    </div>
+</body>
+</html>
