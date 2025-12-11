@@ -6,7 +6,7 @@
     <title>Akashic Atlas | 3D Voxel Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #020617; font-family: ui-sans-serif, system-ui, sans-serif; user-select: none; touch-action: none; }
+        body { margin: 0; overflow: hidden; background-color: #020617; font-family: ui-sans-serif, system-ui, sans-serif; user-select: none; touch-action: none; -webkit-touch-callout: none; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         .interactive { pointer-events: auto; }
         ::-webkit-scrollbar { width: 6px; }
@@ -678,27 +678,33 @@
             origin: { x: 0, y: 0 },
             current: { x: 0, y: 0 }
         };
-
+        
+        // Using "page" coordinates for consistency across devices
         joystick.el.addEventListener('touchstart', e => {
             e.preventDefault();
             const touch = e.changedTouches[0];
             state.touch.id = touch.identifier;
             joystick.active = true;
-            const rect = joystick.el.getBoundingClientRect();
-            joystick.origin = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
-            updateJoystick(touch.clientX, touch.clientY);
-        });
+            // Capture touch start relative to viewport
+            state.touch.startX = touch.clientX;
+            state.touch.startY = touch.clientY;
+            joystick.stick.style.transform = `translate(-50%, -50%)`;
+        }, { passive: false });
 
         joystick.el.addEventListener('touchmove', e => {
             e.preventDefault();
             if (!joystick.active) return;
             for (let i = 0; i < e.changedTouches.length; i++) {
                 if (e.changedTouches[i].identifier === state.touch.id) {
-                    updateJoystick(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+                    const touch = e.changedTouches[i];
+                    // Calculate delta from start
+                    const dx = touch.clientX - state.touch.startX;
+                    const dy = touch.clientY - state.touch.startY;
+                    updateJoystick(dx, dy);
                     break;
                 }
             }
-        });
+        }, { passive: false });
 
         const endJoystick = (e) => {
              e.preventDefault();
@@ -717,19 +723,22 @@
         joystick.el.addEventListener('touchend', endJoystick);
         joystick.el.addEventListener('touchcancel', endJoystick);
 
-        function updateJoystick(x, y) {
+        function updateJoystick(dx, dy) {
             const maxDist = 35;
-            let dx = x - joystick.origin.x;
-            let dy = y - joystick.origin.y;
             const dist = Math.sqrt(dx*dx + dy*dy);
+            
+            // Visual clamping for the stick
+            let visualDx = dx;
+            let visualDy = dy;
+            
             if (dist > maxDist) {
                 const ratio = maxDist / dist;
-                dx *= ratio; dy *= ratio;
+                visualDx *= ratio; 
+                visualDy *= ratio;
             }
-            joystick.stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            joystick.stick.style.transform = `translate(calc(-50% + ${visualDx}px), calc(-50% + ${visualDy}px))`;
             
-            // Set move flags based on joystick position
-            // Thresholds for simpler WASD mapping
+            // Movement logic
             const threshold = 10;
             move.f = dy < -threshold;
             move.b = dy > threshold;
@@ -738,23 +747,25 @@
         }
         
         // Touch actions for build mode
+        const simulateClick = (btn, type) => {
+            const event = new MouseEvent(type, {
+                bubbles: true, cancelable: true, view: window, button: btn
+            });
+            // We need to target the canvas or center of screen ideally, 
+            // but dispatching on document generally works for our global listeners
+            document.dispatchEvent(event);
+        };
+
         document.getElementById('mob-place').addEventListener('touchstart', (e) => {
             e.preventDefault();
-            // Simulate right click
-             const event = new MouseEvent('mousedown', {
-                bubbles: true, cancelable: true, view: window, button: 2
-            });
-            document.dispatchEvent(event);
-            setTimeout(() => document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window, button: 2 })), 100);
+            simulateClick(2, 'mousedown');
+            setTimeout(() => simulateClick(2, 'mouseup'), 100);
         });
         
         document.getElementById('mob-break').addEventListener('touchstart', (e) => {
             e.preventDefault();
-             const event = new MouseEvent('mousedown', {
-                bubbles: true, cancelable: true, view: window, button: 0
-            });
-            document.dispatchEvent(event);
-            setTimeout(() => document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window, button: 0 })), 100);
+            simulateClick(0, 'mousedown');
+            setTimeout(() => simulateClick(0, 'mouseup'), 100);
         });
         
         document.getElementById('mob-fly').addEventListener('touchstart', (e) => {
