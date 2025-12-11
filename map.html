@@ -6,7 +6,8 @@
     <title>Akashic Atlas | 3D Voxel Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #020617; font-family: ui-sans-serif, system-ui, sans-serif; user-select: none; touch-action: none; -webkit-touch-callout: none; }
+        /* ADDED touch-action: none to body to prevent browser gestures */
+        body { margin: 0; overflow: hidden; background-color: #020617; font-family: ui-sans-serif, system-ui, sans-serif; user-select: none; touch-action: none; -webkit-touch-callout: none; overscroll-behavior: none; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         .interactive { pointer-events: auto; }
         ::-webkit-scrollbar { width: 6px; }
@@ -128,7 +129,8 @@
             z-index: 50; 
         }
         
-        .build-btn { width: 60px; height: 60px; background: rgba(30, 41, 59, 0.95); border: 2px solid #475569; border-radius: 50%; color: white; display: flex; items-center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: transform 0.1s; }
+        /* Enforce touch-action none on buttons to stop weird ghost clicks/zooms */
+        .build-btn { width: 60px; height: 60px; background: rgba(30, 41, 59, 0.95); border: 2px solid #475569; border-radius: 50%; color: white; display: flex; items-center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: transform 0.1s; touch-action: none; }
         .build-btn:active { transform: scale(0.95); }
         .build-btn.place-btn { border-color: #10b981; color: #10b981; background: rgba(6, 78, 59, 0.9); }
         .build-btn.break-btn { border-color: #ef4444; color: #ef4444; background: rgba(127, 29, 29, 0.9); }
@@ -138,7 +140,7 @@
         /* Vertical movement controls for Fly Mode */
         #mobile-vertical-controls { display: none; flex-direction: column; gap: 10px; position: absolute; bottom: 160px; left: 160px; pointer-events: auto; z-index: 50; }
         
-        .vert-btn { width: 50px; height: 50px; background: rgba(15, 23, 42, 0.8); border: 2px solid #64748b; border-radius: 12px; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
+        .vert-btn { width: 50px; height: 50px; background: rgba(15, 23, 42, 0.8); border: 2px solid #64748b; border-radius: 12px; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.5); touch-action: none; }
         .vert-btn:active { background: #38BDF8; color: black; }
 
         /* CONTROL SCHEME MODAL */
@@ -750,9 +752,17 @@
 
         // Add camera rotation via touch drag
         document.addEventListener('touchmove', (e) => {
+             // FIXED: Ensure we don't catch events from UI buttons by checking event target closest
+             // Actually, touchstart on those buttons calls stopPropagation, so it shouldn't reach here if started on button
+             // But we need to make sure we don't accidentally rotate if a multi-touch gesture happens
+             
              if (touchState.moveId !== null || touchState.lookId !== null) return;
              
-             if (e.touches.length === 1) {
+             // If this is a single touch drag on background (not buttons), rotate camera
+             // But usually on mobile touch scheme, we use joystick. 
+             // This fallback is for "Mouse Scheme" on a touch device if user selected that.
+             
+             if (!state.isTouch && e.touches.length === 1) {
                  const touch = e.touches[0];
                  if (lastMouseX && lastMouseY) {
                      const movementX = touch.clientX - lastMouseX;
@@ -878,14 +888,20 @@
             const el = document.getElementById(id);
             if(el) {
                 el.addEventListener('touchstart', (e) => {
-                    e.preventDefault(); e.stopPropagation();
+                    e.preventDefault(); 
+                    e.stopPropagation(); // CRITICAL: Stop event from bubbling to camera controls
                     if (id === 'mob-place') { simulateClick(2, 'mousedown'); setTimeout(() => simulateClick(2, 'mouseup'), 50); } 
                     else if (id === 'mob-break') { simulateClick(0, 'mousedown'); setTimeout(() => simulateClick(0, 'mouseup'), 50); } 
                     else if (id === 'mob-fly') { isFlying = !isFlying; velocity.y = 0; el.classList.toggle('bg-yellow-700'); const vControls = document.getElementById('mobile-vertical-controls'); if(vControls) vControls.style.display = isFlying ? 'flex' : 'none'; } 
                     else if (id === 'mob-up') { move.u = true; } 
                     else if (id === 'mob-down') { move.d = true; }
                 }, { passive: false });
-                el.addEventListener('touchend', (e) => { e.preventDefault(); if (id === 'mob-up') move.u = false; if (id === 'mob-down') move.d = false; });
+                el.addEventListener('touchend', (e) => { 
+                    e.preventDefault(); 
+                    e.stopPropagation(); // CRITICAL
+                    if (id === 'mob-up') move.u = false; 
+                    if (id === 'mob-down') move.d = false; 
+                });
             }
         });
 
