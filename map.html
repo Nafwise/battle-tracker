@@ -53,6 +53,48 @@
         #next-turn-btn:hover { transform: translateX(-50%) scale(1.05); box-shadow: 0 0 25px rgba(99, 102, 241, 0.8); }
         #next-turn-btn.hidden { display: none; }
         .turn-active-glow { box-shadow: 0 0 30px 10px rgba(255, 215, 0, 0.6); } /* Gold glow for active turn */
+
+        /* Dropdown Styles */
+        .dropdown-content { display: none; position: absolute; right: 0; top: 100%; background-color: #1e293b; min-width: 160px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); z-index: 50; border-radius: 0.5rem; border: 1px solid #334155; margin-top: 0.5rem;}
+        .dropdown-content.show { display: block; } /* JavaScript toggles this class */
+        
+        .dropdown-content a { 
+            text-decoration: none; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            font-size: 0.75rem; 
+            font-weight: 700; 
+            padding: 8px; /* Added padding for better click area inside the link wrapper */
+        }
+
+        /* Consistent Button Styling for Links */
+        .app-link-btn {
+            display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: #1e293b; /* Slate 800 */
+            color: #94a3b8; /* Slate 400 */
+            border: 1px solid #334155; /* Slate 700 */
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            transition: all 0.2s;
+            width: 100%; /* Make buttons fill width */
+            margin-bottom: 4px;
+        }
+        .app-link-btn:last-child { margin-bottom: 0; }
+
+        .app-link-btn:hover {
+            background-color: #334155; /* Slate 700 */
+            color: #fff;
+            border-color: #475569; /* Slate 600 */
+        }
+        /* Specific accent hover colors */
+        .app-link-tome:hover { border-color: #ef4444; color: #fca5a5; } /* Red for Tome */
+        .app-link-homebrew:hover { border-color: #f59e0b; color: #fcd34d; } /* Amber for Homebrew */
+        .app-link-loot:hover { border-color: #ef4444; color: #fca5a5; } /* Red for Loot */
+        .app-link-campaign:hover { border-color: #10b981; color: #6ee7b7; } /* Emerald for Campaign */
+
     </style>
 </head>
 <body>
@@ -75,7 +117,7 @@
                     <span id="coord-display">0, 0, 0</span> | <span id="block-count">0 Blocks</span> | <span id="current-map-name" class="text-amber-400 font-bold">Default Map</span>
                 </div>
             </div>
-            <div class="flex gap-2">
+            <div class="flex gap-2 relative">
                 <button id="btn-atmosphere" class="interactive bg-slate-800 border border-amber-500/50 p-2 rounded-lg text-amber-400 hover:bg-slate-700 transition-colors shadow-lg" title="Toggle Day/Night"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
                 <div class="w-px h-10 bg-slate-700/50 mx-1"></div>
                 <button id="btn-sync" class="interactive bg-indigo-600 hover:bg-indigo-500 border border-indigo-400 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-lg transition-all flex items-center gap-2">Sync Tokens</button>
@@ -84,6 +126,31 @@
                 <button id="btn-import" class="interactive bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Import JSON</button>
                 <button id="btn-clear" class="interactive bg-red-900/30 hover:bg-red-900/80 border border-red-800/50 text-red-200 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Clear</button>
                 <input type="file" id="file-input" accept=".json" class="hidden">
+                
+                <!-- DROPDOWN MENU -->
+                <div class="dropdown interactive relative">
+                    <button id="btn-apps-dropdown" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg transition-colors flex items-center gap-2">
+                        Apps <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                    <div id="apps-dropdown-content" class="dropdown-content p-2">
+                        <a href="tome.html" target="_blank" class="app-link-btn app-link-tome">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-8a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v8"/><path d="M4 11V7"/><path d="M20 11V7"/><path d="M2 7h4v4H2z"/><path d="M18 7h4v4h-4z"/><path d="M4 7l2-4 2 4"/><path d="M18 7l2-4 2 4"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/></svg>
+                            Tome (Tracker)
+                        </a>
+                        <a href="homebrew.html" target="_blank" class="app-link-btn app-link-homebrew">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
+                            Homebrew
+                        </a>
+                        <a href="loot.html" target="_blank" class="app-link-btn app-link-loot">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg>
+                            Loot Records
+                        </a>
+                        <a href="campaign.html" target="_blank" class="app-link-btn app-link-campaign">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                            Campaign
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
         <div id="sidebar-container" class="absolute left-4 top-32 bottom-32 w-64 interactive overflow-y-auto pr-2 hidden sm:block"></div>
@@ -340,19 +407,27 @@
                 localStorage.setItem('dm-tracker-turn-index', turn);
                 state.currentTurnIndex = turn;
                 
-                EntityManager.updateTurnVisuals();
-                
-                // Auto-snap if in relevant mode
+                // --- NEW LOGIC: AUTO SWITCH MODE AND SNAP ---
                 const activeId = mons[turn].id;
                 const token = state.tokenData.get(activeId);
-                
-                if (token && (state.gameMode === 'players' || state.gameMode === 'enemies')) {
-                    // Only snap if the token matches the current mode (Player vs Enemy)
-                    const isPlayerTurn = mons[turn].type === 'player';
-                    if ((state.gameMode === 'players' && isPlayerTurn) || (state.gameMode === 'enemies' && !isPlayerTurn)) {
+                if (token) {
+                    const tokenType = mons[turn].type; // 'player' or 'monster'
+                    
+                    if (tokenType === 'player') {
+                        setMode('players');
+                        // Update focus list so index matches new active token
+                        state.focusIndex = state.focusList.indexOf(token);
+                        snapCameraTo(token);
+                    } else if (tokenType === 'monster') {
+                        setMode('enemies');
+                        // Update focus list so index matches new active token
+                        state.focusIndex = state.focusList.indexOf(token);
                         snapCameraTo(token);
                     }
                 }
+                // --------------------------------------------
+
+                EntityManager.updateTurnVisuals();
             },
             updateTurnVisuals: () => {
                 // Clear old glows
@@ -474,9 +549,16 @@
             });
             
             if (state.focusList.length > 0) {
-                state.focusIndex = 0;
-                snapCameraTo(state.focusList[0]);
-                state.controlledToken = state.focusList[0];
+                // If we switched automatically due to turn, focusIndex might already be set
+                // Check if current token in focus list matches controlled token
+                if (state.controlledToken && state.focusList.includes(state.controlledToken)) {
+                    state.focusIndex = state.focusList.indexOf(state.controlledToken);
+                } else {
+                    state.focusIndex = 0;
+                }
+                
+                snapCameraTo(state.focusList[state.focusIndex]);
+                state.controlledToken = state.focusList[state.focusIndex];
                 state.moveBudget = 30; // Reset movement budget for turn logic simulation
                 RangeRingManager.update(state.controlledToken, 'movement');
                 document.getElementById('move-badge').style.display = 'block';
@@ -708,6 +790,26 @@
             let s = state.subSelections[target] + (e.deltaY>0?1:-1); if(s<0) s=c.items.length-1; if(s>=c.items.length) s=0;
             state.subSelections[target] = s; UIManager.renderHotbar();
         });
+
+        // Dropdown toggle logic
+        document.getElementById('btn-apps-dropdown').onclick = (e) => {
+            e.stopPropagation();
+            const content = document.getElementById('apps-dropdown-content');
+            content.classList.toggle('show');
+        };
+
+        // Close dropdown when clicking outside
+        window.onclick = (e) => {
+            if (!e.target.matches('#btn-apps-dropdown') && !e.target.closest('#btn-apps-dropdown')) {
+                const dropdowns = document.getElementsByClassName("dropdown-content");
+                for (let i = 0; i < dropdowns.length; i++) {
+                    const openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
+            }
+        };
 
         document.getElementById('instructions').onclick = () => controls.lock();
         controls.addEventListener('lock', () => { document.getElementById('instructions').style.display='none'; document.getElementById('ui-layer').classList.remove('interactive'); });
