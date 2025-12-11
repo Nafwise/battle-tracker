@@ -63,7 +63,7 @@
             <p class="text-slate-400 text-lg">Dungeon Master's Local Digital Suite</p>
         </div>
 
-        <!-- UPDATED GRID: Added Map Card -->
+        <!-- UPDATED GRID: Added Map Card & Campaign Card -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12 text-left">
             
             <!-- TRACKER -->
@@ -76,7 +76,7 @@
                 <span class="inline-flex items-center text-xs font-bold text-indigo-400 group-hover:text-indigo-300">Enter Battlefield &rarr;</span>
             </a>
 
-            <!-- MAP (NEW) -->
+            <!-- MAP -->
             <a href="./map.html" class="astral-card map-hover p-6 rounded-2xl group cursor-pointer relative overflow-hidden flex flex-col h-full no-underline">
                 <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                     <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
@@ -104,6 +104,16 @@
                 <h2 class="text-xl font-bold text-red-500 mb-2 group-hover:text-red-400">Loot Records</h2>
                 <p class="text-slate-400 text-xs mb-4 flex-1">Parse battlefield data or generate treasure hoards.</p>
                 <span class="inline-flex items-center text-xs font-bold text-indigo-400 group-hover:text-indigo-300">Open Vault &rarr;</span>
+            </a>
+
+            <!-- CAMPAIGN MODULE (ADDED) -->
+            <a href="./campaign.html" class="astral-card p-6 rounded-2xl group cursor-pointer relative overflow-hidden flex flex-col h-full no-underline hover:border-emerald-500 hover:shadow-[0_0_25px_rgba(16,185,129,0.4)]">
+                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                </div>
+                <h2 class="text-xl font-bold text-emerald-500 mb-2 group-hover:text-emerald-400">Campaign Module</h2>
+                <p class="text-slate-400 text-xs mb-4 flex-1">The Hallowed Demesne. Read the full adventure module.</p>
+                <span class="inline-flex items-center text-xs font-bold text-indigo-400 group-hover:text-indigo-300">Open Book &rarr;</span>
             </a>
 
         </div>
@@ -141,7 +151,12 @@
             </div>
             
             <div class="cl-section">
-                <div class="cl-header text-cyan-400">Expansion: The Atlas (v1.3.5) <span class="badge-new">NEW</span></div>
+                <div class="cl-header text-emerald-400">Adventure Module (v1.4.0) <span class="badge-new">NEW</span></div>
+                <div class="cl-item">Integrated <strong>The Hallowed Demesne</strong> module directly into the suite.</div>
+            </div>
+
+            <div class="cl-section">
+                <div class="cl-header text-cyan-400">Expansion: The Atlas (v1.3.5)</div>
                 <div class="cl-item">New App: <strong>Akashic Atlas</strong> added to the suite.</div>
                 <div class="cl-item">3D Visualization: View your current tracker combatants on a tactical 3D grid.</div>
                 <div class="cl-item">Position Sync: Drag tokens to save their position locally.</div>
