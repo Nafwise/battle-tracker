@@ -3,680 +3,472 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Akashic Atlas (3D Map)</title>
-    <!-- Tailwind for matching the suite's theme -->
+    <title>Akashic Atlas | 3D Voxel Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #020617; font-family: ui-sans-serif, system-ui, sans-serif; }
-        
-        /* UI Overlay Styles matching Astral Theme */
+        body { margin: 0; overflow: hidden; background-color: #020617; font-family: ui-sans-serif, system-ui, sans-serif; user-select: none; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-        .pointer-events-auto { pointer-events: auto; }
-        
-        /* Custom Scrollbar for lists */
+        .interactive { pointer-events: auto; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-        
-        /* Crosshair */
-        #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 20px; height: 20px;
-            transform: translate(-50%, -50%); pointer-events: none; mix-blend-mode: difference;
-            transition: opacity 0.2s;
-        }
-        #crosshair::before { content: ''; position: absolute; top: 9px; left: 0; width: 20px; height: 2px; background: rgba(255, 255, 255, 0.8); }
-        #crosshair::after { content: ''; position: absolute; top: 0; left: 9px; width: 2px; height: 20px; background: rgba(255, 255, 255, 0.8); }
-
-        /* Floating Tooltip for Hovered Token */
-        #tooltip {
-            position: absolute; display: none;
-            background: rgba(15, 23, 42, 0.9); border: 1px solid #475569;
-            padding: 8px 12px; border-radius: 8px; color: white;
-            backdrop-filter: blur(4px); pointer-events: none;
-            transform: translate(-50%, -120%); white-space: nowrap;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            z-index: 20;
-        }
-
-        /* Material Slot */
-        .slot { width: 32px; height: 32px; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; transition: all 0.2s; border-radius: 4px; position: relative; }
-        .slot:hover { transform: scale(1.1); border-color: white; }
-        .slot.active { border-color: #38BDF8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); transform: scale(1.1); z-index: 10; }
-        
-        /* Toolbar Groups */
-        .toolbar-group {
-            background: rgba(15, 23, 42, 0.6);
-            padding: 6px;
-            border-radius: 8px;
-            display: flex;
-            gap: 4px;
-            align-items: center;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .group-label {
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            font-size: 9px;
-            color: #94a3b8;
-            font-weight: bold;
-            margin-right: 2px;
-            border-right: 1px solid rgba(255,255,255,0.1);
-            padding-right: 4px;
-            height: 32px;
-            text-align: center;
-        }
-
-        /* Token Slot (Vertical Bar) */
-        .token-slot { 
-            display: flex; align-items: center; gap: 8px;
-            padding: 6px 10px; margin-bottom: 4px;
-            background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(71, 85, 105, 0.5);
-            border-radius: 6px; cursor: pointer; transition: all 0.2s;
-            color: #cbd5e1; font-size: 0.75rem;
-        }
-        .token-slot:hover { background: rgba(51, 65, 85, 0.9); border-color: #94a3b8; transform: translateX(4px); }
-        .token-slot.active { background: rgba(56, 189, 248, 0.2); border-color: #38BDF8; color: white; font-weight: bold; }
-        .token-slot .key-hint { 
-            font-family: monospace; font-size: 0.65rem; 
-            background: rgba(0,0,0,0.3); padding: 2px 4px; rounded: 4px; color: #94a3b8;
-        }
-        .token-slot.active .key-hint { color: #38BDF8; background: rgba(56, 189, 248, 0.1); }
-        
-        /* 10-Key Hotbar Styles */
-        #hotbar {
-            display: flex; gap: 8px; align-items: flex-end; justify-content: center;
-            padding: 10px; background: linear-gradient(to top, rgba(2, 6, 23, 0.9), transparent);
-        }
-
-        .hotbar-slot {
-            width: 48px; height: 48px; 
-            border: 2px solid rgba(71, 85, 105, 0.5); 
-            background: rgba(15, 23, 42, 0.8);
-            border-radius: 6px; 
-            position: relative;
-            transition: all 0.1s;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-        }
-        
-        .hotbar-slot.active-category {
-            border-color: #38BDF8;
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
-            transform: translateY(-2px);
-        }
-
-        .key-label {
-            position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-            background: #0f172a; border: 1px solid #334155; color: #94a3b8;
-            font-size: 10px; font-weight: bold; padding: 0 4px; border-radius: 4px;
-            font-family: monospace;
-        }
-
-        /* Vertical Scroll Popup */
-        .scroll-popup {
-            position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
-            display: none; flex-direction: column-reverse; align-items: center; gap: 4px;
-            pointer-events: none;
-        }
-        
-        .hotbar-slot.show-popup .scroll-popup { display: flex; }
-
-        .popup-item {
-            width: 40px; height: 40px; border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(0,0,0,0.6); border-radius: 4px;
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0.6; transition: all 0.1s;
-            color: white; font-size: 10px; text-align: center; overflow: hidden;
-        }
-        
-        /* The middle item (Current Selection) */
-        .popup-item.current {
-            width: 56px; height: 56px; 
-            border: 2px solid #FCD34D;
-            background: rgba(0,0,0,0.9);
-            opacity: 1; font-weight: bold;
-            box-shadow: 0 0 10px rgba(252, 211, 77, 0.3);
-        }
-
-        .token-dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 4px currentColor; }
-        .token-initial { font-size: 14px; font-weight: bold; color: white; text-shadow: 0 1px 2px black; }
-
-        /* Edit Mode Indicator */
-        #edit-mode-badge {
-            display: none;
-            position: absolute; top: 120px; left: 50%; transform: translateX(-50%);
-            background: rgba(234, 179, 8, 0.2); border: 1px solid rgba(234, 179, 8, 0.5);
-            color: #fcd34d; font-size: 0.75rem; font-weight: bold; padding: 4px 12px; rounded-full;
-            pointer-events: none; text-transform: uppercase; letter-spacing: 1px;
-            backdrop-filter: blur(4px);
-        }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); pointer-events: none; mix-blend-mode: difference; transition: opacity 0.2s; }
+        #crosshair::before { content: ''; position: absolute; top: 9px; left: 0; width: 20px; height: 2px; background: rgba(255, 255, 255, 0.9); }
+        #crosshair::after { content: ''; position: absolute; top: 0; left: 9px; width: 2px; height: 20px; background: rgba(255, 255, 255, 0.9); }
+        .hotbar-slot { transition: all 0.15s ease-out; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); }
+        .hotbar-slot.active { border-color: #38BDF8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); transform: translateY(-4px); z-index: 20; }
+        #tooltip { position: absolute; display: none; transform: translate(-50%, -120%); backdrop-filter: blur(8px); z-index: 50; pointer-events: none; }
+        .token-item { transition: all 0.2s; }
+        .token-item:hover { transform: translateX(4px); background: rgba(51, 65, 85, 0.8); }
+        .mode-switch { position: relative; display: flex; background: #0f172a; border-radius: 8px; padding: 4px; border: 1px solid #334155; }
+        .mode-btn { padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; color: #94a3b8; transition: all 0.2s; }
+        .mode-btn.active { background: #38BDF8; color: #0f172a; shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
+        #move-badge { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #6ee7b7; font-weight: bold; padding: 6px 16px; border-radius: 20px; backdrop-filter: blur(4px); display: none; text-shadow: 0 1px 2px black; }
     </style>
 </head>
 <body>
-
-    <!-- UI OVERLAY -->
-    <div id="ui-layer" class="flex flex-col justify-between h-full">
-        
-        <!-- TOP BAR -->
-        <div class="p-4 flex justify-between items-start pointer-events-none">
-            <!-- HEADER -->
-            <header class="pointer-events-auto bg-slate-900/90 border border-slate-700 p-3 rounded-xl shadow-lg backdrop-blur-sm">
-                <h1 class="text-xl font-bold text-white flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan-400"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-                    Akashic Atlas
-                </h1>
-                <div class="text-xs text-slate-400 mt-1 flex gap-2">
-                    <span id="coords">0, 0, 0</span> | <span id="block-count">0</span> Blocks
+    <div id="ui-layer" class="flex flex-col justify-between h-full p-4">
+        <div class="flex justify-between items-start">
+            <div class="interactive bg-slate-900/90 border border-slate-700 p-3 rounded-xl shadow-xl backdrop-blur-sm flex flex-col gap-2">
+                <div class="flex items-center gap-4">
+                    <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                        Akashic Atlas
+                    </h1>
+                    <div class="mode-switch">
+                        <button id="mode-build" class="mode-btn active">BUILD</button>
+                        <button id="mode-dm" class="mode-btn">DM MODE</button>
+                    </div>
                 </div>
-            </header>
-
-            <!-- CONTROLS -->
+                <div class="text-xs text-slate-400 font-mono flex gap-3"><span id="coord-display">0, 0, 0</span> | <span id="block-count">0 Blocks</span></div>
+            </div>
             <div class="flex gap-2">
-                <button id="btn-atmosphere" class="pointer-events-auto bg-slate-800 border border-amber-500/50 p-2 rounded-full text-amber-400 hover:bg-slate-700 hover:text-amber-300 transition-colors shadow-lg" title="Toggle Atmosphere">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-                </button>
-                <div class="w-px h-8 bg-slate-700 mx-1"></div>
-                <button id="btn-sync" class="pointer-events-auto bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded flex items-center gap-2 transition-colors">
-                    Sync
-                </button>
-                <button id="btn-clear" class="pointer-events-auto bg-red-900/50 hover:bg-red-800 border border-red-700 text-red-200 text-xs font-bold px-3 py-1.5 rounded transition-colors">
-                    Clear
-                </button>
-                <button id="btn-save" class="pointer-events-auto bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-xs font-bold px-3 py-1.5 rounded transition-colors">
-                    Save
-                </button>
-                <a href="./tome.html" class="pointer-events-auto bg-purple-900/80 border border-purple-600 p-2 rounded-full text-white hover:bg-purple-800 transition-colors" title="Tracker">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-8a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v8"/><path d="M4 11V7"/><path d="M20 11V7"/><path d="M2 7h4v4H2z"/><path d="M18 7h4v4h-4z"/><path d="M4 7l2-4 2 4"/><path d="M18 7l2-4 2 4"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/></svg>
-                </a>
+                <button id="btn-atmosphere" class="interactive bg-slate-800 border border-amber-500/50 p-2 rounded-lg text-amber-400 hover:bg-slate-700 transition-colors shadow-lg" title="Toggle Day/Night"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
+                <div class="w-px h-10 bg-slate-700/50 mx-1"></div>
+                <button id="btn-sync" class="interactive bg-indigo-600 hover:bg-indigo-500 border border-indigo-400 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-lg transition-all flex items-center gap-2">Sync</button>
+                <button id="btn-save" class="interactive bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Save</button>
+                <button id="btn-load" class="interactive bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Load</button>
+                <button id="btn-clear" class="interactive bg-red-900/30 hover:bg-red-900/80 border border-red-800/50 text-red-200 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Clear</button>
                 <input type="file" id="file-input" accept=".json" class="hidden">
             </div>
         </div>
-
-        <!-- CENTER BADGES -->
-        <div id="edit-mode-badge">Mouse Mode Active (Tab)</div>
-        <div id="instructions" class="pointer-events-auto absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900/90 border border-cyan-500/50 p-8 rounded-2xl text-center shadow-[0_0_50px_rgba(6,182,212,0.15)] backdrop-blur-md cursor-pointer hover:border-cyan-400 transition-all z-50">
-            <h2 class="text-2xl font-bold text-white mb-2">Click to Enter</h2>
-            <div class="space-y-2 text-slate-300 text-sm">
-                <p><strong class="text-cyan-400">WASD</strong> Move | <strong class="text-cyan-400">Space</strong> Jump/Fly</p>
-                <p><strong class="text-cyan-400">Tab</strong> Toggle Mouse Mode</p>
-                <p><strong class="text-red-400">Left Drag</strong> Delete | <strong class="text-cyan-400">Right Drag</strong> Place</p>
-                <p><strong class="text-indigo-400">Shift + Right Click</strong> Focus & Range</p>
+        <div id="sidebar-container" class="absolute left-4 top-32 bottom-32 w-64 interactive overflow-y-auto pr-2 hidden sm:block"></div>
+        <div id="instructions" class="interactive absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900/95 border border-cyan-500/50 p-8 rounded-2xl text-center shadow-[0_0_50px_rgba(6,182,212,0.2)] backdrop-blur-md cursor-pointer hover:border-cyan-400 transition-all z-50 group">
+            <h2 class="text-3xl font-bold text-white mb-2 group-hover:scale-105 transition-transform">Click to Enter</h2>
+            <div id="instr-build" class="space-y-2 text-slate-300 text-sm mt-4 text-left grid grid-cols-2 gap-x-6">
+                <div><span class="text-cyan-400 font-bold">WASD</span> Move</div>
+                <div><span class="text-cyan-400 font-bold">Space / C</span> Fly Up/Down</div>
+                <div><span class="text-red-400 font-bold">L-Click</span> Delete</div>
+                <div><span class="text-cyan-400 font-bold">R-Click</span> Place</div>
+                <div><span class="text-indigo-400 font-bold">Shift + R</span> Focus Token</div>
+                <div><span class="text-yellow-400 font-bold">F</span> Toggle Fly</div>
+            </div>
+            <div id="instr-dm" class="space-y-2 text-slate-300 text-sm mt-4 text-left hidden">
+                <div><span class="text-cyan-400 font-bold">WASD</span> Free Camera</div>
+                <div><span class="text-indigo-400 font-bold">R-Click</span> Control Unit</div>
+                <div><span class="text-green-400 font-bold">L-Click</span> Move Unit</div>
+                <div><span class="text-red-400 font-bold">Esc</span> Release Unit</div>
             </div>
         </div>
-
-        <!-- BOTTOM HOTBAR -->
-        <div class="pointer-events-auto mt-auto w-full flex flex-col items-center">
-            <div class="text-xs text-slate-400 mb-2 font-mono bg-black/50 px-2 py-1 rounded">Hold 1-4 & Scroll to Select</div>
-            <div id="hotbar">
-                <!-- 10 Slots (1-0) generated by JS -->
-            </div>
+        <div id="mouse-mode-badge" class="absolute top-32 left-1/2 -translate-x-1/2 bg-yellow-500/20 border border-yellow-500 text-yellow-200 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur hidden">Mouse Cursor Active (Tab)</div>
+        <div id="move-badge">Movement: 30ft</div>
+        <div class="interactive mt-auto w-full flex flex-col items-center" id="hotbar-wrapper">
+            <div class="bg-black/80 text-slate-400 text-[10px] uppercase tracking-widest px-3 py-1 rounded-t-lg font-bold border-t border-x border-slate-800/50">Hold Number & Scroll to Cycle Options</div>
+            <div id="hotbar" class="flex gap-2 p-3 bg-slate-900/90 border border-slate-700 rounded-2xl shadow-2xl backdrop-blur-md"></div>
         </div>
-
     </div>
-
-    <!-- 3D ELEMENTS -->
     <div id="crosshair"></div>
-    <div id="tooltip"></div>
+    <div id="tooltip" class="bg-slate-900/95 border border-slate-600 rounded-lg p-3 text-white shadow-xl min-w-[150px]"></div>
 
-    <!-- Import Three.js -->
     <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-            }
-        }
+        { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
     </script>
 
     <script type="module">
         import * as THREE from 'three';
         import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
-        // --- Configuration ---
-        const WORLD_SIZE = 64; 
-        const BLOCK_SIZE = 1;
-        
+        const CONFIG = {
+            worldSize: 64,
+            colors: { 
+                bgNight: 0x020617, bgDay: 0x87CEEB, highlight: 0x38BDF8, delete: 0xEF4444, valid: 0x10b981, invalid: 0xEF4444,
+                monster: 0xef4444, player: 0x3b82f6
+            },
+            moveSpeed: 30, blockSize: 5
+        };
+
         const CONDITION_COLORS = { "Blinded":0x525252,"Charmed":0xdb2777,"Deafened":0x94a3b8,"Frightened":0x7c3aed,"Grappled":0xf97316,"Incapacitated":0xdc2626,"Invisible":0xffffff,"Paralyzed":0xfacc15,"Petrified":0x475569,"Poisoned":0x16a34a,"Prone":0x78350f,"Restrained":0x9a3412,"Stunned":0xf59e0b,"Unconscious":0x000000,"Exhaustion":0x7f1d1d,"Default":0x38BDF8 };
-
-        // --- Categories ---
-        // 1: Solids, 2: Liquids, 3: Players, 4: Enemies, 5-0: TBD
         const MATERIALS = [
-            { color: 0x4b6e32, name: "Grass", type: 'solid' }, 
-            { color: 0x5c3c28, name: "Dirt", type: 'solid' },
-            { color: 0x64748b, name: "Stone", type: 'solid' },
-            { color: 0x8B4513, name: "Wood", type: 'solid' },
-            { color: 0xE6C288, name: "Sand", type: 'solid' },
-            { color: 0xf1f5f9, name: "Snow", type: 'solid' },
-            { color: 0x1e293b, name: "Dungeon", type: 'solid' },
-            
-            { color: 0x38BDF8, name: "Water", type: 'liquid', transparent: true, opacity: 0.6 },
-            { color: 0xea580c, name: "Lava", type: 'liquid', transparent: true, opacity: 0.7 },
-            { color: 0x84cc16, name: "Acid", type: 'liquid', transparent: true, opacity: 0.6 },
-            { color: 0x14532d, name: "Poison", type: 'liquid', transparent: true, opacity: 0.7 },
-            { color: 0xa855f7, name: "Force", type: 'liquid', transparent: true, opacity: 0.5 }
+            { id: 0, name: "Grass", color: 0x4b6e32, type: 'solid' }, { id: 1, name: "Dirt", color: 0x5c3c28, type: 'solid' }, { id: 2, name: "Stone", color: 0x64748b, type: 'solid' }, { id: 3, name: "Wood", color: 0x8B4513, type: 'solid' },
+            { id: 4, name: "Sand", color: 0xE6C288, type: 'solid' }, { id: 5, name: "Snow", color: 0xf1f5f9, type: 'solid' }, { id: 6, name: "Dungeon", color: 0x1e293b, type: 'solid' },
+            { id: 7, name: "Water", color: 0x38BDF8, type: 'liquid', opacity: 0.6 }, { id: 8, name: "Lava", color: 0xea580c, type: 'liquid', opacity: 0.8 }, { id: 9, name: "Acid", color: 0x84cc16, type: 'liquid', opacity: 0.6 },
+            { id: 10, name: "Poison", color: 0x14532d, type: 'liquid', opacity: 0.7 }, { id: 11, name: "Force", color: 0xa855f7, type: 'liquid', opacity: 0.5 }
         ];
-
-        // Mapped Indices for easier lookup
-        const SOLIDS = [0, 1, 2, 3, 4, 5, 6]; 
-        const LIQUIDS = [7, 8, 9, 10, 11];
-
-        // UI State
         const CATEGORIES = [
-            { id: 0, name: "Solids", key: "1", type: "block", items: SOLIDS },
-            { id: 1, name: "Liquids", key: "2", type: "block", items: LIQUIDS },
-            { id: 2, name: "Players", key: "3", type: "token", items: [] }, 
-            { id: 3, name: "Enemies", key: "4", type: "token", items: [] }, 
-            { id: 4, name: "TBD", key: "5", type: "none", items: [] },
-            { id: 5, name: "TBD", key: "6", type: "none", items: [] },
-            { id: 6, name: "TBD", key: "7", type: "none", items: [] },
-            { id: 7, name: "TBD", key: "8", type: "none", items: [] },
-            { id: 8, name: "TBD", key: "9", type: "none", items: [] },
-            { id: 9, name: "TBD", key: "0", type: "none", items: [] }
+            { key: '1', label: 'Solid', type: 'block', items: [0, 1, 2, 3, 4, 5, 6] }, { key: '2', label: 'Liquid', type: 'block', items: [7, 8, 9, 10, 11] },
+            { key: '3', label: 'Players', type: 'token', subType: 'player', items: [] }, { key: '4', label: 'Enemies', type: 'token', subType: 'monster', items: [] },
+            { key: '5', label: 'Loot', type: 'loot', items: [] }, { key: '6', label: 'Misc', type: 'none', items: [] },
+            { key: '7', label: '-', type: 'none', items: [] }, { key: '8', label: '-', type: 'none', items: [] }, { key: '9', label: '-', type: 'none', items: [] }, { key: '0', label: '-', type: 'none', items: [] }
         ];
+        const DIRS = [ {x:1,y:0,z:0}, {x:-1,y:0,z:0}, {x:0,y:1,z:0}, {x:0,y:-1,z:0}, {x:0,y:0,z:1}, {x:0,y:0,z:-1} ];
 
-        let activeCategoryIndex = 0; 
-        let categoryIndices = new Array(10).fill(0); 
-        let isHoldingKey = new Array(10).fill(false); 
+        const state = { gameMode: 'build', activeCategoryIdx: 0, subSelections: new Array(10).fill(0), isAtmosphereDay: false, heldKeys: {}, mapData: new Map(), tokenData: new Map(), mode: 'view', dragStart: null, controlledToken: null, focusedToken: null, moveBudget: 30 };
 
-        // --- Globals ---
-        let camera, scene, renderer, controls, raycaster;
-        let moveForward=false, moveBackward=false, moveLeft=false, moveRight=false, moveUp=false, moveDown=false;
-        let canJump=false, isFlying=false, isTabMode=false, isLocking=false;
-        let prevTime = performance.now(), lastSpaceKeyTime = 0, lastLockTime = 0;
-        const velocity = new THREE.Vector3(), direction = new THREE.Vector3();
-        let isNight = true; 
-        let ambientLight, dirLight, torchLight;
+        const scene = new THREE.Scene(); scene.background = new THREE.Color(CONFIG.colors.bgNight); scene.fog = new THREE.Fog(CONFIG.colors.bgNight, 10, 60);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(0, 5, 10);
+        const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(window.devicePixelRatio); renderer.shadowMap.enabled = true; document.body.appendChild(renderer.domElement);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5); dirLight.position.set(50, 100, 50); scene.add(dirLight);
+        const torchLight = new THREE.PointLight(0xffaa00, 1.5, 20); camera.add(torchLight); scene.add(camera);
+        const plane = new THREE.Mesh(new THREE.PlaneGeometry(64, 64).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({visible:false})); plane.name = "ground"; scene.add(plane);
+        scene.add(new THREE.GridHelper(64, 64, 0x334155, 0x1e293b));
 
-        const voxels = new Map(); 
-        const objects = []; 
-        const tokens = new Map(); 
-        const geometryCache = new Map();
-        
-        let heldTokenId = null, focusedToken = null, isShiftDown = false;
-        let isDragging=false, isDeleting=false, buildStartPoint=null, deleteStartPoint=null;
-
-        let rollOverMesh, tokenRollOverMesh, rangeGroup, voxelGeometry, tokenGeometry;
-        const threeMaterials = [];
-
-        // DOM Elements
-        const instructions = document.getElementById('instructions');
-        const tooltip = document.getElementById('tooltip');
-        const hotbarEl = document.getElementById('hotbar');
-        const crosshair = document.getElementById('crosshair');
-        const editModeBadge = document.getElementById('edit-mode-badge');
-
-        init();
-        animate();
-
-        function init() {
-            scene = new THREE.Scene(); scene.background = new THREE.Color(0x020617); scene.fog = new THREE.Fog(0x020617, 10, 60);
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000); camera.position.set(0, 2, 10);
-            
-            ambientLight = new THREE.AmbientLight(0xffffff, 0.2); scene.add(ambientLight);
-            dirLight = new THREE.DirectionalLight(0xffffff, 0.5); dirLight.position.set(50, 100, 50); scene.add(dirLight);
-            torchLight = new THREE.PointLight(0xffaa00, 1.5, 20); camera.add(torchLight); scene.add(camera);
-
-            controls = new PointerLockControls(camera, document.body);
-            instructions.addEventListener('click', () => safeLock());
-            controls.addEventListener('lock', () => { instructions.style.display='none'; editModeBadge.style.display='none'; crosshair.style.opacity='1'; isTabMode=false; isLocking=false; });
-            controls.addEventListener('unlock', () => { isLocking=false; if(isTabMode){ instructions.style.display='none'; editModeBadge.style.display='block'; crosshair.style.opacity='0'; } else { instructions.style.display='block'; editModeBadge.style.display='none'; crosshair.style.opacity='1'; } });
-            document.addEventListener('pointerlockerror', () => { isLocking=false; console.warn("Lock failed"); });
-
-            document.addEventListener('keydown', onKeyDown); document.addEventListener('keyup', onKeyUp);
-            document.addEventListener('mousedown', onMouseDown); document.addEventListener('mouseup', onMouseUp);
-            document.addEventListener('mousemove', onMouseMove); document.addEventListener('wheel', onScroll);
-
-            const plane = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ visible: false }));
-            plane.name = "ground"; scene.add(plane); objects.push(plane);
-            scene.add(new THREE.GridHelper(WORLD_SIZE, WORLD_SIZE, 0x334155, 0x1e293b));
-
-            raycaster = new THREE.Raycaster();
-            voxelGeometry = new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-            tokenGeometry = new THREE.CylinderGeometry(0.4, 0.4, 1.2, 16);
-            
-            initGeometryCache();
-            MATERIALS.forEach(m => threeMaterials.push(new THREE.MeshLambertMaterial({ color: m.color, transparent: !!m.transparent, opacity: m.opacity || 1.0 })));
-
-            rollOverMesh = new THREE.Mesh(new THREE.BoxGeometry(1.05,1.05,1.05), new THREE.MeshBasicMaterial({ color: 0x38BDF8, opacity: 0.5, transparent: true, wireframe: true }));
-            scene.add(rollOverMesh);
-            tokenRollOverMesh = new THREE.Mesh(tokenGeometry, new THREE.MeshBasicMaterial({ color: 0xFCD34D, opacity: 0.5, transparent: true, wireframe: true }));
-            tokenRollOverMesh.visible = false; scene.add(tokenRollOverMesh);
-            rangeGroup = new THREE.Group(); rangeGroup.visible = false; scene.add(rangeGroup);
-
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
-            window.addEventListener('resize', onWindowResize);
-
-            initHotbar();
-            initButtons();
-            loadMap();
-            syncTokensFromTracker();
-        }
-
-        // --- HOTBAR UI ---
-        function initHotbar() {
-            hotbarEl.innerHTML = '';
-            CATEGORIES.forEach((cat, index) => {
-                const slot = document.createElement('div');
-                slot.className = `hotbar-slot ${index === activeCategoryIndex ? 'active-category' : ''}`;
-                slot.id = `slot-${index}`;
-                slot.onclick = () => { setActiveCategory(index); };
-                
-                const keyLabel = document.createElement('div'); keyLabel.className = 'key-label'; keyLabel.innerText = cat.key; slot.appendChild(keyLabel);
-                const content = document.createElement('div'); content.className = 'slot-content'; content.id = `slot-content-${index}`; slot.appendChild(content);
-                const popup = document.createElement('div'); popup.className = 'scroll-popup'; popup.id = `popup-${index}`; slot.appendChild(popup);
-
-                hotbarEl.appendChild(slot);
-                updateSlotVisual(index);
-            });
-        }
-
-        function updateSlotVisual(index) {
-            const cat = CATEGORIES[index];
-            const contentEl = document.getElementById(`slot-content-${index}`);
-            const popupEl = document.getElementById(`popup-${index}`);
-            if (!contentEl || !popupEl) return;
-
-            const currentIndex = categoryIndices[index];
-            const items = cat.items;
-            
-            contentEl.innerHTML = '';
-            if (items.length > 0) {
-                const item = cat.type === 'block' ? MATERIALS[items[currentIndex]] : items[currentIndex];
-                contentEl.appendChild(createItemVisual(item, cat.type, true));
-            } else {
-                contentEl.innerText = "Empty"; contentEl.style.fontSize = "8px"; contentEl.style.color = "#475569";
-            }
-
-            if (isHoldingKey[index] && items.length > 1) {
-                popupEl.innerHTML = '';
-                const prevIdx = (currentIndex - 1 + items.length) % items.length;
-                const nextIdx = (currentIndex + 1) % items.length;
-                
-                const prevItem = cat.type === 'block' ? MATERIALS[items[prevIdx]] : items[prevIdx];
-                const currItem = cat.type === 'block' ? MATERIALS[items[currentIndex]] : items[currentIndex];
-                const nextItem = cat.type === 'block' ? MATERIALS[items[nextIdx]] : items[nextIdx];
-
-                const divNext = document.createElement('div'); divNext.className = 'popup-item'; divNext.appendChild(createItemVisual(nextItem, cat.type));
-                const divCurr = document.createElement('div'); divCurr.className = 'popup-item current'; divCurr.appendChild(createItemVisual(currItem, cat.type));
-                const divPrev = document.createElement('div'); divPrev.className = 'popup-item'; divPrev.appendChild(createItemVisual(prevItem, cat.type));
-
-                popupEl.appendChild(divNext); popupEl.appendChild(divCurr); popupEl.appendChild(divPrev);
-                document.getElementById(`slot-${index}`).classList.add('show-popup');
-            } else {
-                document.getElementById(`slot-${index}`).classList.remove('show-popup');
-            }
-        }
-
-        function createItemVisual(item, type, large=false) {
-            const container = document.createElement('div');
-            container.style.display = 'flex'; container.style.alignItems = 'center'; container.style.justifyContent = 'center'; container.style.width = '100%'; container.style.height = '100%';
-            
-            if (type === 'block') {
-                container.style.backgroundColor = '#' + item.color.toString(16).padStart(6,'0');
-                if(large) container.style.border = "2px solid rgba(255,255,255,0.2)";
-                container.title = item.name;
-            } else if (type === 'token') {
-                const dot = document.createElement('div'); dot.className = 'token-dot';
-                dot.style.backgroundColor = item.type === 'monster' ? '#F43F5E' : '#6366f1';
-                dot.style.color = item.type === 'monster' ? '#F43F5E' : '#6366f1'; 
-                if (large) {
-                    dot.style.width = "16px"; dot.style.height = "16px";
-                    const label = document.createElement('div'); label.className = 'token-initial'; label.innerText = item.name.charAt(0).toUpperCase();
-                    container.appendChild(label); container.style.flexDirection = 'column'; container.appendChild(dot);
-                } else {
-                    container.appendChild(dot);
+        const GeometryManager = {
+            cache: new Map(),
+            init: () => {
+                const base = new THREE.BoxGeometry(1,1,1); const pos = base.attributes.position, norm = base.attributes.normal, uv = base.attributes.uv, idx = base.index;
+                for (let m=0; m<64; m++) {
+                    const indices = [];
+                    for (let f=0; f<6; f++) if ((m & (1<<f)) === 0) for (let i=0; i<6; i++) indices.push(idx.array[f*6+i]);
+                    const g = new THREE.BufferGeometry(); g.setAttribute('position', pos); g.setAttribute('normal', norm); g.setAttribute('uv', uv); g.setIndex(indices);
+                    GeometryManager.cache.set(m, g);
                 }
-                container.title = item.name;
-            }
-            return container;
-        }
+            },
+            get: (m) => GeometryManager.cache.get(m) || GeometryManager.cache.get(0)
+        }; GeometryManager.init();
 
-        function setActiveCategory(index) {
-            document.getElementById(`slot-${activeCategoryIndex}`)?.classList.remove('active-category');
-            activeCategoryIndex = index;
-            document.getElementById(`slot-${activeCategoryIndex}`)?.classList.add('active-category');
-            
-            const cat = CATEGORIES[index];
-            if (cat.type === 'token' && cat.items.length > 0) {
-                const itemIdx = categoryIndices[index];
-                heldTokenId = cat.items[itemIdx].id;
-            } else {
-                heldTokenId = null; 
-            }
-        }
+        const materials = MATERIALS.map(m => new THREE.MeshLambertMaterial({color:m.color, transparent:!!m.opacity, opacity:m.opacity||1}));
+        const tokenGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.2, 16);
+        const lootGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
 
-        function cycleCategory(index, direction) {
-            const cat = CATEGORIES[index];
-            if (cat.items.length === 0) return;
-            if (direction > 0) { categoryIndices[index] = (categoryIndices[index] + 1) % cat.items.length; } else { categoryIndices[index] = (categoryIndices[index] - 1 + cat.items.length) % cat.items.length; }
-            updateSlotVisual(index);
-            if (index === activeCategoryIndex && cat.type === 'token') { heldTokenId = cat.items[categoryIndices[index]].id; }
-        }
-
-        // --- INPUT HANDLING ---
-        function onKeyDown(e) {
-            if (e.key === 'Shift') isShiftDown = true;
-            if (e.code === 'Tab') { e.preventDefault(); if(controls.isLocked){ isTabMode=true; controls.unlock(); } else { safeLock(); } return; }
-            
-            if(e.code==='KeyW') moveForward=true; if(e.code==='KeyA') moveLeft=true; if(e.code==='KeyS') moveBackward=true; if(e.code==='KeyD') moveRight=true;
-            if(e.code==='Space' && !e.repeat) { if(Date.now()-lastSpaceKeyTime<300){ isFlying=!isFlying; velocity.y=0;} else if(isFlying) moveUp=true; else if(canJump){velocity.y+=10; canJump=false;} lastSpaceKeyTime=Date.now(); }
-            if(e.code==='KeyC') if(isFlying) moveDown=true;
-
-            if (e.code.startsWith('Digit')) {
-                const num = parseInt(e.key); const index = num === 0 ? 9 : num - 1; 
-                if (!isHoldingKey[index]) { isHoldingKey[index] = true; setActiveCategory(index); updateSlotVisual(index); }
-            }
-        }
-
-        function onKeyUp(e) {
-            if (e.key === 'Shift') isShiftDown = false;
-            if(e.code==='KeyW') moveForward=false; if(e.code==='KeyA') moveLeft=false; if(e.code==='KeyS') moveBackward=false; if(e.code==='KeyD') moveRight=false;
-            if(e.code==='Space') moveUp=false; if(e.code==='KeyC') moveDown=false;
-
-            if (e.code.startsWith('Digit')) {
-                const num = parseInt(e.key); const index = num === 0 ? 9 : num - 1; 
-                isHoldingKey[index] = false; updateSlotVisual(index);
-            }
-        }
-
-        function onScroll(e) {
-            const heldIndex = isHoldingKey.findIndex(k => k === true);
-            if (heldIndex !== -1) cycleCategory(heldIndex, e.deltaY > 0 ? 1 : -1);
-        }
-        
-        // --- DATA & LOGIC ---
-        function syncTokensFromTracker() {
-            const raw = localStorage.getItem('dm-tracker-monsters');
-            let all = raw ? JSON.parse(raw) : [];
-            CATEGORIES[2].items = all.filter(c => c.type === 'player');
-            CATEGORIES[3].items = all.filter(c => c.type === 'monster');
-            if (categoryIndices[2] >= CATEGORIES[2].items.length) categoryIndices[2] = 0;
-            if (categoryIndices[3] >= CATEGORIES[3].items.length) categoryIndices[3] = 0;
-
-            const savedPositions = JSON.parse(localStorage.getItem('dm-tracker-map-positions') || '{}');
-            const currentIds = new Set();
-            
-            all.forEach((c, index) => {
-                currentIds.add(c.id);
-                if (tokens.has(c.id)) { updateTokenVisuals(tokens.get(c.id), c); } else {
-                    const color = c.type === 'monster' ? 0xF43F5E : 0x6366f1; 
-                    const mesh = new THREE.Mesh(tokenGeometry, new THREE.MeshLambertMaterial({ color }));
-                    if (savedPositions[c.id]) mesh.position.set(savedPositions[c.id].x, savedPositions[c.id].y, savedPositions[c.id].z);
-                    else mesh.position.set(index * 2 + 0.5, 1, 0.5); 
-                    mesh.userData = { isToken: true, id: c.id, name: c.name, hp: c.currentHp, maxHp: c.maxHp, conditions: c.conditions || [] };
-                    mesh.name = "token"; scene.add(mesh); objects.push(mesh); tokens.set(c.id, mesh); updateTokenVisuals(mesh, c);
-                }
-            });
-            tokens.forEach((mesh, id) => { if (!currentIds.has(id)) { scene.remove(mesh); objects.splice(objects.indexOf(mesh), 1); tokens.delete(id); } });
-            updateSlotVisual(2); updateSlotVisual(3);
-        }
-
-        // --- STANDARD FUNCTIONS (Restored & Fixed) ---
-        function initGeometryCache() {
-            const baseGeo = new THREE.BoxGeometry(1,1,1); const idx=baseGeo.index.array, pos=baseGeo.attributes.position, norm=baseGeo.attributes.normal, uv=baseGeo.attributes.uv;
-            for(let m=0; m<64; m++){ const ni=[]; for(let i=0;i<6;i++){ if((m&(1<<i))!==0){ const o=i*6; for(let j=0;j<6;j++) ni.push(idx[o+j]); }} 
-            const g=new THREE.BufferGeometry(); g.setAttribute('position',pos); g.setAttribute('normal',norm); g.setAttribute('uv',uv); g.setIndex(ni); geometryCache.set(m,g); }
-        }
-        const DIRS = [{x:1,y:0,z:0},{x:-1,y:0,z:0},{x:0,y:1,z:0},{x:0,y:-1,z:0},{x:0,y:0,z:1},{x:0,y:0,z:-1}];
-        function getVisibilityMask(x,y,z,mat) { let m=0; for(let i=0;i<6;i++){ const d=DIRS[i], n=voxels.get(`${x+d.x},${y+d.y},${z+d.z}`); if(!n||n.userData.colorIndex!==mat) m|=(1<<i); } return m; }
-        function updateVoxelGeometry(v) { const m=getVisibilityMask(v.position.x,v.position.y,v.position.z,v.userData.colorIndex); const g=geometryCache.get(m); if(g) v.geometry=g; }
-        function updateNeighbors(x,y,z) { for(let i=0;i<6;i++){ const d=DIRS[i], n=voxels.get(`${x+d.x},${y+d.y},${z+d.z}`); if(n) updateVoxelGeometry(n); } }
-        function safeLock() { const n=performance.now(); if(isLocking||controls.isLocked||(n-lastLockTime<1200))return; if(!document.hasFocus())return; isLocking=true; lastLockTime=n; try{controls.lock();}catch(e){isLocking=false;} setTimeout(()=>{if(isLocking&&!controls.isLocked)isLocking=false;},2000); }
-        
-        function updateTokenVisuals(mesh, data) {
-            mesh.userData.hp=data.currentHp; mesh.userData.maxHp=data.maxHp; mesh.userData.name=data.name; mesh.userData.conditions=data.conditions||[];
-            if(data.currentHp<=0 && data.type==='monster') { mesh.rotation.x=Math.PI/2; mesh.position.y=0.2; mesh.material.color.setHex(0x334155); }
-            else { mesh.rotation.x=0; mesh.material.color.setHex(data.type==='monster'?0xF43F5E:0x6366f1); if(mesh.position.y<0.6) mesh.position.y=1; }
-        }
-        function saveTokenPositions() { const d={}; tokens.forEach((m,id)=>{d[id]={x:m.position.x,y:m.position.y,z:m.position.z};}); localStorage.setItem('dm-tracker-map-positions', JSON.stringify(d)); }
-        
-        function getVoxelPos(pt,norm,mode) { const p=new THREE.Vector3().copy(pt); if(mode==='build')p.addScaledVector(norm,0.5); else{ if(Math.abs(pt.y)<0.01) p.addScaledVector(norm,0.5); else p.addScaledVector(norm,-0.1); } return p.divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE/2); }
-        function focusOnToken(t) { focusedToken=t; controls.getObject().position.copy(t.position).add(new THREE.Vector3(0,3,5)); updateRangeIndicator(t); }
-        function updateRangeIndicator(t) {
-            while(rangeGroup.children.length>0) rangeGroup.remove(rangeGroup.children[0]);
-            rangeGroup.visible=true; rangeGroup.position.copy(t.position); rangeGroup.position.y=t.position.y-0.55;
-            const conds=t.userData.conditions||[]; const segs=64;
-            if(conds.length===0) { const g=new THREE.RingGeometry(2.9,3.0,segs); g.rotateX(-Math.PI/2); rangeGroup.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({color:CONDITION_COLORS["Default"], side:THREE.DoubleSide, transparent:true, opacity:0.8}))); }
-            else { const arc=(Math.PI*2)/conds.length; conds.forEach((c,i)=>{ const g=new THREE.RingGeometry(2.9,3.0,Math.max(8,Math.floor(segs/conds.length)),1,i*arc,arc); g.rotateX(-Math.PI/2); rangeGroup.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({color:CONDITION_COLORS[c]||CONDITION_COLORS["Default"], side:THREE.DoubleSide, transparent:true, opacity:0.9}))); }); }
-        }
-
-        function updateInteraction() {
-            if(!controls.isLocked && !isTabMode) return;
-            if(focusedToken && rangeGroup.visible) { rangeGroup.position.copy(focusedToken.position); rangeGroup.position.y=focusedToken.position.y-0.55; }
-            if(!isTabMode) {
-                raycaster.setFromCamera(new THREE.Vector2(0,0), camera); const intersects=raycaster.intersectObjects(objects, false);
-                if(intersects.length>0) {
-                    const hit=intersects[0], obj=hit.object, pt=hit.point, norm=hit.face.normal, dist=controls.getObject().position.distanceTo(pt);
-                    if(obj.userData.isToken && heldTokenId===null && !isDragging && !isDeleting) {
-                        tooltip.style.display='block'; tooltip.style.left='50%'; tooltip.style.top='50%'; 
-                        let condStr = obj.userData.conditions?.length ? `<br><span style="color:#f87171; font-size:10px;">${obj.userData.conditions.join(", ")}</span>` : "";
-                        tooltip.innerHTML=`<strong>${obj.userData.name}</strong><br>HP: ${obj.userData.hp}/${obj.userData.maxHp}${condStr}<br><span style="color:#fbbf24">Dist: ${Math.round(dist*5)} ft</span>`;
-                        rollOverMesh.visible=false; tokenRollOverMesh.visible=false; return;
+        const RangeRingManager = {
+            group: new THREE.Group(),
+            init: () => { scene.add(RangeRingManager.group); RangeRingManager.group.visible = false; },
+            update: (targetToken, type = 'movement') => {
+                while(RangeRingManager.group.children.length) RangeRingManager.group.remove(RangeRingManager.group.children[0]);
+                if(!targetToken) { RangeRingManager.group.visible = false; return; }
+                RangeRingManager.group.visible = true;
+                RangeRingManager.group.position.copy(targetToken.position);
+                RangeRingManager.group.position.y = targetToken.position.y - 0.1 + 0.02;
+                const data = targetToken.userData.data;
+                if (type === 'movement') {
+                    const radius = (state.moveBudget / 5); if (radius <= 0) return;
+                    const mesh = new THREE.Mesh(new THREE.RingGeometry(Math.max(0.1, radius-0.2), radius, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({color: 0x38BDF8, side: THREE.DoubleSide, transparent: true, opacity: 0.4}));
+                    RangeRingManager.group.add(mesh);
+                } else if (type === 'conditions') {
+                    const conditions = data.conditions || []; const radius = 6;
+                    if (conditions.length === 0) {
+                        RangeRingManager.group.add(new THREE.Mesh(new THREE.RingGeometry(radius-0.2, radius, 64).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: CONDITION_COLORS.Default, side: THREE.DoubleSide, transparent: true, opacity: 0.5 })));
+                    } else {
+                        const segmentSize = (Math.PI * 2) / conditions.length;
+                        conditions.forEach((cond, i) => {
+                            RangeRingManager.group.add(new THREE.Mesh(new THREE.RingGeometry(radius-0.2, radius, 32, 1, i * segmentSize, segmentSize).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: CONDITION_COLORS[cond] || CONDITION_COLORS.Default, side: THREE.DoubleSide, transparent: true, opacity: 0.8 })));
+                        });
                     }
+                }
+            }
+        }; RangeRingManager.init();
+
+        const WorldManager = {
+            add: (x,y,z,mat) => {
+                const k = `${x},${y},${z}`; if(state.mapData.has(k)) return;
+                const m = new THREE.Mesh(GeometryManager.get(0), materials[mat]); m.position.set(x,y,z); m.userData={isVoxel:true, matIndex:mat};
+                scene.add(m); state.mapData.set(k, m);
+                WorldManager.updateGeo(x,y,z); DIRS.forEach(d=>WorldManager.updateGeo(x+d.x, y+d.y, z+d.z));
+                document.getElementById('block-count').innerText = `${state.mapData.size} Blocks`;
+            },
+            remove: (m) => {
+                const {x,y,z} = m.position; scene.remove(m); state.mapData.delete(`${x},${y},${z}`);
+                DIRS.forEach(d=>WorldManager.updateGeo(x+d.x, y+d.y, z+d.z)); document.getElementById('block-count').innerText = `${state.mapData.size} Blocks`;
+            },
+            updateGeo: (x,y,z) => {
+                const m = state.mapData.get(`${x},${y},${z}`); if(!m) return;
+                let mask = 0; DIRS.forEach((d,i) => { const n = state.mapData.get(`${x+d.x},${y+d.y},${z+d.z}`); if(n && n.userData.matIndex === m.userData.matIndex) mask |= (1<<i); });
+                m.geometry = GeometryManager.get(mask);
+            },
+            clear: () => { state.mapData.forEach(m=>scene.remove(m)); state.mapData.clear(); state.tokenData.forEach(m=>scene.remove(m)); state.tokenData.clear(); document.getElementById('block-count').innerText = `0 Blocks`; },
+            save: () => { const d=[]; state.mapData.forEach(m=>d.push({x:m.position.x, y:m.position.y, z:m.position.z, c:m.userData.matIndex})); localStorage.setItem('dnd-voxel-map', JSON.stringify(d)); },
+            load: () => { try { const r = localStorage.getItem('dnd-voxel-map'); if(r) { const d = JSON.parse(r); state.mapData.forEach(m=>scene.remove(m)); state.mapData.clear(); d.forEach(b=>WorldManager.add(b.x,b.y,b.z,b.c)); } } catch(e) { console.error(e); } }
+        };
+
+        const EntityManager = {
+            sync: () => {
+                try {
+                    const mons = JSON.parse(localStorage.getItem('dm-tracker-monsters')||'[]');
+                    if(!mons.length) { mons.push({id:'p1', name:'Hero', type:'player', currentHp:20, maxHp:20, conditions:['Poisoned']}); mons.push({id:'e1', name:'Goblin', type:'monster', currentHp:7, maxHp:7, conditions:[]}); }
+                    CATEGORIES[2].items = mons.filter(c=>c.type==='player'); CATEGORIES[3].items = mons.filter(c=>c.type==='monster');
+                    const loot = JSON.parse(localStorage.getItem('dm-loot') || '[]');
+                    if (!loot.length) loot.push({id:'l1', name:'Gold', icon:'💰'}, {id:'l2', name:'Sword', icon:'⚔️'}, {id:'l3', name:'Potion', icon:'🧪'});
+                    CATEGORIES[4].items = loot;
                     
-                    const cat = CATEGORIES[activeCategoryIndex];
-                    if (cat.type === 'token' && heldTokenId !== null) {
-                        rollOverMesh.visible=false; tokenRollOverMesh.visible=true; tokenRollOverMesh.position.copy(pt).add(norm);
-                        tokenRollOverMesh.position.divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE/2); tokenRollOverMesh.position.y = Math.floor(pt.y+0.1)+0.6;
-                    } else if (cat.type === 'block') {
-                        tokenRollOverMesh.visible=false; rollOverMesh.visible=true; rollOverMesh.scale.set(1,1,1); rollOverMesh.material.color.setHex(0x38BDF8);
-                        rollOverMesh.position.copy(pt).addScaledVector(norm,0.5).divideScalar(BLOCK_SIZE).floor().multiplyScalar(BLOCK_SIZE).addScalar(BLOCK_SIZE/2);
-                        
-                        if (isDragging && buildStartPoint) {
-                           const end = getVoxelPos(pt, norm, 'build');
-                           const minX = Math.min(buildStartPoint.x, end.x), maxX = Math.max(buildStartPoint.x, end.x);
-                           const minY = Math.min(buildStartPoint.y, end.y), maxY = Math.max(buildStartPoint.y, end.y);
-                           const minZ = Math.min(buildStartPoint.z, end.z), maxZ = Math.max(buildStartPoint.z, end.z);
-                           rollOverMesh.scale.set(maxX-minX+1, maxY-minY+1, maxZ-minZ+1);
-                           rollOverMesh.position.set(minX+(maxX-minX+1)/2-0.5, minY+(maxY-minY+1)/2-0.5, minZ+(maxZ-minZ+1)/2-0.5);
-                        } else if (isDeleting && deleteStartPoint) {
-                           rollOverMesh.material.color.setHex(0xEF4444);
-                           const end = getVoxelPos(pt, norm, 'delete');
-                           const minX = Math.min(deleteStartPoint.x, end.x), maxX = Math.max(deleteStartPoint.x, end.x);
-                           const minY = Math.min(deleteStartPoint.y, end.y), maxY = Math.max(deleteStartPoint.y, end.y);
-                           const minZ = Math.min(deleteStartPoint.z, end.z), maxZ = Math.max(deleteStartPoint.z, end.z);
-                           rollOverMesh.scale.set(maxX-minX+1, maxY-minY+1, maxZ-minZ+1);
-                           rollOverMesh.position.set(minX+(maxX-minX+1)/2-0.5, minY+(maxY-minY+1)/2-0.5, minZ+(maxZ-minZ+1)/2-0.5);
+                    const savedPos = JSON.parse(localStorage.getItem('dm-tracker-map-positions')||'{}');
+                    const placedLoot = JSON.parse(localStorage.getItem('dm-placed-loot')||'[]');
+
+                    // Cleanup tokens
+                    state.tokenData.forEach((m,id) => { if(!m.userData.isLoot && !mons.find(c=>c.id===id)) { scene.remove(m); state.tokenData.delete(id); } });
+                    // Cleanup loot
+                    state.tokenData.forEach((m,id) => { if(m.userData.isLoot && !placedLoot.find(l=>l.instanceId===id)) { scene.remove(m); state.tokenData.delete(id); } });
+
+                    mons.forEach((c,i) => {
+                        let m = state.tokenData.get(c.id);
+                        const col = c.type==='monster' ? CONFIG.colors.monster : CONFIG.colors.player;
+                        if(!m) {
+                            m = new THREE.Mesh(tokenGeo, new THREE.MeshLambertMaterial({color:col}));
+                            m.add(new THREE.Mesh(new THREE.SphereGeometry(0.25), new THREE.MeshLambertMaterial({color:0xffffff})).translateY(0.4));
+                            m.userData={isToken:true, id:c.id, data:c}; scene.add(m); state.tokenData.set(c.id, m);
+                            const p = savedPos[c.id] || {x:i*2, y:0.1, z:0};
+                            m.position.set(p.x, p.y, p.z);
+                        } else { m.material.color.setHex(col); m.userData.data=c; }
+                    });
+
+                    placedLoot.forEach(l => {
+                        if(!state.tokenData.has(l.instanceId)) {
+                            const m = new THREE.Mesh(lootGeo, new THREE.MeshLambertMaterial({color:0xFFD700}));
+                            m.position.set(l.x, l.y, l.z); m.userData = {isLoot:true, id:l.instanceId, data:l.data};
+                            scene.add(m); state.tokenData.set(l.instanceId, m);
+                        }
+                    });
+                    
+                    UIManager.renderHotbar(); UIManager.renderSidebar();
+                } catch(e) { console.error(e); }
+            },
+            savePos: () => {
+                const d={}; const l=[];
+                state.tokenData.forEach((m,id)=>{
+                    if(m.userData.isLoot) l.push({instanceId:id, x:m.position.x, y:m.position.y, z:m.position.z, data:m.userData.data});
+                    else d[id]={x:m.position.x, y:m.position.y, z:m.position.z};
+                });
+                localStorage.setItem('dm-tracker-map-positions', JSON.stringify(d));
+                localStorage.setItem('dm-placed-loot', JSON.stringify(l));
+            }
+        };
+
+        const UIManager = {
+            renderHotbar: () => {
+                const el = document.getElementById('hotbar'); el.innerHTML='';
+                CATEGORIES.forEach((c,i) => {
+                    const div = document.createElement('div');
+                    div.className = `hotbar-slot w-12 h-12 bg-slate-800 border-2 rounded-lg flex flex-col items-center justify-center cursor-pointer relative ${i===state.activeCategoryIdx?'active border-sky-400':'border-slate-600 opacity-80'}`;
+                    const item = c.items[state.subSelections[i]||0];
+                    let inr = '';
+                    if(item !== undefined) {
+                        if(c.type==='block') { const h = MATERIALS[item].color.toString(16).padStart(6,'0'); inr=`<div style="width:24px;height:24px;background:#${h};border:1px solid #fff;border-radius:4px"></div>`; }
+                        else if(c.type==='token') { const cl = c.subType==='monster'?'#ef4444':'#3b82f6'; inr=`<div style="width:12px;height:12px;background:${cl};border-radius:50%"></div><span class="text-[9px] text-white truncate w-full text-center">${item.name}</span>`; }
+                        else if(c.type==='loot') inr=`<span style="font-size:20px">${item.icon}</span>`;
+                    }
+                    div.innerHTML = `<span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-950 text-slate-400 text-[9px] px-1.5 rounded border border-slate-700">${(i+1)%10}</span>${inr}`;
+                    div.onclick = () => { state.activeCategoryIdx=i; UIManager.renderHotbar(); }; el.appendChild(div);
+                });
+            },
+            renderSidebar: () => {
+                const el = document.getElementById('sidebar-container'); el.innerHTML='';
+                const parts = [ {l:'Heroes', d:CATEGORIES[2].items}, {l:'Enemies', d:CATEGORIES[3].items} ];
+                parts.forEach(p => {
+                    if(!p.d.length) return;
+                    el.innerHTML += `<div class="text-[10px] font-bold text-slate-400 mt-2 mb-1 border-b border-slate-700">${p.l}</div>`;
+                    p.d.forEach(t => {
+                        const r = document.createElement('div'); r.className='token-item flex items-center gap-2 bg-slate-800/50 p-2 rounded mb-1 cursor-pointer';
+                        r.innerHTML = `<div class="w-2 h-2 rounded-full ${p.l==='Heroes'?'bg-blue-500':'bg-red-500'}"></div><div class="text-xs text-slate-200">${t.name}</div>`;
+                        r.onclick = () => { const m = state.tokenData.get(t.id); if(m) { controls.getObject().position.set(m.position.x, m.position.y+5, m.position.z+5); controls.getObject().lookAt(m.position); } };
+                        el.appendChild(r);
+                    });
+                });
+            },
+            updateTooltip: (o) => {
+                const t = document.getElementById('tooltip');
+                if(!o) { t.style.display='none'; return; }
+                t.style.display='block';
+                if(o.userData.isVoxel) t.innerHTML = `<div class="font-bold text-sm">${MATERIALS[o.userData.matIndex].name}</div>`;
+                else if(o.userData.isToken) t.innerHTML = `<div class="font-bold text-indigo-300 text-lg">${o.userData.data.name}</div><div class="text-xs">HP: ${o.userData.data.currentHp}/${o.userData.data.maxHp}</div><div class="text-[9px] text-slate-400">${o.userData.data.conditions?.join(',')||''}</div>`;
+                else if(o.userData.isLoot) t.innerHTML = `<div class="font-bold text-amber-400">${o.userData.data.icon} ${o.userData.data.name}</div>`;
+            }
+        };
+
+        const controls = new PointerLockControls(camera, document.body);
+        const raycaster = new THREE.Raycaster();
+        const move = { f:false, b:false, l:false, r:false, u:false, d:false };
+        let canJump=false, isFlying=false, velocity = new THREE.Vector3(), prevTime = performance.now();
+
+        const rollover = new THREE.Mesh(new THREE.BoxGeometry(1.05,1.05,1.05), new THREE.MeshBasicMaterial({color:0x38BDF8, wireframe:true, opacity:0.5, transparent:true})); scene.add(rollover);
+        const tokenRoll = new THREE.Mesh(tokenGeo, new THREE.MeshBasicMaterial({color:0xFCD34D, wireframe:true})); tokenRoll.visible=false; scene.add(tokenRoll);
+
+        function getVoxelPos(pt, norm, mode) { const p = pt.clone(); if(mode==='build') p.add(norm.clone().multiplyScalar(0.5)); else p.add(norm.clone().multiplyScalar(-0.1)); return p.floor().addScalar(0.5); }
+        function checkCollision(pos) {
+            if(state.gameMode === 'dm' || isFlying) return false;
+            const r=0.3, h=1.6, minX=Math.floor(pos.x-r), maxX=Math.ceil(pos.x+r), minY=Math.floor(pos.y-h), maxY=Math.ceil(pos.y), minZ=Math.floor(pos.z-r), maxZ=Math.ceil(pos.z+r);
+            for(let x=minX; x<maxX; x++) for(let y=minY; y<maxY; y++) for(let z=minZ; z<maxZ; z++) { if(state.mapData.has(`${x},${y},${z}`) && (pos.x-r < x+0.5 && pos.x+r > x-0.5 && pos.y-h < y+0.5 && pos.y > y-0.5 && pos.z-r < z+0.5 && pos.z+r > z-0.5)) return true; }
+            return false;
+        }
+
+        function handleRaycast() {
+            if(!controls.isLocked && state.mode!=='view') return;
+            raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+            const hits = raycaster.intersectObjects([...state.mapData.values(), ...state.tokenData.values(), scene.getObjectByName('ground')]);
+            if(hits.length) {
+                const hit = hits[0]; UIManager.updateTooltip(hit.object.name==='ground'?null:hit.object);
+                if (state.gameMode === 'dm') {
+                    rollover.visible = false; tokenRoll.visible = false;
+                    if (state.controlledToken) {
+                        if(hit.object.userData.isVoxel || hit.object.name === 'ground') {
+                            rollover.visible = true;
+                            let floorY = hit.object.name === 'ground' ? 0 : Math.round(hit.point.y);
+                            if (hit.face.normal.y < 0.9 && hit.object.userData.isVoxel) floorY = Math.floor(hit.point.y); 
+                            const tx = Math.floor(hit.point.x + hit.face.normal.x*0.1) + 0.5, tz = Math.floor(hit.point.z + hit.face.normal.z*0.1) + 0.5;
+                            const targetPos = new THREE.Vector3(tx, floorY + 0.1, tz);
+                            const cost = Math.ceil(state.controlledToken.position.distanceTo(targetPos)) * 5;
+                            rollover.scale.set(1, 0.1, 1); rollover.position.set(tx, floorY+0.05, tz);
+                            if (cost <= state.moveBudget) { rollover.material.color.setHex(CONFIG.colors.valid); document.getElementById('tooltip').innerHTML = `<div class="text-green-400 font-bold">Move: ${cost}ft</div>`; }
+                            else { rollover.material.color.setHex(CONFIG.colors.invalid); document.getElementById('tooltip').innerHTML = `<div class="text-red-400 font-bold">Far: ${cost}ft</div>`; }
+                            document.getElementById('tooltip').style.display = 'block';
                         }
                     }
-                } else { rollOverMesh.visible=false; tokenRollOverMesh.visible=false; tooltip.style.display='none'; }
-            }
+                    return {hit, interactable:true};
+                }
+                const cat = CATEGORIES[state.activeCategoryIdx];
+                if(cat.type === 'block') {
+                    tokenRoll.visible = false; rollover.visible = true;
+                    if(state.dragStart) {
+                        const s = state.dragStart.pos, e = getVoxelPos(hit.point, hit.face.normal, state.dragStart.mode);
+                        const minX=Math.min(s.x,e.x), maxX=Math.max(s.x,e.x), minY=Math.min(s.y,e.y), maxY=Math.max(s.y,e.y), minZ=Math.min(s.z,e.z), maxZ=Math.max(s.z,e.z);
+                        rollover.scale.set(maxX-minX+1, maxY-minY+1, maxZ-minZ+1); rollover.position.set(minX+(maxX-minX+1)/2-0.5, minY+(maxY-minY+1)/2-0.5, minZ+(maxZ-minZ+1)/2-0.5);
+                        rollover.material.color.setHex(state.dragStart.mode==='delete' ? CONFIG.colors.delete : CONFIG.colors.highlight);
+                    } else { const p = hit.point.clone().add(hit.face.normal.multiplyScalar(0.5)).floor().addScalar(0.5); rollover.scale.set(1,1,1); rollover.position.copy(p); rollover.material.color.setHex(CONFIG.colors.highlight); }
+                } else if (cat.type === 'token' || cat.type === 'loot') {
+                    rollover.visible = false; tokenRoll.visible = true;
+                    const tx = Math.floor(hit.point.x + hit.face.normal.x*0.1) + 0.5, tz = Math.floor(hit.point.z + hit.face.normal.z*0.1) + 0.5;
+                    let fy = hit.object.name==='ground'?0:(hit.face.normal.y>0.9?Math.round(hit.point.y):Math.floor(hit.point.y));
+                    tokenRoll.position.set(tx, fy+(cat.type==='loot'?0.2:0.1), tz);
+                }
+                return {hit, interactable:true};
+            } else { rollover.visible=false; tokenRoll.visible=false; UIManager.updateTooltip(null); return {interactable:false}; }
         }
-        function onMouseMove(event) { if (controls.isLocked) { tooltip.style.display = 'none'; return; } }
 
-        function onMouseDown(e) {
-            if(e.target.closest('#ui-layer')) return; if(isTabMode) return; if(!controls.isLocked){ safeLock(); return; }
-            raycaster.setFromCamera(new THREE.Vector2(0,0), camera); const intersects=raycaster.intersectObjects(objects, false);
-            if(intersects.length>0) {
-                const hit=intersects[0], obj=hit.object;
-                if(e.button===2) { // Right Click
-                    if(isShiftDown && obj.userData.isToken) { focusOnToken(obj); return; }
-                    const cat = CATEGORIES[activeCategoryIndex];
-                    if (cat.type === 'token') {
-                         if (heldTokenId !== null) { const t = tokens.get(heldTokenId); if(t) { t.position.copy(tokenRollOverMesh.position); saveTokenPositions(); } }
-                    } else if (cat.type === 'block') {
-                        if (!isDragging) { isDragging = true; buildStartPoint = getVoxelPos(hit.point, hit.face.normal, 'build'); }
+        document.addEventListener('keydown', e => {
+            if(e.repeat) return;
+            if(e.code === 'KeyW') move.f=true; if(e.code === 'KeyS') move.b=true; if(e.code === 'KeyA') move.l=true; if(e.code === 'KeyD') move.r=true;
+            if(e.code === 'Space') { if(isFlying || state.gameMode === 'dm') move.u=true; else if(canJump) { velocity.y+=15; canJump=false; } }
+            if(e.code === 'KeyC') { if(isFlying || state.gameMode === 'dm') move.d=true; } 
+            if(e.code === 'KeyF') { isFlying=!isFlying; velocity.y=0; }
+            if(e.code === 'Tab') { e.preventDefault(); if(controls.isLocked) { controls.unlock(); state.mode='menu'; document.getElementById('mouse-mode-badge').style.display='block'; } else { controls.lock(); state.mode='view'; document.getElementById('mouse-mode-badge').style.display='none'; } }
+            if(e.code === 'Escape') { if(state.controlledToken) { state.controlledToken = null; state.moveBudget = 30; RangeRingManager.update(null); document.getElementById('move-badge').style.display='none'; } }
+            if (e.key >= '0' && e.key <= '9') { const i = e.key==='0'?9:parseInt(e.key)-1; state.heldKeys[i]=true; state.activeCategoryIdx=i; UIManager.renderHotbar(); }
+        });
+        document.addEventListener('keyup', e => {
+            if(e.code === 'KeyW') move.f=false; if(e.code === 'KeyS') move.b=false; if(e.code === 'KeyA') move.l=false; if(e.code === 'KeyD') move.r=false;
+            if(e.code === 'Space') move.u=false; if(e.code === 'KeyC') move.d=false;
+            if (e.key >= '0' && e.key <= '9') { const i = e.key==='0'?9:parseInt(e.key)-1; state.heldKeys[i]=false; }
+        });
+
+        document.addEventListener('mousedown', e => {
+            if(!controls.isLocked) return;
+            const res = handleRaycast();
+            if(!res.interactable) { if(e.button===0) { state.controlledToken = null; state.focusedToken = null; RangeRingManager.update(null); document.getElementById('move-badge').style.display='none'; } return; }
+            const {hit} = res;
+            if (e.shiftKey && e.button === 2 && hit.object.userData.isToken) { state.focusedToken = hit.object; RangeRingManager.update(state.focusedToken, 'conditions'); const p = hit.object.position; controls.getObject().position.set(p.x, p.y+5, p.z+5); controls.getObject().lookAt(p); return; }
+            if (state.gameMode === 'dm') {
+                if (e.button === 2) { 
+                    if (hit.object.userData.isToken) {
+                        state.controlledToken = hit.object; state.focusedToken = null; state.moveBudget = 30; RangeRingManager.update(state.controlledToken, 'movement');
+                        document.getElementById('move-badge').style.display = 'block'; document.getElementById('move-badge').innerText = `Movement: ${state.moveBudget}ft`;
+                        const originalColor = hit.object.material.color.getHex(); hit.object.material.color.setHex(0xffffff); setTimeout(() => hit.object.material.color.setHex(originalColor), 100);
+                    } else { state.controlledToken = null; RangeRingManager.update(null); document.getElementById('move-badge').style.display='none'; }
+                } else if (e.button === 0) {
+                    if (state.controlledToken && (hit.object.userData.isVoxel || hit.object.name === 'ground')) {
+                        let floorY = hit.object.name==='ground'?0:Math.round(hit.point.y); if(hit.face.normal.y<0.9 && hit.object.userData.isVoxel) floorY=Math.floor(hit.point.y);
+                        const tx = Math.floor(hit.point.x + hit.face.normal.x*0.1) + 0.5, tz = Math.floor(hit.point.z + hit.face.normal.z*0.1) + 0.5;
+                        const targetPos = new THREE.Vector3(tx, floorY + 0.1, tz);
+                        const cost = Math.ceil(state.controlledToken.position.distanceTo(targetPos)) * 5;
+                        if (cost <= state.moveBudget) { state.controlledToken.position.copy(targetPos); state.moveBudget -= cost; document.getElementById('move-badge').innerText = `Movement: ${state.moveBudget}ft`; RangeRingManager.update(state.controlledToken, 'movement'); EntityManager.savePos(); }
                     }
                 }
-                if(e.button===0 && !obj.userData.isToken) { // Left Click
-                    if(focusedToken) { focusedToken=null; rangeGroup.visible=false; }
-                    if(!isDeleting) { isDeleting=true; deleteStartPoint = getVoxelPos(hit.point, hit.face.normal, 'delete'); }
+                return;
+            }
+            const cat = CATEGORIES[state.activeCategoryIdx];
+            if(e.button === 2) {
+                if(cat.type==='block') state.dragStart = {pos:getVoxelPos(hit.point, hit.face.normal, 'build'), mode:'build'};
+                else if(cat.type==='token' || cat.type==='loot') {
+                    const d = cat.items[state.subSelections[state.activeCategoryIdx]];
+                    if(d) {
+                         const p = tokenRoll.position.clone();
+                         if(cat.type==='token') {
+                             if(state.tokenData.has(d.id)) state.tokenData.get(d.id).position.copy(p);
+                             else { const posData = JSON.parse(localStorage.getItem('dm-tracker-map-positions')||'{}'); posData[d.id] = {x:p.x,y:p.y,z:p.z}; localStorage.setItem('dm-tracker-map-positions',JSON.stringify(posData)); EntityManager.sync(); }
+                         } else {
+                             const m = new THREE.Mesh(lootGeo, new THREE.MeshLambertMaterial({color:0xFFD700})); m.position.copy(tokenRoll.position); m.userData={isLoot:true, id:`l${Date.now()}`, data:d};
+                             scene.add(m); state.tokenData.set(m.userData.id, m);
+                         }
+                         EntityManager.savePos();
+                    }
                 }
+            } else if(e.button===0) {
+                if(cat.type==='block' && hit.object.userData.isVoxel) state.dragStart={pos:getVoxelPos(hit.point, hit.face.normal, 'delete'), mode:'delete'};
+                else if(hit.object.userData.isLoot) { scene.remove(hit.object); state.tokenData.delete(hit.object.userData.id); EntityManager.savePos(); }
             }
-        }
-        function onMouseUp(e) {
-            raycaster.setFromCamera(new THREE.Vector2(0,0), camera); const intersects=raycaster.intersectObjects(objects, false);
-            const hit=intersects.length>0?intersects[0]:null;
-            if(e.button===2 && isDragging) {
-                if(hit && buildStartPoint) executeBoxAction(buildStartPoint, getVoxelPos(hit.point, hit.face.normal, 'build'), 'build');
-                isDragging=false; buildStartPoint=null; rollOverMesh.scale.set(1,1,1);
-            }
-            if(e.button===0 && isDeleting) {
-                if(hit && deleteStartPoint) executeBoxAction(deleteStartPoint, getVoxelPos(hit.point, hit.face.normal, 'delete'), 'delete');
-                isDeleting=false; deleteStartPoint=null; rollOverMesh.scale.set(1,1,1); rollOverMesh.material.color.setHex(0x38BDF8);
-            }
-        }
-        function executeBoxAction(start, end, action) {
-            const minX=Math.min(start.x,end.x), maxX=Math.max(start.x,end.x), minY=Math.min(start.y,end.y), maxY=Math.max(start.y,end.y), minZ=Math.min(start.z,end.z), maxZ=Math.max(start.z,end.z);
-            let c=0; const pp=controls.getObject().position;
-            const cat = CATEGORIES[activeCategoryIndex];
-            const matIdx = (cat.type === 'block') ? cat.items[categoryIndices[activeCategoryIndex]] : 0; 
-            
-            for(let x=minX; x<=maxX; x++) for(let y=minY; y<=maxY; y++) for(let z=minZ; z<=maxZ; z++) {
-                if(action==='build') { if(new THREE.Vector3(x,y,z).distanceTo(pp)>1.5) { addBlock(x,y,z, matIdx, false); c++; } }
-                else { const v=voxels.get(`${x},${y},${z}`); if(v){ removeBlock(v); c++; } }
-            }
-            if(c>0) { saveMap(); updateBlockCount(); }
-        }
+        });
 
-        // --- BLOCK MANAGEMENT ---
-        function addBlock(x,y,z,mat,save=true) {
-            const k=`${x},${y},${z}`; if(voxels.has(k)) return;
-            const m=new THREE.Mesh(voxelGeometry, threeMaterials[mat]);
-            m.position.set(x,y,z); m.name="voxel"; m.userData.colorIndex=mat;
-            scene.add(m); objects.push(m); voxels.set(k,m);
-            updateVoxelGeometry(m); updateNeighbors(x,y,z);
-            if(save){ saveMap(); updateBlockCount(); }
+        document.addEventListener('mouseup', () => {
+            if(!state.dragStart) return;
+            const res = handleRaycast();
+            if(res.interactable) {
+                const s = state.dragStart.pos, e = getVoxelPos(res.hit.point, res.hit.face.normal, state.dragStart.mode);
+                const minX=Math.min(s.x,e.x), maxX=Math.max(s.x,e.x), minY=Math.min(s.y,e.y), maxY=Math.max(s.y,e.y), minZ=Math.min(s.z,e.z), maxZ=Math.max(s.z,e.z);
+                const mat = CATEGORIES[state.activeCategoryIdx].items[state.subSelections[state.activeCategoryIdx]];
+                if((maxX-minX)*(maxY-minY)*(maxZ-minZ) > 5000) { alert("Too big"); state.dragStart=null; rollover.scale.set(1,1,1); return; }
+                let chg=0;
+                for(let x=minX; x<=maxX; x++) for(let y=minY; y<=maxY; y++) for(let z=minZ; z<=maxZ; z++) {
+                    if(state.dragStart.mode==='build') { if(mat!==undefined){WorldManager.add(x,y,z,mat); chg++;} } else { const m=state.mapData.get(`${x},${y},${z}`); if(m){WorldManager.remove(m); chg++;} }
+                }
+                if(chg) WorldManager.save();
+            }
+            state.dragStart=null; rollover.scale.set(1,1,1);
+        });
+
+        document.addEventListener('wheel', e => {
+            const i = Object.keys(state.heldKeys).find(k=>state.heldKeys[k]);
+            const target = i !== undefined ? i : state.activeCategoryIdx;
+            const c = CATEGORIES[target]; if(!c.items.length) return;
+            let s = state.subSelections[target] + (e.deltaY>0?1:-1); if(s<0) s=c.items.length-1; if(s>=c.items.length) s=0;
+            state.subSelections[target] = s; UIManager.renderHotbar();
+        });
+
+        document.getElementById('instructions').onclick = () => controls.lock();
+        controls.addEventListener('lock', () => { document.getElementById('instructions').style.display='none'; document.getElementById('ui-layer').classList.remove('interactive'); });
+        controls.addEventListener('unlock', () => { if(state.mode==='menu') document.getElementById('ui-layer').classList.add('interactive'); else document.getElementById('instructions').style.display='block'; });
+        document.getElementById('mode-build').onclick = () => setMode('build'); document.getElementById('mode-dm').onclick = () => setMode('dm');
+        function setMode(m) {
+            state.gameMode = m; document.getElementById('mode-build').className = `mode-btn ${m==='build'?'active':''}`; document.getElementById('mode-dm').className = `mode-btn ${m==='dm'?'active':''}`;
+            document.getElementById('instr-build').style.display = m==='build'?'grid':'none'; document.getElementById('instr-dm').style.display = m==='dm'?'grid':'none';
+            if(m==='dm') { isFlying=true; velocity.y=0; } UIManager.renderHotbar();
         }
-        function removeBlock(o) {
-            const {x,y,z}=o.position; scene.remove(o); objects.splice(objects.indexOf(o),1); voxels.delete(`${x},${y},${z}`);
-            updateNeighbors(x,y,z); saveMap(); updateBlockCount();
-        }
-        function saveMap() { const d=[]; voxels.forEach(v=>d.push({x:v.position.x,y:v.position.y,z:v.position.z,c:v.userData.colorIndex})); localStorage.setItem('dnd-voxel-map', JSON.stringify(d)); }
-        function loadMap() { const r=localStorage.getItem('dnd-voxel-map'); if(r){ JSON.parse(r).forEach(b=>addBlock(b.x,b.y,b.z,b.c,false)); } }
-        function updateBlockCount() { document.getElementById('block-count').innerText=voxels.size; }
-        
-        function initButtons() {
-            document.getElementById('btn-sync').onclick=()=>{ syncTokensFromTracker(); alert("Synced!"); };
-            document.getElementById('btn-atmosphere').onclick = () => { isNight=!isNight; if(isNight){scene.background=new THREE.Color(0x020617); scene.fog=new THREE.Fog(0x020617,10,60); ambientLight.intensity=0.2; dirLight.intensity=0.5; torchLight.intensity=1.5;} else {scene.background=new THREE.Color(0x87CEEB); scene.fog=new THREE.Fog(0x87CEEB,30,150); ambientLight.intensity=0.7; dirLight.intensity=0.8; torchLight.intensity=0;} };
-            document.getElementById('btn-clear').onclick=()=>{ if(confirm("Clear Map?")){ voxels.forEach(v=>scene.remove(v)); voxels.clear(); objects.length=0; objects.push(scene.getObjectByName("ground")); tokens.forEach(t=>objects.push(t)); saveMap(); updateBlockCount(); } };
-            document.getElementById('btn-save').onclick=()=>{ const d=localStorage.getItem('dnd-voxel-map'); const b=new Blob([d],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='akashic-map.json'; a.click(); };
-            document.getElementById('file-input').addEventListener('change', (e) => {
-                const f=e.target.files[0]; if(!f)return; const r=new FileReader();
-                r.onload=(ev)=>{ try{ const d=JSON.parse(ev.target.result); voxels.forEach(v=>scene.remove(v)); voxels.clear(); objects.length=0; objects.push(scene.getObjectByName("ground")); tokens.forEach(t=>objects.push(t)); d.forEach(b=>addBlock(b.x,b.y,b.z,b.c,false)); saveMap(); updateBlockCount(); }catch(err){alert("Error");} };
-                r.readAsText(f); e.target.value='';
-            });
-        }
-        function onWindowResize() { camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
+        document.getElementById('btn-sync').onclick = EntityManager.sync; document.getElementById('btn-clear').onclick = () => { if(confirm("Nuke world?")) WorldManager.clear(); };
+        document.getElementById('btn-save').onclick = () => { const b=new Blob([localStorage.getItem('dnd-voxel-map')],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='map.json'; a.click(); };
+        document.getElementById('btn-load').onclick = () => document.getElementById('file-input').click();
+        document.getElementById('file-input').onchange = (e) => { const r=new FileReader(); r.onload=ev=>{localStorage.setItem('dnd-voxel-map',ev.target.result); WorldManager.load();}; r.readAsText(e.target.files[0]); };
+
         function animate() {
             requestAnimationFrame(animate);
-            const time=performance.now();
+            const dt = (performance.now()-prevTime)/1000; prevTime=performance.now();
             if(controls.isLocked) {
-                const delta=(time-prevTime)/1000;
-                velocity.x-=velocity.x*10.0*delta; velocity.z-=velocity.z*10.0*delta;
-                if(isFlying) { velocity.y-=velocity.y*5.0*delta; if(moveUp)velocity.y+=30*delta; if(moveDown)velocity.y-=30*delta; } else { velocity.y-=9.8*2.0*delta; }
-                direction.z=Number(moveForward)-Number(moveBackward); direction.x=Number(moveRight)-Number(moveLeft); direction.normalize();
-                if(moveForward||moveBackward) velocity.z-=direction.z*100.0*delta; if(moveLeft||moveRight) velocity.x-=direction.x*100.0*delta;
-                controls.moveRight(-velocity.x*delta); controls.moveForward(-velocity.z*delta); controls.getObject().position.y+=(velocity.y*delta);
-                if(controls.getObject().position.y<2){ velocity.y=0; controls.getObject().position.y=2; if(!isFlying)canJump=true; }
-                const p=controls.getObject().position; document.getElementById('coords').innerText=`${Math.round(p.x)}, ${Math.round(p.y)}, ${Math.round(p.z)}`;
-                updateInteraction();
+                velocity.x -= velocity.x * 10.0 * dt; velocity.z -= velocity.z * 10.0 * dt;
+                if (state.gameMode === 'dm') velocity.y -= velocity.y * 5.0 * dt; else velocity.y -= isFlying ? velocity.y * 5.0 * dt : 9.8 * 2.0 * dt;
+                const dir = new THREE.Vector3(); dir.z = Number(move.f) - Number(move.b); dir.x = Number(move.r) - Number(move.l); dir.normalize();
+                const spd = isFlying || state.gameMode==='dm' ? 40 : 15;
+                if (move.f || move.b) velocity.z -= dir.z * spd * 10.0 * dt; if (move.l || move.r) velocity.x -= dir.x * spd * 10.0 * dt;
+                if ((isFlying || state.gameMode==='dm')) { if (move.u) velocity.y += spd * 10.0 * dt; if (move.d) velocity.y -= spd * 10.0 * dt; }
+                const obj = controls.getObject(), startPos = obj.position.clone();
+                controls.moveRight(-velocity.x * dt); if(checkCollision(obj.position)) obj.position.x = startPos.x;
+                controls.moveForward(-velocity.z * dt); if(checkCollision(obj.position)) obj.position.z = startPos.z;
+                obj.position.y += velocity.y * dt;
+                if(checkCollision(obj.position) || (obj.position.y<2 && state.gameMode!=='dm')) { if(velocity.y<0) { canJump=true; obj.position.y = Math.ceil(obj.position.y); } else { obj.position.y = Math.floor(obj.position.y)-0.6; } velocity.y=0; if(obj.position.y < 2) obj.position.y = 2; }
+                const p = obj.position; document.getElementById('coord-display').innerText = `${Math.round(p.x)}, ${Math.round(p.y)}, ${Math.round(p.z)}`;
+                handleRaycast();
             }
-            prevTime=time; renderer.render(scene, camera);
+            renderer.render(scene, camera);
         }
+
+        WorldManager.load(); EntityManager.sync(); UIManager.renderHotbar();
+        window.addEventListener('resize', () => { camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+        animate();
     </script>
 </body>
 </html>
