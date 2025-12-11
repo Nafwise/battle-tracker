@@ -83,16 +83,51 @@
             #move-badge { bottom: 140px; }
         }
 
-        /* Virtual Joystick Area */
-        #mobile-controls { display: none; pointer-events: none; position: absolute; bottom: 20px; left: 20px; right: 20px; height: 150px; justify-content: space-between; align-items: end; z-index: 40; }
-        @media (max-width: 1024px) { #mobile-controls { display: flex; } }
+        /* UPDATED MOBILE CONTROLS */
+        #mobile-controls { 
+            display: none; 
+            position: absolute; 
+            top: 0; left: 0; width: 100%; height: 100%; 
+            pointer-events: none; /* Let clicks pass through generally */
+            z-index: 40; 
+        }
+        /* Mobile controls visibility is now handled by JS logic */
+
+        /* The invisible touch zones */
+        .touch-zone-left { position: absolute; top: 60px; bottom: 0; left: 0; width: 50%; pointer-events: auto; touch-action: none; }
+        .touch-zone-right { position: absolute; top: 60px; bottom: 0; right: 0; width: 50%; pointer-events: auto; touch-action: none; }
+
+        /* The Visual Joystick */
+        #joystick-ui { 
+            position: absolute; 
+            width: 100px; height: 100px; 
+            border: 2px solid rgba(255, 255, 255, 0.2); 
+            border-radius: 50%; 
+            display: none; /* Hidden until touched */
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+        }
+        #joystick-knob {
+            position: absolute; left: 50%; top: 50%;
+            width: 40px; height: 40px;
+            background: rgba(56, 189, 248, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+        }
+
+        /* Build Actions Position */
+        #mobile-build-actions { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            pointer-events: auto; 
+            position: absolute; 
+            bottom: 140px; 
+            right: 20px; 
+            z-index: 50; 
+        }
         
-        .touch-zone { width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; pointer-events: auto; position: relative; backdrop-filter: blur(4px); touch-action: none; }
-        .touch-stick { width: 50px; height: 50px; background: rgba(56, 189, 248, 0.8); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 15px rgba(56,189,248,0.5); pointer-events: none; transition: transform 0.05s; }
-        
-        /* Mobile Build Actions */
-        #mobile-build-actions { display: none; flex-direction: column; gap: 15px; pointer-events: auto; position: absolute; bottom: 160px; right: 20px; z-index: 50; }
-        @media (max-width: 1024px) { #mobile-build-actions { display: flex; } }
         .build-btn { width: 60px; height: 60px; background: rgba(30, 41, 59, 0.95); border: 2px solid #475569; border-radius: 50%; color: white; display: flex; items-center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: transform 0.1s; }
         .build-btn:active { transform: scale(0.95); }
         .build-btn.place-btn { border-color: #10b981; color: #10b981; background: rgba(6, 78, 59, 0.9); }
@@ -102,12 +137,13 @@
 
         /* Vertical movement controls for Fly Mode */
         #mobile-vertical-controls { display: none; flex-direction: column; gap: 10px; position: absolute; bottom: 160px; left: 160px; pointer-events: auto; z-index: 50; }
-        @media (max-width: 1024px) { /* Display only on mobile/tablet */
-             /* We set display via JS based on fly mode, but ensure default hidden */
-        }
+        
         .vert-btn { width: 50px; height: 50px; background: rgba(15, 23, 42, 0.8); border: 2px solid #64748b; border-radius: 12px; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
         .vert-btn:active { background: #38BDF8; color: black; }
 
+        /* CONTROL SCHEME MODAL */
+        #controls-modal { display: none; }
+        #controls-modal.open { display: flex; }
     </style>
 </head>
 <body>
@@ -136,6 +172,7 @@
 
             <!-- CONTROLS -->
             <div class="header-controls flex gap-2 relative flex-wrap justify-end w-full md:w-auto">
+                <button id="btn-input-toggle" class="interactive bg-slate-800 border border-slate-600 p-2 rounded-lg text-slate-400 hover:text-white transition-colors shadow-lg" title="Change Controls"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="12" rx="2"/><path d="M6 12h.01"/><path d="M10 12h.01"/><path d="M14 12h.01"/><path d="M18 12h.01"/><path d="M12 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M6 8v.01"/><path d="M18 8v.01"/></svg></button>
                 <button id="btn-atmosphere" class="interactive bg-slate-800 border border-amber-500/50 p-2 rounded-lg text-amber-400 hover:bg-slate-700 transition-colors shadow-lg" title="Toggle Day/Night"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
                 <div class="w-px h-10 bg-slate-700/50 mx-1 hidden md:block"></div>
                 <button id="btn-sync" class="interactive bg-indigo-600 hover:bg-indigo-500 border border-indigo-400 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-lg transition-all flex items-center gap-2">Sync</button>
@@ -154,7 +191,7 @@
                         <a href="tome.html" target="_blank" class="app-link-btn app-link-tome"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-8a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v8"/><path d="M4 11V7"/><path d="M20 11V7"/><path d="M2 7h4v4H2z"/><path d="M18 7h4v4h-4z"/><path d="M4 7l2-4 2 4"/><path d="M18 7l2-4 2 4"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/></svg> Tome</a>
                         <a href="homebrew.html" target="_blank" class="app-link-btn app-link-homebrew"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg> Homebrew</a>
                         <a href="loot.html" target="_blank" class="app-link-btn app-link-loot"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg> Loot</a>
-                        <a href="campaign.html" target="_blank" class="app-link-btn app-link-campaign"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Campaign</a>
+                        <a href="campaign.html" target="_blank" class="app-link-btn app-link-campaign"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Campaign</a>
                     </div>
                 </div>
             </div>
@@ -200,11 +237,17 @@
         <div id="mouse-mode-badge" class="absolute top-32 left-1/2 -translate-x-1/2 bg-yellow-500/20 border border-yellow-500 text-yellow-200 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur hidden">Mouse Cursor Active (Tab)</div>
         <div id="move-badge">Movement: 30ft</div>
         
-        <!-- MOBILE CONTROLS (JOYSTICK) -->
+        <!-- NEW MOBILE CONTROLS -->
         <div id="mobile-controls">
-            <div id="joystick-move" class="touch-zone">
-                <div id="stick-move" class="touch-stick"></div>
+            <!-- Touch Zones -->
+            <div id="zone-move" class="touch-zone-left"></div>
+            <div id="zone-look" class="touch-zone-right"></div>
+            
+            <!-- Visual Feedback -->
+            <div id="joystick-ui">
+                <div id="joystick-knob"></div>
             </div>
+
             <div id="mobile-vertical-controls">
                 <button id="mob-up" class="vert-btn">▲</button>
                 <button id="mob-down" class="vert-btn">▼</button>
@@ -238,6 +281,33 @@
                     <button id="create-map-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded text-sm">Create</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- CONTROL SCHEME MODAL -->
+    <div id="controls-modal" class="interactive fixed inset-0 z-[110] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 w-full max-w-lg rounded-2xl border-2 border-indigo-500/50 shadow-[0_0_50px_rgba(99,102,241,0.2)] p-8 text-center">
+            <h2 class="text-2xl font-bold text-white mb-2">Select Control Scheme</h2>
+            <p class="text-slate-400 mb-8">Choose how you want to interact with the world.</p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <button id="scheme-mouse" class="p-6 bg-slate-800 hover:bg-slate-700 border border-slate-600 hover:border-indigo-400 rounded-xl transition-all group flex flex-col items-center gap-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-400 group-hover:scale-110 transition-transform"><rect x="2" y="4" width="20" height="12" rx="2"/><path d="M6 12h.01"/><path d="M10 12h.01"/><path d="M14 12h.01"/><path d="M18 12h.01"/><path d="M12 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M6 8v.01"/><path d="M18 8v.01"/></svg>
+                    <div>
+                        <div class="font-bold text-white text-lg">Keyboard & Mouse</div>
+                        <div class="text-xs text-slate-400 mt-1">WASD to Move<br>Pointer Lock Look</div>
+                    </div>
+                </button>
+
+                <button id="scheme-touch" class="p-6 bg-slate-800 hover:bg-slate-700 border border-slate-600 hover:border-cyan-400 rounded-xl transition-all group flex flex-col items-center gap-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-cyan-400 group-hover:scale-110 transition-transform"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    <div>
+                        <div class="font-bold text-white text-lg">Touchscreen</div>
+                        <div class="text-xs text-slate-400 mt-1">Virtual Joystick<br>Swipe to Look</div>
+                    </div>
+                </button>
+            </div>
+            <p class="text-[10px] text-slate-500">You can change this later from the top menu.</p>
         </div>
     </div>
 
@@ -284,7 +354,9 @@
             currentMapId: 'default', currentMapName: 'Default Map', autoSaveTimer: null,
             focusIndex: 0, focusList: [], 
             currentTurnIndex: 0,
-            touch: { id: null, startX: 0, startY: 0, moveX: 0, moveY: 0 } // Touch state
+            isTouch: false, // Updated: controlled by selection
+            moveVector: { x: 0, z: 0 }, 
+            touch: { id: null, startX: 0, startY: 0, moveX: 0, moveY: 0 } 
         };
 
         const scene = new THREE.Scene(); scene.background = new THREE.Color(CONFIG.colors.bgNight); scene.fog = new THREE.Fog(CONFIG.colors.bgNight, 10, 60);
@@ -304,14 +376,6 @@
         
         document.addEventListener('contextmenu', event => event.preventDefault());
         
-        // Basic check for touch device to avoid pointer lock errors
-        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-        
-        // If on touch device, force instructions hidden immediately
-        if (isTouchDevice) {
-            document.getElementById('instructions').style.display = 'none';
-        }
-
         const GeometryManager = {
             cache: new Map(),
             init: () => {
@@ -326,7 +390,18 @@
             get: (m) => GeometryManager.cache.get(m) || GeometryManager.cache.get(0)
         }; GeometryManager.init();
 
-        const materials = MATERIALS.map(m => new THREE.MeshLambertMaterial({color:m.color, transparent:!!m.opacity, opacity:m.opacity||1}));
+        const materials = MATERIALS.map(m => {
+            const matConfig = {
+                color: m.color,
+                transparent: !!m.opacity,
+                opacity: m.opacity || 1
+            };
+            if (m.type === 'liquid') {
+                matConfig.depthWrite = false; 
+                matConfig.side = THREE.FrontSide;
+            }
+            return new THREE.MeshLambertMaterial(matConfig);
+        });
         const tokenGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.2, 16);
         const lootGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
 
@@ -367,7 +442,6 @@
                 if (!idx[id]) return false;
                 state.currentMapId = id; state.currentMapName = idx[id];
                 
-                // Fix for missing element ID
                 const mapNameEl = document.getElementById('current-map-name');
                 if (mapNameEl) mapNameEl.innerText = state.currentMapName;
                 
@@ -433,58 +507,40 @@
             advanceTurn: () => {
                 const mons = JSON.parse(localStorage.getItem('dm-tracker-monsters') || '[]');
                 if (mons.length === 0) return;
-                
-                // Get Current Turn Index from Tome (or local state if simple mode)
                 let turn = parseInt(localStorage.getItem('dm-tracker-turn-index') || '0');
                 turn = (turn + 1) % mons.length;
-                
-                // Save back to sync with Tome
                 localStorage.setItem('dm-tracker-turn-index', turn);
                 state.currentTurnIndex = turn;
-                
-                // --- NEW LOGIC: AUTO SWITCH MODE AND SNAP ---
                 const activeId = mons[turn].id;
                 const token = state.tokenData.get(activeId);
                 if (token) {
-                    const tokenType = mons[turn].type; // 'player' or 'monster'
-                    
+                    const tokenType = mons[turn].type; 
                     if (tokenType === 'player') {
                         setMode('players');
-                        // Update focus list so index matches new active token
                         state.focusIndex = state.focusList.indexOf(token);
                         snapCameraTo(token);
                     } else if (tokenType === 'monster') {
                         setMode('enemies');
-                        // Update focus list so index matches new active token
                         state.focusIndex = state.focusList.indexOf(token);
                         snapCameraTo(token);
                     }
                 }
-                // --------------------------------------------
-
                 EntityManager.updateTurnVisuals();
             },
             updateTurnVisuals: () => {
-                // Clear old glows
-                state.tokenData.forEach(m => {
-                    if (m.userData.glow) { m.remove(m.userData.glow); m.userData.glow = null; }
-                });
-
+                state.tokenData.forEach(m => { if (m.userData.glow) { m.remove(m.userData.glow); m.userData.glow = null; } });
                 const mons = JSON.parse(localStorage.getItem('dm-tracker-monsters') || '[]');
                 const turnIndex = parseInt(localStorage.getItem('dm-tracker-turn-index') || '0');
                 if (mons.length > 0 && mons[turnIndex]) {
                     const activeId = mons[turnIndex].id;
                     const token = state.tokenData.get(activeId);
                     if (token) {
-                        // Add Gold Glow
                         const glowGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.05, 32);
                         const glowMat = new THREE.MeshBasicMaterial({ color: 0xFFD700, transparent: true, opacity: 0.5 });
                         const glow = new THREE.Mesh(glowGeo, glowMat);
                         glow.position.y = -0.1;
                         token.add(glow);
                         token.userData.glow = glow;
-                        
-                        // Update UI
                         const btn = document.getElementById('next-turn-btn');
                         btn.classList.remove('hidden');
                         btn.innerHTML = `<span>Next Turn (${mons[turnIndex].name})</span> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>`;
@@ -565,16 +621,10 @@
         function snapCameraTo(token) {
             if(!token) return;
             const targetPos = token.position.clone();
-            const camOffset = new THREE.Vector3(0, 10, 8); // Top-down isometric offset
+            const camOffset = new THREE.Vector3(0, 10, 8); 
             camera.position.copy(targetPos).add(camOffset);
-            
-            // Explicitly set camera up vector to avoid roll
             camera.up.set(0, 1, 0);
-            
             camera.lookAt(targetPos);
-            // Don't call controls.unlock() here if in touch mode, it might interfere.
-            // Just rely on manual camera positioning.
-            
             RangeRingManager.update(token, 'focus');
             document.getElementById('focus-label').innerText = token.userData.data.name;
         }
@@ -589,17 +639,14 @@
             });
             
             if (state.focusList.length > 0) {
-                // If we switched automatically due to turn, focusIndex might already be set
-                // Check if current token in focus list matches controlled token
                 if (state.controlledToken && state.focusList.includes(state.controlledToken)) {
                     state.focusIndex = state.focusList.indexOf(state.controlledToken);
                 } else {
                     state.focusIndex = 0;
                 }
-                
                 snapCameraTo(state.focusList[state.focusIndex]);
                 state.controlledToken = state.focusList[state.focusIndex];
-                state.moveBudget = 30; // Reset movement budget for turn logic simulation
+                state.moveBudget = 30; 
                 RangeRingManager.update(state.controlledToken, 'movement');
                 document.getElementById('move-badge').style.display = 'block';
                 document.getElementById('move-badge').innerText = `Movement: ${state.moveBudget}ft`;
@@ -626,11 +673,9 @@
         }
 
         function handleRaycast() {
-            // FIX: Ensure raycast works even if unlocked in certain modes
-            if(!controls.isLocked && !isTouchDevice && state.mode!=='view' && state.gameMode !== 'players' && state.gameMode !== 'enemies' && state.gameMode !== 'dm') return;
+            if(!controls.isLocked && !state.isTouch && state.mode!=='view' && state.gameMode !== 'players' && state.gameMode !== 'enemies' && state.gameMode !== 'dm') return;
             
-            // RAYCAST FIX: If unlocked or touch, use mouse position. If locked, use center (0,0)
-            if (controls.isLocked && !isTouchDevice) {
+            if (controls.isLocked && !state.isTouch) {
                 raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
             } else {
                 raycaster.setFromCamera(mouse, camera);
@@ -638,7 +683,6 @@
             
             const hits = raycaster.intersectObjects([...state.mapData.values(), ...state.tokenData.values(), scene.getObjectByName('ground')]);
             
-            // Default: Hide rollers
             rollover.visible = false; 
             tokenRoll.visible = false;
             UIManager.updateTooltip(null);
@@ -647,9 +691,7 @@
                 const hit = hits[0]; 
                 UIManager.updateTooltip(hit.object.name==='ground'?null:hit.object);
                 
-                // Logic based on mode
                 if (state.gameMode === 'dm' || state.gameMode === 'players' || state.gameMode === 'enemies') {
-                    // Token Movement Logic
                     if (state.controlledToken) {
                          if(hit.object.userData.isVoxel || hit.object.name === 'ground') {
                             rollover.visible = true;
@@ -667,7 +709,6 @@
                     return {hit, interactable:true};
                 }
                 
-                // Build Mode Logic
                 if (state.gameMode === 'build') {
                     const cat = CATEGORIES[state.activeCategoryIdx];
                     if(cat.type === 'block') {
@@ -699,37 +740,25 @@
             if (isRightMouseDown && !controls.isLocked) {
                 const movementX = event.clientX - lastMouseX;
                 const movementY = event.clientY - lastMouseY;
-                
-                // Manually rotate camera
                 camera.rotation.y -= movementX * 0.002;
                 camera.rotation.x -= movementY * 0.002;
                 camera.rotation.x = Math.max( - Math.PI / 2, Math.min( Math.PI / 2, camera.rotation.x ) );
             }
-            
             lastMouseX = event.clientX;
             lastMouseY = event.clientY;
         });
 
         // Add camera rotation via touch drag
         document.addEventListener('touchmove', (e) => {
-             // Only rotate camera if NOT using joystick
-             if (joystick.active) return;
-             // Also ignore if interacting with UI (though preventDefault might stop this)
+             if (touchState.moveId !== null || touchState.lookId !== null) return;
              
              if (e.touches.length === 1) {
                  const touch = e.touches[0];
                  if (lastMouseX && lastMouseY) {
                      const movementX = touch.clientX - lastMouseX;
                      const movementY = touch.clientY - lastMouseY;
-                     
-                     // Rotate camera similar to mouse logic
-                     // If pointer locked (FPS mode) we usually let PointerLockControls handle it, 
-                     // but on mobile PointerLock API is often unavailable or weird.
-                     // We manually rotate object.
                      const obj = controls.getObject();
                      obj.rotation.y -= movementX * 0.005;
-                     
-                     // Pitch is on camera itself inside object
                      camera.rotation.x -= movementY * 0.005;
                      camera.rotation.x = Math.max( - Math.PI / 2, Math.min( Math.PI / 2, camera.rotation.x ) );
                  }
@@ -745,140 +774,115 @@
              }
         }, { passive: true });
 
-        
-        // --- TOUCH CONTROLS ---
-        const joystick = {
-            el: document.getElementById('joystick-move'),
-            stick: document.getElementById('stick-move'),
-            active: false,
-            origin: { x: 0, y: 0 },
-            current: { x: 0, y: 0 }
+        // --- NEW TOUCH CONTROLS ---
+        const touchState = {
+            moveId: null,
+            moveStart: { x: 0, y: 0 },
+            lookId: null,
+            lookLast: { x: 0, y: 0 }
         };
-        
-        // Using "page" coordinates for consistency across devices
-        joystick.el.addEventListener('touchstart', e => {
+
+        const joyUI = document.getElementById('joystick-ui');
+        const joyKnob = document.getElementById('joystick-knob');
+
+        const zoneMove = document.getElementById('zone-move');
+        zoneMove.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            e.stopPropagation(); // prevent bubbling to camera look
             const touch = e.changedTouches[0];
-            state.touch.id = touch.identifier;
-            joystick.active = true;
-            // Capture touch start relative to viewport
-            const rect = joystick.el.getBoundingClientRect();
-            // Center logic - stick moves relative to touch start
-            state.touch.startX = touch.clientX;
-            state.touch.startY = touch.clientY;
-            joystick.stick.style.transform = `translate(-50%, -50%)`;
+            if(touchState.moveId === null) {
+                touchState.moveId = touch.identifier;
+                touchState.moveStart = { x: touch.clientX, y: touch.clientY };
+                joyUI.style.display = 'block';
+                joyUI.style.left = touch.clientX + 'px';
+                joyUI.style.top = touch.clientY + 'px';
+                joyKnob.style.transform = `translate(-50%, -50%)`;
+            }
         }, { passive: false });
 
-        joystick.el.addEventListener('touchmove', e => {
+        zoneMove.addEventListener('touchmove', (e) => {
             e.preventDefault();
-            e.stopPropagation();
-            if (!joystick.active) return;
             for (let i = 0; i < e.changedTouches.length; i++) {
-                if (e.changedTouches[i].identifier === state.touch.id) {
-                    const touch = e.changedTouches[i];
-                    // Calculate delta from start
-                    const dx = touch.clientX - state.touch.startX;
-                    const dy = touch.clientY - state.touch.startY;
-                    updateJoystick(dx, dy);
-                    break;
+                const touch = e.changedTouches[i];
+                if (touch.identifier === touchState.moveId) {
+                    const maxDist = 50;
+                    let dx = touch.clientX - touchState.moveStart.x;
+                    let dy = touch.clientY - touchState.moveStart.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist > maxDist) { const ratio = maxDist / dist; dx *= ratio; dy *= ratio; }
+                    joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+                    state.moveVector.x = dx / maxDist; 
+                    state.moveVector.z = dy / maxDist; 
                 }
             }
         }, { passive: false });
 
-        const endJoystick = (e) => {
-             e.preventDefault();
-             e.stopPropagation();
-             if (!joystick.active) return;
-             for (let i = 0; i < e.changedTouches.length; i++) {
-                if (e.changedTouches[i].identifier === state.touch.id) {
-                    joystick.active = false;
-                    state.touch.moveX = 0; state.touch.moveY = 0;
-                    joystick.stick.style.transform = `translate(-50%, -50%)`;
-                    // Reset moves
-                    move.f = false; move.b = false; move.l = false; move.r = false;
-                    break;
+        const endMove = (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === touchState.moveId) {
+                    touchState.moveId = null;
+                    state.moveVector = { x: 0, z: 0 };
+                    joyUI.style.display = 'none';
                 }
             }
         };
-        joystick.el.addEventListener('touchend', endJoystick);
-        joystick.el.addEventListener('touchcancel', endJoystick);
+        zoneMove.addEventListener('touchend', endMove);
+        zoneMove.addEventListener('touchcancel', endMove);
 
-        function updateJoystick(dx, dy) {
-            const maxDist = 35;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            
-            // Visual clamping for the stick
-            let visualDx = dx;
-            let visualDy = dy;
-            
-            if (dist > maxDist) {
-                const ratio = maxDist / dist;
-                visualDx *= ratio; 
-                visualDy *= ratio;
+        const zoneLook = document.getElementById('zone-look');
+        zoneLook.addEventListener('touchstart', (e) => {
+            const touch = e.changedTouches[0];
+            if(touchState.lookId === null) {
+                touchState.lookId = touch.identifier;
+                touchState.lookLast = { x: touch.clientX, y: touch.clientY };
             }
-            joystick.stick.style.transform = `translate(calc(-50% + ${visualDx}px), calc(-50% + ${visualDy}px))`;
-            
-            // Movement logic
-            const threshold = 10;
-            // Reverse Z (forward is negative Z)
-            // Left/Right is X axis
-            
-            // If facing forward (default): -Z is forward, +X is right
-            // We need to apply movement relative to camera vector
-            // But basic WASD logic is handled in animate() based on flags
-            
-            move.f = dy < -threshold;
-            move.b = dy > threshold;
-            move.l = dx < -threshold;
-            move.r = dx > threshold;
-        }
+        }, { passive: false });
+
+        zoneLook.addEventListener('touchmove', (e) => {
+            e.preventDefault(); 
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (touch.identifier === touchState.lookId) {
+                    const dx = touch.clientX - touchState.lookLast.x;
+                    const dy = touch.clientY - touchState.lookLast.y;
+                    const obj = controls.getObject();
+                    obj.rotation.y -= dx * 0.005;
+                    camera.rotation.x -= dy * 0.005;
+                    camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+                    touchState.lookLast = { x: touch.clientX, y: touch.clientY };
+                }
+            }
+        }, { passive: false });
+
+        const endLook = (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === touchState.lookId) {
+                    touchState.lookId = null;
+                }
+            }
+        };
+        zoneLook.addEventListener('touchend', endLook);
+        zoneLook.addEventListener('touchcancel', endLook);
         
-        // Touch actions for build mode
         const simulateClick = (btn, type) => {
-            const event = new MouseEvent(type, {
-                bubbles: true, cancelable: true, view: window, button: btn
-            });
-            // We need to target the canvas or center of screen ideally, 
-            // but dispatching on document generally works for our global listeners
+            const event = new MouseEvent(type, { bubbles: true, cancelable: true, view: window, button: btn });
             document.dispatchEvent(event);
         };
 
-        // Fix touch listener for buttons
         const touchBtns = ['mob-place', 'mob-break', 'mob-fly', 'mob-up', 'mob-down'];
         touchBtns.forEach(id => {
             const el = document.getElementById(id);
             if(el) {
                 el.addEventListener('touchstart', (e) => {
-                    e.preventDefault(); // Stop zoom/scroll
-                    e.stopPropagation();
-                    if (id === 'mob-place') {
-                        simulateClick(2, 'mousedown');
-                        setTimeout(() => simulateClick(2, 'mouseup'), 50);
-                    } else if (id === 'mob-break') {
-                        simulateClick(0, 'mousedown');
-                        setTimeout(() => simulateClick(0, 'mouseup'), 50);
-                    } else if (id === 'mob-fly') {
-                        isFlying = !isFlying; velocity.y = 0;
-                        el.classList.toggle('bg-yellow-700');
-                        // Toggle vertical controls visibility
-                        const vControls = document.getElementById('mobile-vertical-controls');
-                        if(vControls) vControls.style.display = isFlying ? 'flex' : 'none';
-                    } else if (id === 'mob-up') {
-                        move.u = true;
-                    } else if (id === 'mob-down') {
-                        move.d = true;
-                    }
+                    e.preventDefault(); e.stopPropagation();
+                    if (id === 'mob-place') { simulateClick(2, 'mousedown'); setTimeout(() => simulateClick(2, 'mouseup'), 50); } 
+                    else if (id === 'mob-break') { simulateClick(0, 'mousedown'); setTimeout(() => simulateClick(0, 'mouseup'), 50); } 
+                    else if (id === 'mob-fly') { isFlying = !isFlying; velocity.y = 0; el.classList.toggle('bg-yellow-700'); const vControls = document.getElementById('mobile-vertical-controls'); if(vControls) vControls.style.display = isFlying ? 'flex' : 'none'; } 
+                    else if (id === 'mob-up') { move.u = true; } 
+                    else if (id === 'mob-down') { move.d = true; }
                 }, { passive: false });
-                
-                el.addEventListener('touchend', (e) => {
-                     e.preventDefault();
-                     if (id === 'mob-up') move.u = false;
-                     if (id === 'mob-down') move.d = false;
-                });
+                el.addEventListener('touchend', (e) => { e.preventDefault(); if (id === 'mob-up') move.u = false; if (id === 'mob-down') move.d = false; });
             }
         });
-
 
         document.addEventListener('keydown', e => {
             if(e.repeat) return;
@@ -888,15 +892,11 @@
             if(e.code === 'KeyF') { isFlying=!isFlying; velocity.y=0; }
             if(e.code === 'Tab') {
                 e.preventDefault();
-                // --- FIX: Check for Tab functionality based on mode ---
                 if (state.gameMode === 'players' || state.gameMode === 'enemies') {
-                    if (state.focusList && state.focusList.length > 0) {
-                         snapCameraTo(state.focusList[state.focusIndex]);
-                    }
+                    if (state.focusList && state.focusList.length > 0) { snapCameraTo(state.focusList[state.focusIndex]); }
                 } else {
-                    if(controls.isLocked) { controls.unlock(); state.mode='menu'; document.getElementById('mouse-mode-badge').style.display='block'; } else { if (!isTouchDevice) controls.lock(); state.mode='view'; document.getElementById('mouse-mode-badge').style.display='none'; }
+                    if(controls.isLocked) { controls.unlock(); state.mode='menu'; document.getElementById('mouse-mode-badge').style.display='block'; } else { if (!state.isTouch) controls.lock(); state.mode='view'; document.getElementById('mouse-mode-badge').style.display='none'; }
                 }
-                // -----------------------------------------------------
             }
             if(e.code === 'Escape') { if(state.controlledToken) { state.controlledToken = null; state.moveBudget = 30; RangeRingManager.update(null); document.getElementById('move-badge').style.display='none'; } }
             if (e.key >= '0' && e.key <= '9') { const i = e.key==='0'?9:parseInt(e.key)-1; state.heldKeys[i]=true; state.activeCategoryIdx=i; UIManager.renderHotbar(); }
@@ -908,20 +908,13 @@
         });
 
         document.addEventListener('mousedown', e => {
-            if (e.button === 2) {
-                isRightMouseDown = true;
-                lastMouseX = e.clientX;
-                lastMouseY = e.clientY;
-            }
-
+            if (e.button === 2) { isRightMouseDown = true; lastMouseX = e.clientX; lastMouseY = e.clientY; }
             if(!controls.isLocked && state.mode !== 'view' && state.gameMode !== 'players' && state.gameMode !== 'enemies' && state.gameMode !== 'dm') return;
             const res = handleRaycast();
             if(!res.interactable) { if(e.button===0) { state.controlledToken = null; state.focusedToken = null; RangeRingManager.update(null); document.getElementById('move-badge').style.display='none'; } return; }
             const {hit} = res;
-            
-            // In Player/Enemy/DM mode, handle movement
             if (state.gameMode === 'players' || state.gameMode === 'enemies' || state.gameMode === 'dm') {
-                if (e.button === 0) { // Left Click to MOVE
+                if (e.button === 0) { 
                     if (state.controlledToken && (hit.object.userData.isVoxel || hit.object.name === 'ground')) {
                         let floorY = hit.object.name==='ground'?0:Math.round(hit.point.y); if(hit.face.normal.y<0.9 && hit.object.userData.isVoxel) floorY=Math.floor(hit.point.y);
                         const tx = Math.floor(hit.point.x + hit.face.normal.x*0.1) + 0.5, tz = Math.floor(hit.point.z + hit.face.normal.z*0.1) + 0.5;
@@ -938,29 +931,17 @@
                     return;
                 }
             }
-
-            // Right click select (if not dragging camera)
             if (e.shiftKey && e.button === 2 && hit.object.userData.isToken) { state.focusedToken = hit.object; RangeRingManager.update(state.focusedToken, 'conditions'); const p = hit.object.position; controls.getObject().position.set(p.x, p.y+5, p.z+5); controls.getObject().lookAt(p); return; }
-            if (state.gameMode === 'dm') {
-               // DM Specific selection logic if needed
-            }
-            
-            // Building Logic (Only if Mode is Build)
             if (state.gameMode === 'build') {
                 const cat = CATEGORIES[state.activeCategoryIdx];
                 if(e.button === 2) {
                     if(cat.type==='block') state.dragStart = {pos:getVoxelPos(hit.point, hit.face.normal, 'build'), mode:'build'};
                     else if(cat.type==='token' || cat.type==='loot') {
-                        // Token Placement Logic
                         const d = cat.items[state.subSelections[state.activeCategoryIdx]];
                         if(d) {
                              const p = tokenRoll.position.clone();
-                             if(cat.type==='token') {
-                                 if(state.tokenData.has(d.id)) state.tokenData.get(d.id).position.copy(p);
-                             } else {
-                                 const m = new THREE.Mesh(lootGeo, new THREE.MeshLambertMaterial({color:0xFFD700})); m.position.copy(tokenRoll.position); m.userData={isLoot:true, id:`l${Date.now()}`, data:d};
-                                 scene.add(m); state.tokenData.set(m.userData.id, m);
-                             }
+                             if(cat.type==='token') { if(state.tokenData.has(d.id)) state.tokenData.get(d.id).position.copy(p); } 
+                             else { const m = new THREE.Mesh(lootGeo, new THREE.MeshLambertMaterial({color:0xFFD700})); m.position.copy(tokenRoll.position); m.userData={isLoot:true, id:`l${Date.now()}`, data:d}; scene.add(m); state.tokenData.set(m.userData.id, m); }
                              MapStorageManager.saveMap();
                         }
                     }
@@ -973,7 +954,6 @@
 
         document.addEventListener('mouseup', (e) => {
             if (e.button === 2) isRightMouseDown = false;
-
             if(!state.dragStart) return;
             const res = handleRaycast();
             if(res.interactable) {
@@ -986,11 +966,8 @@
                     if(state.dragStart.mode==='build') { if(mat!==undefined){WorldManager.add(x,y,z,mat,false); chg++;} } 
                     else { const m=state.mapData.get(`${x},${y},${z}`); if(m){WorldManager.remove(m); chg++;} }
                 }
-                
-                // Batch update visuals
                 for(let x=minX-1; x<=maxX+1; x++) for(let y=minY-1; y<=maxY+1; y++) for(let z=minZ-1; z<=maxZ+1; z++) WorldManager.updateGeo(x,y,z);
                 document.getElementById('block-count').innerText = `${state.mapData.size} Blocks`;
-                
                 if(chg) MapStorageManager.saveMap();
             }
             state.dragStart=null; rollover.scale.set(1,1,1);
@@ -998,20 +975,11 @@
 
         document.addEventListener('wheel', e => {
             if (state.gameMode === 'players' || state.gameMode === 'enemies') {
-                const zoomSpeed = 0.5;
-                const zoomDir = new THREE.Vector3();
-                camera.getWorldDirection(zoomDir);
-                
-                // Reverse direction for zoom out if deltaY is positive
-                if (e.deltaY > 0) {
-                    zoomDir.negate();
-                }
-
-                // Apply zoom
+                const zoomSpeed = 0.5; const zoomDir = new THREE.Vector3(); camera.getWorldDirection(zoomDir);
+                if (e.deltaY > 0) zoomDir.negate();
                 camera.position.add(zoomDir.multiplyScalar(zoomSpeed));
                 return;
             }
-
             const i = Object.keys(state.heldKeys).find(k=>state.heldKeys[k]);
             const target = i !== undefined ? i : state.activeCategoryIdx;
             const c = CATEGORIES[target]; if(!c.items.length) return;
@@ -1020,48 +988,31 @@
         });
 
         // Dropdown toggle logic
-        document.getElementById('btn-apps-dropdown').onclick = (e) => {
-            e.stopPropagation();
-            const content = document.getElementById('apps-dropdown-content');
-            content.classList.toggle('show');
-        };
-
-        // Close dropdown when clicking outside
+        document.getElementById('btn-apps-dropdown').onclick = (e) => { e.stopPropagation(); document.getElementById('apps-dropdown-content').classList.toggle('show'); };
         window.onclick = (e) => {
             if (!e.target.matches('#btn-apps-dropdown') && !e.target.closest('#btn-apps-dropdown')) {
                 const dropdowns = document.getElementsByClassName("dropdown-content");
-                for (let i = 0; i < dropdowns.length; i++) {
-                    const openDropdown = dropdowns[i];
-                    if (openDropdown.classList.contains('show')) {
-                        openDropdown.classList.remove('show');
-                    }
-                }
+                for (let i = 0; i < dropdowns.length; i++) { if (dropdowns[i].classList.contains('show')) dropdowns[i].classList.remove('show'); }
             }
         };
 
-        // --- FIX: Updated Click Handler for Instructions ---
+        // --- INSTRUCTIONS CLICK ---
         document.getElementById('instructions').onclick = () => {
             if (state.gameMode === 'players' || state.gameMode === 'enemies') {
-                // In token modes, just hide instructions and allow interaction
-                // Do NOT lock pointer, as that hides the cursor which we need for UI
                 document.getElementById('instructions').style.display='none';
                 document.getElementById('ui-layer').classList.add('interactive');
             } else {
-                // In Build/DM modes, use pointer lock ONLY if not touch
-                if (!isTouchDevice) controls.lock();
+                if (!state.isTouch) controls.lock();
                 else document.getElementById('instructions').style.display='none';
             }
         };
-        // ----------------------------------------------------
 
         controls.addEventListener('lock', () => { document.getElementById('instructions').style.display='none'; document.getElementById('ui-layer').classList.remove('interactive'); });
         controls.addEventListener('unlock', () => { 
-            // In Player/Enemy mode, we want the UI interactive but maybe not full lock instructions if we just snapped
             if(state.mode==='menu' || state.gameMode === 'players' || state.gameMode === 'enemies' || state.gameMode === 'dm') {
                 document.getElementById('ui-layer').classList.add('interactive'); 
             } else {
-                // Only show instructions if not on touch
-                if(!isTouchDevice) document.getElementById('instructions').style.display='block'; 
+                if(!state.isTouch) document.getElementById('instructions').style.display='block'; 
             }
         });
         
@@ -1073,9 +1024,7 @@
         document.getElementById('focus-next').onclick = () => cycleFocus(1);
         document.getElementById('focus-prev').onclick = () => cycleFocus(-1);
         
-        document.getElementById('next-turn-btn').onclick = () => {
-            EntityManager.advanceTurn();
-        };
+        document.getElementById('next-turn-btn').onclick = () => { EntityManager.advanceTurn(); };
 
         // --- NEW SLOTS LOGIC ---
         document.getElementById('btn-slots').onclick = () => { UIManager.renderSlots(); document.getElementById('slots-modal').classList.add('open'); };
@@ -1085,11 +1034,45 @@
             if(name) {
                 const id = MapStorageManager.createMap(name);
                 MapStorageManager.loadMap(id);
-                WorldManager.clear(true); // New map is empty
+                WorldManager.clear(true);
                 UIManager.renderSlots();
                 document.getElementById('new-map-name').value = '';
             }
         };
+
+        // --- INPUT SCHEME LOGIC ---
+        function applyInputScheme(mode) {
+            state.isTouch = (mode === 'touch');
+            localStorage.setItem('akashic_input_scheme', mode);
+            
+            const mobControls = document.getElementById('mobile-controls');
+            const instructions = document.getElementById('instructions');
+            
+            if (state.isTouch) {
+                mobControls.style.display = 'block';
+                instructions.style.display = 'none'; // Don't need click-to-lock on mobile
+            } else {
+                mobControls.style.display = 'none';
+                if(state.gameMode === 'build' && !controls.isLocked) instructions.style.display = 'block';
+            }
+            document.getElementById('controls-modal').classList.remove('open');
+        }
+
+        function initInputScheme() {
+            const saved = localStorage.getItem('akashic_input_scheme');
+            if (saved) {
+                applyInputScheme(saved);
+            } else {
+                // If no save, check capability but still show modal for choice
+                const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+                // Optional: Auto-select if confident? No, user requested selection on startup.
+                document.getElementById('controls-modal').classList.add('open');
+            }
+        }
+
+        document.getElementById('scheme-mouse').onclick = () => applyInputScheme('mouse');
+        document.getElementById('scheme-touch').onclick = () => applyInputScheme('touch');
+        document.getElementById('btn-input-toggle').onclick = () => document.getElementById('controls-modal').classList.add('open');
 
         function setMode(m) {
             state.gameMode = m; 
@@ -1107,27 +1090,20 @@
             } else {
                 focusControls.classList.remove('visible');
                 RangeRingManager.update(null);
-                // Unlock fly/move for build/dm
                 if(m==='dm') { isFlying=true; velocity.y=0; }
                 
-                // --- FIX: Reset camera orientation when leaving Token Mode ---
                 if (m === 'build') {
-                    // Reset roll (Z) and ensure valid pitch (X)
                     camera.rotation.z = 0;
-                    camera.rotation.x = 0; // Look straight
-                    // Optionally reset up vector just in case
+                    camera.rotation.x = 0;
                     camera.up.set(0, 1, 0);
-                    if (!isTouchDevice) controls.lock(); // Auto-lock for build mode convenience
+                    if (!state.isTouch) controls.lock(); 
                 }
-                // -------------------------------------------------------------
             }
-            
             UIManager.renderHotbar();
         }
         document.getElementById('btn-sync').onclick = EntityManager.sync; 
         document.getElementById('btn-clear').onclick = () => { if(confirm("Nuke this map?")) { WorldManager.clear(); MapStorageManager.saveMap(); } };
         
-        // Export/Import JSON for Backup
         document.getElementById('btn-export').onclick = () => { 
             const data = {
                 voxels: JSON.parse(localStorage.getItem(`akashic_map_${state.currentMapId}_voxels`)),
@@ -1154,17 +1130,39 @@
             requestAnimationFrame(animate);
             const dt = (performance.now()-prevTime)/1000; prevTime=performance.now();
             
-            // Only handle movement physics if locked AND NOT in focus mode
-            // On touch device, controls.isLocked is usually false, but we want physics if simulating lock via touch
-            const physicsEnabled = (controls.isLocked || isTouchDevice) && state.gameMode !== 'players' && state.gameMode !== 'enemies';
+            const physicsEnabled = (controls.isLocked || state.isTouch) && state.gameMode !== 'players' && state.gameMode !== 'enemies';
 
             if(physicsEnabled) {
-                velocity.x -= velocity.x * 10.0 * dt; velocity.z -= velocity.z * 10.0 * dt;
-                if (state.gameMode === 'dm') velocity.y -= velocity.y * 5.0 * dt; else velocity.y -= isFlying ? velocity.y * 5.0 * dt : 9.8 * 2.0 * dt;
-                const dir = new THREE.Vector3(); dir.z = Number(move.f) - Number(move.b); dir.x = Number(move.r) - Number(move.l); dir.normalize();
+                velocity.x -= velocity.x * 10.0 * dt; 
+                velocity.z -= velocity.z * 10.0 * dt;
+                
+                if (state.gameMode === 'dm') velocity.y -= velocity.y * 5.0 * dt; 
+                else velocity.y -= isFlying ? velocity.y * 5.0 * dt : 9.8 * 2.0 * dt;
+
                 const spd = isFlying || state.gameMode==='dm' ? 40 : 15;
-                if (move.f || move.b) velocity.z -= dir.z * spd * 10.0 * dt; if (move.l || move.r) velocity.x -= dir.x * spd * 10.0 * dt;
-                if ((isFlying || state.gameMode==='dm')) { if (move.u) velocity.y += spd * 10.0 * dt; if (move.d) velocity.y -= spd * 10.0 * dt; }
+
+                let inputX = 0;
+                let inputZ = 0;
+
+                if (state.isTouch) {
+                    inputX = state.moveVector.x;
+                    inputZ = state.moveVector.z;
+                } else {
+                    inputZ = Number(move.f) - Number(move.b); 
+                    inputX = Number(move.r) - Number(move.l);
+                    inputZ = Number(move.b) - Number(move.f); 
+                }
+                
+                if (inputZ !== 0 || inputX !== 0) {
+                    velocity.z += inputZ * spd * 10.0 * dt; 
+                    velocity.x += inputX * spd * 10.0 * dt;
+                }
+
+                if ((isFlying || state.gameMode==='dm')) { 
+                    if (move.u) velocity.y += spd * 10.0 * dt; 
+                    if (move.d) velocity.y -= spd * 10.0 * dt; 
+                }
+
                 const obj = controls.getObject(), startPos = obj.position.clone();
                 controls.moveRight(-velocity.x * dt); if(checkCollision(obj.position)) obj.position.x = startPos.x;
                 controls.moveForward(-velocity.z * dt); if(checkCollision(obj.position)) obj.position.z = startPos.z;
@@ -1178,12 +1176,12 @@
 
         // INIT LOAD
         if (!MapStorageManager.loadMap('default')) {
-            // First time setup if empty
             MapStorageManager.saveIndex({'default': 'Default Map'});
             MapStorageManager.loadMap('default');
         }
         EntityManager.sync(); 
         UIManager.renderHotbar();
+        initInputScheme(); // Start the selection process
         window.addEventListener('resize', () => { camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
         animate();
     </script>
