@@ -675,7 +675,7 @@
         function handleRaycast() {
             if(!controls.isLocked && !state.isTouch && state.mode!=='view' && state.gameMode !== 'players' && state.gameMode !== 'enemies' && state.gameMode !== 'dm') return;
             
-            if (controls.isLocked && !state.isTouch) {
+            if (controls.isLocked || state.isTouch) { // CHANGED: Always center raycast for touch OR pointer lock
                 raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
             } else {
                 raycaster.setFromCamera(mouse, camera);
@@ -844,10 +844,15 @@
                 if (touch.identifier === touchState.lookId) {
                     const dx = touch.clientX - touchState.lookLast.x;
                     const dy = touch.clientY - touchState.lookLast.y;
-                    const obj = controls.getObject();
-                    obj.rotation.y -= dx * 0.005;
-                    camera.rotation.x -= dy * 0.005;
-                    camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+                    
+                    // FIXED: Use Euler order YXZ to prevent roll/yaw coupling (gimbal lock flipping)
+                    const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+                    euler.setFromQuaternion(camera.quaternion);
+                    euler.y -= dx * 0.005;
+                    euler.x -= dy * 0.005;
+                    euler.x = Math.max(- Math.PI / 2, Math.min( Math.PI / 2, euler.x ));
+                    camera.quaternion.setFromEuler(euler);
+                    
                     touchState.lookLast = { x: touch.clientX, y: touch.clientY };
                 }
             }
@@ -1145,7 +1150,7 @@
                 let inputZ = 0;
 
                 if (state.isTouch) {
-                    inputX = state.moveVector.x;
+                    inputX = -state.moveVector.x;
                     inputZ = state.moveVector.z;
                 } else {
                     inputZ = Number(move.f) - Number(move.b); 
