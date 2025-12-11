@@ -1196,12 +1196,12 @@
                 let inputZ = 0;
 
                 if (state.isTouch) {
-                    inputX = -state.moveVector.x;
+                    // FIXED: Removed negation so dragging Right produces positive X
+                    inputX = state.moveVector.x;
                     inputZ = state.moveVector.z;
                 } else {
                     inputZ = Number(move.f) - Number(move.b); 
                     inputX = Number(move.r) - Number(move.l);
-                    inputZ = Number(move.b) - Number(move.f); 
                 }
                 
                 if (inputZ !== 0 || inputX !== 0) {
@@ -1215,8 +1215,13 @@
                 }
 
                 const obj = controls.getObject(), startPos = obj.position.clone();
-                controls.moveRight(-velocity.x * dt); if(checkCollision(obj.position)) obj.position.x = startPos.x;
-                controls.moveForward(-velocity.z * dt); if(checkCollision(obj.position)) obj.position.z = startPos.z;
+                // FIXED: Changed to positive velocity.x to align D/Right with Right movement
+                controls.moveRight(velocity.x * dt); 
+                if(checkCollision(obj.position)) obj.position.x = startPos.x;
+                
+                controls.moveForward(-velocity.z * dt); 
+                if(checkCollision(obj.position)) obj.position.z = startPos.z;
+                
                 obj.position.y += velocity.y * dt;
                 if(checkCollision(obj.position) || (obj.position.y<2 && state.gameMode!=='dm')) { if(velocity.y<0) { canJump=true; obj.position.y = Math.ceil(obj.position.y); } else { obj.position.y = Math.floor(obj.position.y)-0.6; } velocity.y=0; if(obj.position.y < 2) obj.position.y = 2; }
                 const p = obj.position; document.getElementById('coord-display').innerText = `${Math.round(p.x)}, ${Math.round(p.y)}, ${Math.round(p.z)}`;
