@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Akashic Atlas | 3D Voxel Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #020617; font-family: ui-sans-serif, system-ui, sans-serif; user-select: none; }
+        body { margin: 0; overflow: hidden; background-color: #020617; font-family: ui-sans-serif, system-ui, sans-serif; user-select: none; touch-action: none; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         .interactive { pointer-events: auto; }
         ::-webkit-scrollbar { width: 6px; }
@@ -20,27 +20,27 @@
         #tooltip { position: absolute; display: none; transform: translate(-50%, -120%); backdrop-filter: blur(8px); z-index: 50; pointer-events: none; }
         .token-item { transition: all 0.2s; }
         .token-item:hover { transform: translateX(4px); background: rgba(51, 65, 85, 0.8); }
-        .mode-switch { position: relative; display: flex; background: #0f172a; border-radius: 8px; padding: 4px; border: 1px solid #334155; gap: 4px; }
+        .mode-switch { position: relative; display: flex; background: #0f172a; border-radius: 8px; padding: 4px; border: 1px solid #334155; gap: 4px; flex-wrap: wrap; justify-content: center; }
         .mode-btn { padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; color: #94a3b8; transition: all 0.2s; }
         .mode-btn.active { background: #38BDF8; color: #0f172a; box-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
         #move-badge { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #6ee7b7; font-weight: bold; padding: 6px 16px; border-radius: 20px; backdrop-filter: blur(4px); display: none; text-shadow: 0 1px 2px black; }
         
-        #save-indicator { position: absolute; bottom: 20px; right: 20px; background: rgba(0,0,0,0.7); color: #aaa; padding: 5px 10px; border-radius: 5px; font-size: 12px; pointer-events: none; transition: opacity 0.5s; opacity: 0; }
+        #save-indicator { position: absolute; bottom: 80px; right: 20px; background: rgba(0,0,0,0.7); color: #aaa; padding: 5px 10px; border-radius: 5px; font-size: 12px; pointer-events: none; transition: opacity 0.5s; opacity: 0; }
         #save-indicator.visible { opacity: 1; }
         
         #slots-modal { display: none; }
         #slots-modal.open { display: flex; }
 
         /* Focus Navigation Controls */
-        #focus-controls { display: none; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); gap: 10px; align-items: center; pointer-events: auto; }
+        #focus-controls { display: none; position: absolute; bottom: 160px; left: 50%; transform: translateX(-50%); gap: 10px; align-items: center; pointer-events: auto; }
         #focus-controls.visible { display: flex; }
         .focus-nav-btn { background: rgba(15, 23, 42, 0.9); color: white; border: 1px solid #334155; width: 40px; height: 40px; border-radius: 50%; display: flex; items-center; justify-content: center; font-weight: bold; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .focus-nav-btn:hover { background: #38BDF8; color: #0f172a; transform: scale(1.1); }
         .focus-label { background: rgba(15, 23, 42, 0.9); color: white; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; border: 1px solid #334155; min-width: 150px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
 
-        /* Next Turn Button - Integrated from Tome */
+        /* Next Turn Button */
         #next-turn-btn { 
-            position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            position: absolute; top: 130px; left: 50%; transform: translateX(-50%);
             background: linear-gradient(135deg, #4f46e5, #ec4899);
             border: 2px solid #a5b4fc;
             box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
@@ -52,60 +52,65 @@
         }
         #next-turn-btn:hover { transform: translateX(-50%) scale(1.05); box-shadow: 0 0 25px rgba(99, 102, 241, 0.8); }
         #next-turn-btn.hidden { display: none; }
-        .turn-active-glow { box-shadow: 0 0 30px 10px rgba(255, 215, 0, 0.6); } /* Gold glow for active turn */
+        .turn-active-glow { box-shadow: 0 0 30px 10px rgba(255, 215, 0, 0.6); }
 
         /* Dropdown Styles */
         .dropdown-content { display: none; position: absolute; right: 0; top: 100%; background-color: #1e293b; min-width: 160px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); z-index: 50; border-radius: 0.5rem; border: 1px solid #334155; margin-top: 0.5rem;}
-        .dropdown-content.show { display: block; } /* JavaScript toggles this class */
+        .dropdown-content.show { display: block; }
+        .dropdown-content a { text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 700; padding: 8px; }
         
-        .dropdown-content a { 
-            text-decoration: none; 
-            display: flex; 
-            align-items: center; 
-            gap: 8px; 
-            font-size: 0.75rem; 
-            font-weight: 700; 
-            padding: 8px; /* Added padding for better click area inside the link wrapper */
-        }
-
-        /* Consistent Button Styling for Links */
-        .app-link-btn {
-            display: flex; align-items: center; gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background-color: #1e293b; /* Slate 800 */
-            color: #94a3b8; /* Slate 400 */
-            border: 1px solid #334155; /* Slate 700 */
-            border-radius: 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 700;
-            transition: all 0.2s;
-            width: 100%; /* Make buttons fill width */
-            margin-bottom: 4px;
-        }
+        /* App Links */
+        .app-link-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 700; transition: all 0.2s; width: 100%; margin-bottom: 4px; }
         .app-link-btn:last-child { margin-bottom: 0; }
+        .app-link-btn:hover { background-color: #334155; color: #fff; border-color: #475569; }
+        .app-link-tome:hover { border-color: #ef4444; color: #fca5a5; }
+        .app-link-homebrew:hover { border-color: #f59e0b; color: #fcd34d; }
+        .app-link-loot:hover { border-color: #ef4444; color: #fca5a5; }
+        .app-link-campaign:hover { border-color: #10b981; color: #6ee7b7; }
 
-        .app-link-btn:hover {
-            background-color: #334155; /* Slate 700 */
-            color: #fff;
-            border-color: #475569; /* Slate 600 */
+        /* Mobile specific adjustments */
+        @media (max-width: 768px) {
+            #ui-layer { padding: 10px; }
+            .mode-switch { justify-content: space-between; }
+            .mode-btn { padding: 6px 8px; font-size: 10px; flex-grow: 1; text-align: center; }
+            #instructions { display: none !important; } /* Hide heavy instructions on mobile */
+            #hotbar-wrapper { bottom: 10px; }
+            .hotbar-slot { width: 40px; height: 40px; }
+            #next-turn-btn { top: auto; bottom: 200px; }
+            #sidebar-container { display: none; } /* Hide sidebar on mobile */
+            .header-controls { flex-wrap: wrap; justify-content: center; gap: 5px; }
+            .header-controls button { padding: 6px 10px; font-size: 10px; }
+            #move-badge { bottom: 140px; }
         }
-        /* Specific accent hover colors */
-        .app-link-tome:hover { border-color: #ef4444; color: #fca5a5; } /* Red for Tome */
-        .app-link-homebrew:hover { border-color: #f59e0b; color: #fcd34d; } /* Amber for Homebrew */
-        .app-link-loot:hover { border-color: #ef4444; color: #fca5a5; } /* Red for Loot */
-        .app-link-campaign:hover { border-color: #10b981; color: #6ee7b7; } /* Emerald for Campaign */
+
+        /* Virtual Joystick Area */
+        #mobile-controls { display: none; pointer-events: none; position: absolute; bottom: 20px; left: 20px; right: 20px; height: 150px; justify-content: space-between; align-items: end; z-index: 40; }
+        @media (max-width: 768px) { #mobile-controls { display: flex; } }
+        .touch-zone { width: 120px; height: 120px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 50%; pointer-events: auto; position: relative; backdrop-filter: blur(2px); }
+        .touch-stick { width: 50px; height: 50px; background: rgba(56, 189, 248, 0.5); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 10px rgba(56,189,248,0.3); pointer-events: none; }
+        .touch-action-btn { width: 60px; height: 60px; background: rgba(16, 185, 129, 0.2); border: 2px solid #10b981; border-radius: 50%; display: flex; items-center; justify-content: center; color: #10b981; font-weight: bold; pointer-events: auto; margin-bottom: 20px; backdrop-filter: blur(4px); }
+        .touch-action-btn:active { background: #10b981; color: white; }
+
+        /* Mobile Build Actions */
+        #mobile-build-actions { display: none; flex-direction: column; gap: 10px; pointer-events: auto; position: absolute; bottom: 160px; right: 20px; }
+        @media (max-width: 768px) { #mobile-build-actions { display: flex; } }
+        .build-btn { width: 50px; height: 50px; background: rgba(30, 41, 59, 0.9); border: 1px solid #475569; border-radius: 12px; color: white; display: flex; items-center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .build-btn.active { border-color: #38BDF8; color: #38BDF8; }
 
     </style>
 </head>
 <body>
     <div id="ui-layer" class="flex flex-col justify-between h-full p-4">
-        <div class="flex justify-between items-start">
-            <div class="interactive bg-slate-900/90 border border-slate-700 p-3 rounded-xl shadow-xl backdrop-blur-sm flex flex-col gap-2">
-                <div class="flex items-center gap-4">
+        <!-- HEADER -->
+        <div class="flex flex-col md:flex-row justify-between items-start gap-4">
+            <div class="interactive bg-slate-900/90 border border-slate-700 p-3 rounded-xl shadow-xl backdrop-blur-sm flex flex-col gap-2 w-full md:w-auto">
+                <div class="flex items-center justify-between gap-4">
                     <h1 class="text-xl font-bold text-white flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                        Akashic Atlas
+                        <span class="hidden md:inline">Akashic Atlas</span>
+                        <span class="md:hidden">Atlas</span>
                     </h1>
+                    <!-- Mode Switch -->
                     <div class="mode-switch">
                         <button id="mode-build" class="mode-btn active">BUILD</button>
                         <button id="mode-dm" class="mode-btn">DM</button>
@@ -113,18 +118,20 @@
                         <button id="mode-enemies" class="mode-btn text-red-400">ENEMIES</button>
                     </div>
                 </div>
-                <div class="text-xs text-slate-400 font-mono flex gap-3">
+                <div class="text-xs text-slate-400 font-mono flex gap-3 justify-center md:justify-start">
                     <span id="coord-display">0, 0, 0</span> | <span id="block-count">0 Blocks</span> | <span id="current-map-name" class="text-amber-400 font-bold">Default Map</span>
                 </div>
             </div>
-            <div class="flex gap-2 relative">
+
+            <!-- CONTROLS -->
+            <div class="header-controls flex gap-2 relative flex-wrap justify-end w-full md:w-auto">
                 <button id="btn-atmosphere" class="interactive bg-slate-800 border border-amber-500/50 p-2 rounded-lg text-amber-400 hover:bg-slate-700 transition-colors shadow-lg" title="Toggle Day/Night"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
-                <div class="w-px h-10 bg-slate-700/50 mx-1"></div>
-                <button id="btn-sync" class="interactive bg-indigo-600 hover:bg-indigo-500 border border-indigo-400 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-lg transition-all flex items-center gap-2">Sync Tokens</button>
+                <div class="w-px h-10 bg-slate-700/50 mx-1 hidden md:block"></div>
+                <button id="btn-sync" class="interactive bg-indigo-600 hover:bg-indigo-500 border border-indigo-400 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-lg transition-all flex items-center gap-2">Sync</button>
                 <button id="btn-slots" class="interactive bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-400 text-xs font-bold px-3 py-2 rounded-lg transition-colors flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Maps</button>
-                <button id="btn-export" class="interactive bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Export JSON</button>
-                <button id="btn-import" class="interactive bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Import JSON</button>
-                <button id="btn-clear" class="interactive bg-red-900/30 hover:bg-red-900/80 border border-red-800/50 text-red-200 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Clear</button>
+                <button id="btn-export" class="interactive bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg transition-colors hidden md:block">Export</button>
+                <button id="btn-import" class="interactive bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg transition-colors hidden md:block">Import</button>
+                <button id="btn-clear" class="interactive bg-red-900/30 hover:bg-red-900/80 border border-red-800/50 text-red-200 text-xs font-bold px-3 py-2 rounded-lg transition-colors hidden md:block">Clear</button>
                 <input type="file" id="file-input" accept=".json" class="hidden">
                 
                 <!-- DROPDOWN MENU -->
@@ -133,22 +140,10 @@
                         Apps <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                     </button>
                     <div id="apps-dropdown-content" class="dropdown-content p-2">
-                        <a href="tome.html" target="_blank" class="app-link-btn app-link-tome">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-8a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v8"/><path d="M4 11V7"/><path d="M20 11V7"/><path d="M2 7h4v4H2z"/><path d="M18 7h4v4h-4z"/><path d="M4 7l2-4 2 4"/><path d="M18 7l2-4 2 4"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/></svg>
-                            Tome (Tracker)
-                        </a>
-                        <a href="homebrew.html" target="_blank" class="app-link-btn app-link-homebrew">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
-                            Homebrew
-                        </a>
-                        <a href="loot.html" target="_blank" class="app-link-btn app-link-loot">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg>
-                            Loot Records
-                        </a>
-                        <a href="campaign.html" target="_blank" class="app-link-btn app-link-campaign">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                            Campaign
-                        </a>
+                        <a href="tome.html" target="_blank" class="app-link-btn app-link-tome"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-8a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v8"/><path d="M4 11V7"/><path d="M20 11V7"/><path d="M2 7h4v4H2z"/><path d="M18 7h4v4h-4z"/><path d="M4 7l2-4 2 4"/><path d="M18 7l2-4 2 4"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/></svg> Tome</a>
+                        <a href="homebrew.html" target="_blank" class="app-link-btn app-link-homebrew"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg> Homebrew</a>
+                        <a href="loot.html" target="_blank" class="app-link-btn app-link-loot"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg> Loot</a>
+                        <a href="campaign.html" target="_blank" class="app-link-btn app-link-campaign"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Campaign</a>
                     </div>
                 </div>
             </div>
@@ -162,9 +157,9 @@
             <button id="focus-next" class="focus-nav-btn">&gt;</button>
         </div>
 
-        <!-- Next Turn Button (New) -->
+        <!-- Next Turn Button -->
         <button id="next-turn-btn" class="interactive hidden">
-            <span>Next Turn</span>
+            <span>Next</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
         </button>
 
@@ -172,33 +167,45 @@
             <h2 class="text-3xl font-bold text-white mb-2 group-hover:scale-105 transition-transform">Click to Enter</h2>
             <div id="instr-build" class="space-y-2 text-slate-300 text-sm mt-4 text-left grid grid-cols-2 gap-x-6">
                 <div><span class="text-cyan-400 font-bold">WASD</span> Move</div>
-                <div><span class="text-cyan-400 font-bold">Space / C</span> Fly Up/Down</div>
+                <div><span class="text-cyan-400 font-bold">Space / C</span> Fly</div>
                 <div><span class="text-red-400 font-bold">L-Click</span> Delete</div>
                 <div><span class="text-cyan-400 font-bold">R-Click</span> Place</div>
-                <div><span class="text-indigo-400 font-bold">Shift + R</span> Focus Token</div>
+                <div><span class="text-indigo-400 font-bold">Shift + R</span> Focus</div>
                 <div><span class="text-yellow-400 font-bold">F</span> Toggle Fly</div>
             </div>
             <div id="instr-dm" class="space-y-2 text-slate-300 text-sm mt-4 text-left hidden">
-                <div><span class="text-cyan-400 font-bold">WASD</span> Free Camera</div>
-                <div><span class="text-indigo-400 font-bold">R-Click (Hold)</span> Pitch/Yaw</div>
-                <div><span class="text-green-400 font-bold">L-Click</span> Select/Move</div>
-                <div><span class="text-red-400 font-bold">Esc</span> Release Unit</div>
+                <div><span class="text-cyan-400 font-bold">WASD</span> Free Cam</div>
+                <div><span class="text-indigo-400 font-bold">R-Hold</span> Look</div>
+                <div><span class="text-green-400 font-bold">L-Click</span> Select</div>
+                <div><span class="text-red-400 font-bold">Esc</span> Release</div>
             </div>
             <div id="instr-focus" class="space-y-2 text-slate-300 text-sm mt-4 text-left hidden">
-                <div><span class="text-cyan-400 font-bold">R-Click (Hold)</span> Pitch/Yaw</div>
-                <div><span class="text-green-400 font-bold">L-Click</span> Move Token</div>
-                <div><span class="text-indigo-400 font-bold">Tab</span> Snap to Token</div>
+                <div><span class="text-cyan-400 font-bold">R-Hold</span> Look</div>
+                <div><span class="text-green-400 font-bold">L-Click</span> Move</div>
+                <div><span class="text-indigo-400 font-bold">Tab</span> Snap</div>
                 <div><span class="text-amber-400 font-bold">Scroll</span> Zoom</div>
             </div>
         </div>
         <div id="mouse-mode-badge" class="absolute top-32 left-1/2 -translate-x-1/2 bg-yellow-500/20 border border-yellow-500 text-yellow-200 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur hidden">Mouse Cursor Active (Tab)</div>
         <div id="move-badge">Movement: 30ft</div>
         
+        <!-- MOBILE CONTROLS (JOYSTICK) -->
+        <div id="mobile-controls">
+            <div id="joystick-move" class="touch-zone">
+                <div id="stick-move" class="touch-stick"></div>
+            </div>
+            <div id="mobile-build-actions">
+                <button id="mob-place" class="build-btn bg-emerald-900/80 border-emerald-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
+                <button id="mob-break" class="build-btn bg-red-900/80 border-red-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                <button id="mob-fly" class="build-btn bg-yellow-900/80 border-yellow-500 text-yellow-200 text-xs font-bold">FLY</button>
+            </div>
+        </div>
+
         <div id="save-indicator">Saving...</div>
 
         <div class="interactive mt-auto w-full flex flex-col items-center" id="hotbar-wrapper">
-            <div class="bg-black/80 text-slate-400 text-[10px] uppercase tracking-widest px-3 py-1 rounded-t-lg font-bold border-t border-x border-slate-800/50">Hold Number & Scroll to Cycle Options</div>
-            <div id="hotbar" class="flex gap-2 p-3 bg-slate-900/90 border border-slate-700 rounded-2xl shadow-2xl backdrop-blur-md"></div>
+            <div class="bg-black/80 text-slate-400 text-[10px] uppercase tracking-widest px-3 py-1 rounded-t-lg font-bold border-t border-x border-slate-800/50">Hold # & Scroll / Touch</div>
+            <div id="hotbar" class="flex gap-2 p-3 bg-slate-900/90 border border-slate-700 rounded-2xl shadow-2xl backdrop-blur-md overflow-x-auto max-w-full"></div>
         </div>
     </div>
 
@@ -261,12 +268,13 @@
             mode: 'view', dragStart: null, controlledToken: null, focusedToken: null, moveBudget: 30,
             currentMapId: 'default', currentMapName: 'Default Map', autoSaveTimer: null,
             focusIndex: 0, focusList: [], 
-            currentTurnIndex: 0 // New state for turn tracking
+            currentTurnIndex: 0,
+            touch: { id: null, startX: 0, startY: 0, moveX: 0, moveY: 0 } // Touch state
         };
 
         const scene = new THREE.Scene(); scene.background = new THREE.Color(CONFIG.colors.bgNight); scene.fog = new THREE.Fog(CONFIG.colors.bgNight, 10, 60);
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(0, 5, 10);
-        const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(window.devicePixelRatio); renderer.shadowMap.enabled = true; document.body.appendChild(renderer.domElement);
+        const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(window.devicePixelRatio > 1 ? 2 : 1); renderer.shadowMap.enabled = true; document.body.appendChild(renderer.domElement);
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); scene.add(ambientLight);
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.5); dirLight.position.set(50, 100, 50); scene.add(dirLight);
         const torchLight = new THREE.PointLight(0xffaa00, 1.5, 20); camera.add(torchLight); scene.add(camera);
@@ -335,7 +343,11 @@
                 const idx = MapStorageManager.getKeys();
                 if (!idx[id]) return false;
                 state.currentMapId = id; state.currentMapName = idx[id];
-                document.getElementById('current-map-name').innerText = state.currentMapName;
+                
+                // Fix for missing element ID
+                const mapNameEl = document.getElementById('current-map-name');
+                if (mapNameEl) mapNameEl.innerText = state.currentMapName;
+                
                 try {
                     const raw = localStorage.getItem(`akashic_map_${id}_voxels`);
                     WorldManager.clear(false); 
@@ -463,7 +475,7 @@
                 const el = document.getElementById('hotbar'); el.innerHTML='';
                 CATEGORIES.forEach((c,i) => {
                     const div = document.createElement('div');
-                    div.className = `hotbar-slot w-12 h-12 bg-slate-800 border-2 rounded-lg flex flex-col items-center justify-center cursor-pointer relative ${i===state.activeCategoryIdx?'active border-sky-400':'border-slate-600 opacity-80'}`;
+                    div.className = `hotbar-slot w-12 h-12 bg-slate-800 border-2 rounded-lg flex flex-col items-center justify-center cursor-pointer relative ${i===state.activeCategoryIdx?'active border-sky-400':'border-slate-600 opacity-80'} shrink-0`;
                     const item = c.items[state.subSelections[i]||0];
                     let inr = '';
                     if(item !== undefined) {
@@ -532,6 +544,10 @@
             const targetPos = token.position.clone();
             const camOffset = new THREE.Vector3(0, 10, 8); // Top-down isometric offset
             camera.position.copy(targetPos).add(camOffset);
+            
+            // Explicitly set camera up vector to avoid roll
+            camera.up.set(0, 1, 0);
+            
             camera.lookAt(targetPos);
             controls.unlock();
             
@@ -653,6 +669,100 @@
             lastMouseX = event.clientX;
             lastMouseY = event.clientY;
         });
+        
+        // --- TOUCH CONTROLS ---
+        const joystick = {
+            el: document.getElementById('joystick-move'),
+            stick: document.getElementById('stick-move'),
+            active: false,
+            origin: { x: 0, y: 0 },
+            current: { x: 0, y: 0 }
+        };
+
+        joystick.el.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            state.touch.id = touch.identifier;
+            joystick.active = true;
+            const rect = joystick.el.getBoundingClientRect();
+            joystick.origin = { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
+            updateJoystick(touch.clientX, touch.clientY);
+        });
+
+        joystick.el.addEventListener('touchmove', e => {
+            e.preventDefault();
+            if (!joystick.active) return;
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === state.touch.id) {
+                    updateJoystick(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+                    break;
+                }
+            }
+        });
+
+        const endJoystick = (e) => {
+             e.preventDefault();
+             if (!joystick.active) return;
+             for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === state.touch.id) {
+                    joystick.active = false;
+                    state.touch.moveX = 0; state.touch.moveY = 0;
+                    joystick.stick.style.transform = `translate(-50%, -50%)`;
+                    // Reset moves
+                    move.f = false; move.b = false; move.l = false; move.r = false;
+                    break;
+                }
+            }
+        };
+        joystick.el.addEventListener('touchend', endJoystick);
+        joystick.el.addEventListener('touchcancel', endJoystick);
+
+        function updateJoystick(x, y) {
+            const maxDist = 35;
+            let dx = x - joystick.origin.x;
+            let dy = y - joystick.origin.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist > maxDist) {
+                const ratio = maxDist / dist;
+                dx *= ratio; dy *= ratio;
+            }
+            joystick.stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            
+            // Set move flags based on joystick position
+            // Thresholds for simpler WASD mapping
+            const threshold = 10;
+            move.f = dy < -threshold;
+            move.b = dy > threshold;
+            move.l = dx < -threshold;
+            move.r = dx > threshold;
+        }
+        
+        // Touch actions for build mode
+        document.getElementById('mob-place').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            // Simulate right click
+             const event = new MouseEvent('mousedown', {
+                bubbles: true, cancelable: true, view: window, button: 2
+            });
+            document.dispatchEvent(event);
+            setTimeout(() => document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window, button: 2 })), 100);
+        });
+        
+        document.getElementById('mob-break').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+             const event = new MouseEvent('mousedown', {
+                bubbles: true, cancelable: true, view: window, button: 0
+            });
+            document.dispatchEvent(event);
+            setTimeout(() => document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window, button: 0 })), 100);
+        });
+        
+        document.getElementById('mob-fly').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isFlying = !isFlying; velocity.y = 0;
+            e.target.classList.toggle('bg-yellow-700');
+        });
+
 
         document.addEventListener('keydown', e => {
             if(e.repeat) return;
@@ -866,6 +976,17 @@
                 RangeRingManager.update(null);
                 // Unlock fly/move for build/dm
                 if(m==='dm') { isFlying=true; velocity.y=0; }
+                
+                // --- FIX: Reset camera orientation when leaving Token Mode ---
+                if (m === 'build') {
+                    // Reset roll (Z) and ensure valid pitch (X)
+                    camera.rotation.z = 0;
+                    camera.rotation.x = 0; // Look straight
+                    // Optionally reset up vector just in case
+                    camera.up.set(0, 1, 0);
+                    controls.lock(); // Auto-lock for build mode convenience
+                }
+                // -------------------------------------------------------------
             }
             
             UIManager.renderHotbar();
