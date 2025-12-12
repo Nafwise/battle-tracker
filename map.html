@@ -6,7 +6,6 @@
     <title>Akashic Atlas | 3D Voxel Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* ADDED touch-action: none to body to prevent browser gestures */
         body { margin: 0; overflow: hidden; background-color: #020617; font-family: ui-sans-serif, system-ui, sans-serif; user-select: none; touch-action: none; -webkit-touch-callout: none; overscroll-behavior: none; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         .interactive { pointer-events: auto; }
@@ -16,7 +15,6 @@
         #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); pointer-events: none; mix-blend-mode: difference; transition: opacity 0.2s; }
         #crosshair::before { content: ''; position: absolute; top: 9px; left: 0; width: 20px; height: 2px; background: rgba(255, 255, 255, 0.9); }
         #crosshair::after { content: ''; position: absolute; top: 0; left: 9px; width: 2px; height: 20px; background: rgba(255, 255, 255, 0.9); }
-        /* Added touch-action: none here as well */
         .hotbar-slot { transition: all 0.15s ease-out; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); touch-action: none; }
         .hotbar-slot.active { border-color: #38BDF8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); transform: translateY(-4px); z-index: 20; }
         #tooltip { position: absolute; display: none; transform: translate(-50%, -120%); backdrop-filter: blur(8px); z-index: 50; pointer-events: none; }
@@ -26,43 +24,22 @@
         .mode-btn { padding: 4px 12px; font-size: 12px; font-weight: bold; border-radius: 6px; color: #94a3b8; transition: all 0.2s; }
         .mode-btn.active { background: #38BDF8; color: #0f172a; box-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
         #move-badge { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #6ee7b7; font-weight: bold; padding: 6px 16px; border-radius: 20px; backdrop-filter: blur(4px); display: none; text-shadow: 0 1px 2px black; }
-        
         #save-indicator { position: absolute; bottom: 80px; right: 20px; background: rgba(0,0,0,0.7); color: #aaa; padding: 5px 10px; border-radius: 5px; font-size: 12px; pointer-events: none; transition: opacity 0.5s; opacity: 0; }
         #save-indicator.visible { opacity: 1; }
-        
         #slots-modal { display: none; }
         #slots-modal.open { display: flex; }
-
-        /* Focus Navigation Controls */
         #focus-controls { display: none; position: absolute; bottom: 160px; left: 50%; transform: translateX(-50%); gap: 10px; align-items: center; pointer-events: auto; }
         #focus-controls.visible { display: flex; }
         .focus-nav-btn { background: rgba(15, 23, 42, 0.9); color: white; border: 1px solid #334155; width: 40px; height: 40px; border-radius: 50%; display: flex; items-center; justify-content: center; font-weight: bold; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .focus-nav-btn:hover { background: #38BDF8; color: #0f172a; transform: scale(1.1); }
         .focus-label { background: rgba(15, 23, 42, 0.9); color: white; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; border: 1px solid #334155; min-width: 150px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-
-        /* Next Turn Button */
-        #next-turn-btn { 
-            position: absolute; top: 130px; left: 50%; transform: translateX(-50%);
-            background: linear-gradient(135deg, #4f46e5, #ec4899);
-            border: 2px solid #a5b4fc;
-            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
-            padding: 8px 24px; border-radius: 99px;
-            color: white; font-weight: bold; font-size: 14px;
-            display: flex; align-items: center; gap: 8px;
-            cursor: pointer; transition: all 0.2s;
-            z-index: 50;
-            touch-action: none; /* Prevent gestures */
-        }
+        #next-turn-btn { position: absolute; top: 130px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #4f46e5, #ec4899); border: 2px solid #a5b4fc; box-shadow: 0 0 15px rgba(99, 102, 241, 0.5); padding: 8px 24px; border-radius: 99px; color: white; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s; z-index: 50; touch-action: none; }
         #next-turn-btn:hover { transform: translateX(-50%) scale(1.05); box-shadow: 0 0 25px rgba(99, 102, 241, 0.8); }
         #next-turn-btn.hidden { display: none; }
         .turn-active-glow { box-shadow: 0 0 30px 10px rgba(255, 215, 0, 0.6); }
-
-        /* Dropdown Styles */
         .dropdown-content { display: none; position: absolute; right: 0; top: 100%; background-color: #1e293b; min-width: 160px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); z-index: 50; border-radius: 0.5rem; border: 1px solid #334155; margin-top: 0.5rem;}
         .dropdown-content.show { display: block; }
         .dropdown-content a { text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 700; padding: 8px; }
-        
-        /* App Links */
         .app-link-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 700; transition: all 0.2s; width: 100%; margin-bottom: 4px; }
         .app-link-btn:last-child { margin-bottom: 0; }
         .app-link-btn:hover { background-color: #334155; color: #fff; border-color: #475569; }
@@ -70,83 +47,35 @@
         .app-link-homebrew:hover { border-color: #f59e0b; color: #fcd34d; }
         .app-link-loot:hover { border-color: #ef4444; color: #fca5a5; }
         .app-link-campaign:hover { border-color: #10b981; color: #6ee7b7; }
-
-        /* Mobile specific adjustments */
         @media (max-width: 1024px) { 
             #ui-layer { padding: 10px; }
             .mode-switch { justify-content: space-between; }
             .mode-btn { padding: 6px 8px; font-size: 10px; flex-grow: 1; text-align: center; }
-            #instructions { display: none !important; } /* Hide heavy instructions on mobile */
-            /* FIX: Ensure hotbar wrapper is above mobile controls (z-index 40) */
+            #instructions { display: none !important; }
             #hotbar-wrapper { bottom: 10px; z-index: 60; position: relative; }
             .hotbar-slot { width: 40px; height: 40px; }
             #next-turn-btn { top: auto; bottom: 200px; }
-            #sidebar-container { display: none; } /* Hide sidebar on mobile */
+            #sidebar-container { display: none; }
             .header-controls { flex-wrap: wrap; justify-content: center; gap: 5px; }
             .header-controls button { padding: 6px 10px; font-size: 10px; }
             #move-badge { bottom: 140px; }
         }
-
-        /* UPDATED MOBILE CONTROLS */
-        #mobile-controls { 
-            display: none; 
-            position: absolute; 
-            top: 0; left: 0; width: 100%; height: 100%; 
-            pointer-events: none; /* Let clicks pass through generally */
-            z-index: 40; 
-        }
-        /* Mobile controls visibility is now handled by JS logic */
-
-        /* The invisible touch zones */
+        #mobile-controls { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; }
         .touch-zone-left { position: absolute; top: 60px; bottom: 0; left: 0; width: 50%; pointer-events: auto; touch-action: none; }
         .touch-zone-right { position: absolute; top: 60px; bottom: 0; right: 0; width: 50%; pointer-events: auto; touch-action: none; }
-
-        /* The Visual Joystick */
-        #joystick-ui { 
-            position: absolute; 
-            width: 100px; height: 100px; 
-            border: 2px solid rgba(255, 255, 255, 0.2); 
-            border-radius: 50%; 
-            display: none; /* Hidden until touched */
-            pointer-events: none;
-            transform: translate(-50%, -50%);
-        }
-        #joystick-knob {
-            position: absolute; left: 50%; top: 50%;
-            width: 40px; height: 40px;
-            background: rgba(56, 189, 248, 0.5);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
-        }
-
-        /* Build Actions Position */
-        #mobile-build-actions { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-            pointer-events: auto; 
-            position: absolute; 
-            bottom: 140px; 
-            right: 20px; 
-            z-index: 50; 
-        }
-        
-        /* Enforce touch-action none on buttons to stop weird ghost clicks/zooms */
+        #joystick-ui { position: absolute; width: 100px; height: 100px; border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%; display: none; pointer-events: none; transform: translate(-50%, -50%); }
+        #joystick-knob { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; background: rgba(56, 189, 248, 0.5); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 10px rgba(56, 189, 248, 0.8); }
+        #mobile-build-actions { display: flex; flex-direction: column; gap: 15px; pointer-events: auto; position: absolute; bottom: 140px; right: 20px; z-index: 50; }
         .build-btn { width: 60px; height: 60px; background: rgba(30, 41, 59, 0.95); border: 2px solid #475569; border-radius: 50%; color: white; display: flex; items-center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: transform 0.1s; touch-action: none; }
         .build-btn:active { transform: scale(0.95); }
         .build-btn.place-btn { border-color: #10b981; color: #10b981; background: rgba(6, 78, 59, 0.9); }
         .build-btn.break-btn { border-color: #ef4444; color: #ef4444; background: rgba(127, 29, 29, 0.9); }
         .build-btn.fly-btn { border-color: #eab308; color: #fef08a; background: rgba(113, 63, 18, 0.9); font-size: 10px; font-weight: bold; }
         .build-btn.fly-btn.active { background: #eab308; color: black; box-shadow: 0 0 15px rgba(234, 179, 8, 0.6); }
-
-        /* Vertical movement controls for Fly Mode */
+        .build-btn.rotate-btn { border-color: #818cf8; color: #a5b4fc; background: rgba(49, 46, 129, 0.9); }
         #mobile-vertical-controls { display: none; flex-direction: column; gap: 10px; position: absolute; bottom: 160px; left: 160px; pointer-events: auto; z-index: 50; }
-        
         .vert-btn { width: 50px; height: 50px; background: rgba(15, 23, 42, 0.8); border: 2px solid #64748b; border-radius: 12px; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.5); touch-action: none; }
         .vert-btn:active { background: #38BDF8; color: black; }
-
-        /* CONTROL SCHEME MODAL */
         #controls-modal { display: none; }
         #controls-modal.open { display: flex; }
     </style>
@@ -162,7 +91,6 @@
                         <span class="hidden md:inline">Akashic Atlas</span>
                         <span class="md:hidden">Atlas</span>
                     </h1>
-                    <!-- Mode Switch -->
                     <div class="mode-switch">
                         <button id="mode-build" class="mode-btn active">BUILD</button>
                         <button id="mode-dm" class="mode-btn">DM</button>
@@ -187,7 +115,6 @@
                 <button id="btn-clear" class="interactive bg-red-900/30 hover:bg-red-900/80 border border-red-800/50 text-red-200 text-xs font-bold px-3 py-2 rounded-lg transition-colors hidden md:block">Clear</button>
                 <input type="file" id="file-input" accept=".json" class="hidden">
                 
-                <!-- DROPDOWN MENU -->
                 <div class="dropdown interactive relative">
                     <button id="btn-apps-dropdown" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg transition-colors flex items-center gap-2">
                         Apps <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -203,14 +130,12 @@
         </div>
         <div id="sidebar-container" class="absolute left-4 top-32 bottom-32 w-64 interactive overflow-y-auto pr-2 hidden sm:block"></div>
         
-        <!-- Focus Navigation UI -->
         <div id="focus-controls" class="interactive">
             <button id="focus-prev" class="focus-nav-btn">&lt;</button>
             <div id="focus-label" class="focus-label">No Target</div>
             <button id="focus-next" class="focus-nav-btn">&gt;</button>
         </div>
 
-        <!-- Next Turn Button -->
         <button id="next-turn-btn" class="interactive hidden">
             <span>Next</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
@@ -223,6 +148,7 @@
                 <div><span class="text-cyan-400 font-bold">Space / C</span> Fly</div>
                 <div><span class="text-red-400 font-bold">L-Click</span> Delete</div>
                 <div><span class="text-cyan-400 font-bold">R-Click</span> Place</div>
+                <div><span class="text-green-400 font-bold">R</span> Rotate</div>
                 <div><span class="text-indigo-400 font-bold">Shift + R</span> Focus</div>
                 <div><span class="text-yellow-400 font-bold">F</span> Toggle Fly</div>
             </div>
@@ -242,17 +168,10 @@
         <div id="mouse-mode-badge" class="absolute top-32 left-1/2 -translate-x-1/2 bg-yellow-500/20 border border-yellow-500 text-yellow-200 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur hidden">Mouse Cursor Active (Tab)</div>
         <div id="move-badge">Movement: 30ft</div>
         
-        <!-- NEW MOBILE CONTROLS -->
         <div id="mobile-controls">
-            <!-- Touch Zones -->
             <div id="zone-move" class="touch-zone-left"></div>
             <div id="zone-look" class="touch-zone-right"></div>
-            
-            <!-- Visual Feedback -->
-            <div id="joystick-ui">
-                <div id="joystick-knob"></div>
-            </div>
-
+            <div id="joystick-ui"><div id="joystick-knob"></div></div>
             <div id="mobile-vertical-controls">
                 <button id="mob-up" class="vert-btn">▲</button>
                 <button id="mob-down" class="vert-btn">▼</button>
@@ -260,6 +179,7 @@
             <div id="mobile-build-actions">
                 <button id="mob-place" class="build-btn place-btn"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
                 <button id="mob-break" class="build-btn break-btn"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                <button id="mob-rotate" class="build-btn rotate-btn"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
                 <button id="mob-fly" class="build-btn fly-btn">FLY</button>
             </div>
         </div>
@@ -272,7 +192,6 @@
         </div>
     </div>
 
-    <!-- MAP SLOTS MODAL -->
     <div id="slots-modal" class="interactive fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 w-full max-w-md rounded-xl border border-slate-700 shadow-2xl flex flex-col max-h-[80vh]">
             <div class="p-4 border-b border-slate-700 flex justify-between items-center">
@@ -289,7 +208,6 @@
         </div>
     </div>
 
-    <!-- CONTROL SCHEME MODAL -->
     <div id="controls-modal" class="interactive fixed inset-0 z-[110] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 w-full max-w-lg rounded-2xl border-2 border-indigo-500/50 shadow-[0_0_50px_rgba(99,102,241,0.2)] p-8 text-center">
             <h2 class="text-2xl font-bold text-white mb-2">Select Control Scheme</h2>
@@ -326,6 +244,7 @@
     <script type="module">
         import * as THREE from 'three';
         import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+        import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
         // --- CONFIGURATION ---
         const CONFIG = {
@@ -338,18 +257,89 @@
         };
 
         const CONDITION_COLORS = { "Blinded":0x525252,"Charmed":0xdb2777,"Deafened":0x94a3b8,"Frightened":0x7c3aed,"Grappled":0xf97316,"Incapacitated":0xdc2626,"Invisible":0xffffff,"Paralyzed":0xfacc15,"Petrified":0x475569,"Poisoned":0x16a34a,"Prone":0x78350f,"Restrained":0x9a3412,"Stunned":0xf59e0b,"Unconscious":0x000000,"Exhaustion":0x7f1d1d,"Default":0x38BDF8 };
+        
+        // ---- TEXTURE GENERATION HELPER ----
+        const TextureGenerator = {
+            createCanvas(width, height) {
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                return canvas;
+            },
+            brick(color, groutColor) {
+                const w = 64, h = 64;
+                const canvas = this.createCanvas(w, h);
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#' + groutColor.toString(16).padStart(6, '0');
+                ctx.fillRect(0, 0, w, h);
+                ctx.fillStyle = '#' + color.toString(16).padStart(6, '0');
+                const brickH = 14; const brickW = 28;
+                ctx.fillRect(0, 2, brickW, brickH); ctx.fillRect(brickW + 2, 2, brickW, brickH); ctx.fillRect((brickW * 2) + 4, 2, brickW, brickH);
+                ctx.fillRect(-10, 18, brickW, brickH); ctx.fillRect(16, 18, brickW, brickH); ctx.fillRect(16 + brickW + 2, 18, brickW, brickH);
+                ctx.fillRect(0, 34, brickW, brickH); ctx.fillRect(brickW + 2, 34, brickW, brickH);
+                ctx.fillRect(-10, 50, brickW, brickH); ctx.fillRect(16, 50, brickW, brickH); ctx.fillRect(16 + brickW + 2, 50, brickW, brickH);
+                const tex = new THREE.CanvasTexture(canvas); tex.magFilter = THREE.NearestFilter;
+                return tex;
+            },
+            wood(color, darkColor) {
+                const w = 64, h = 64;
+                const canvas = this.createCanvas(w, h);
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#' + color.toString(16).padStart(6, '0');
+                ctx.fillRect(0, 0, w, h);
+                ctx.strokeStyle = '#' + darkColor.toString(16).padStart(6, '0');
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(0, 21); ctx.lineTo(w, 21); ctx.moveTo(0, 42); ctx.lineTo(w, 42); ctx.stroke();
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                for(let i=0; i<40; i++) { ctx.fillRect(Math.random()*w, Math.random()*h, 4, 1); }
+                const tex = new THREE.CanvasTexture(canvas); tex.magFilter = THREE.NearestFilter;
+                return tex;
+            }
+        };
+
+        // --- UPDATED MATERIALS ---
         const MATERIALS = [
-            { id: 0, name: "Grass", color: 0x4b6e32, type: 'solid' }, { id: 1, name: "Dirt", color: 0x5c3c28, type: 'solid' }, { id: 2, name: "Stone", color: 0x64748b, type: 'solid' }, { id: 3, name: "Wood", color: 0x8B4513, type: 'solid' },
-            { id: 4, name: "Sand", color: 0xE6C288, type: 'solid' }, { id: 5, name: "Snow", color: 0xf1f5f9, type: 'solid' }, { id: 6, name: "Dungeon", color: 0x1e293b, type: 'solid' },
-            { id: 7, name: "Water", color: 0x38BDF8, type: 'liquid', opacity: 0.6 }, { id: 8, name: "Lava", color: 0xea580c, type: 'liquid', opacity: 0.8 }, { id: 9, name: "Acid", color: 0x84cc16, type: 'liquid', opacity: 0.6 },
-            { id: 10, name: "Poison", color: 0x14532d, type: 'liquid', opacity: 0.7 }, { id: 11, name: "Force", color: 0xa855f7, type: 'liquid', opacity: 0.5 }
+            { id: 0, name: "Grass", color: 0x4b6e32, type: 'solid' },
+            { id: 1, name: "Dirt", color: 0x5c3c28, type: 'solid' },
+            { id: 2, name: "Stone", color: 0x64748b, type: 'solid' },
+            { id: 3, name: "Wood Planks", color: 0x8B4513, type: 'textured_wood', color2: 0x5c3c28 }, 
+            { id: 4, name: "Sand", color: 0xE6C288, type: 'solid' },
+            { id: 5, name: "Snow", color: 0xf1f5f9, type: 'solid' },
+            { id: 6, name: "Dungeon Bricks", color: 0x475569, type: 'textured_brick', color2: 0x1e293b }, 
+            { id: 7, name: "Red Bricks", color: 0x8f3636, type: 'textured_brick', color2: 0x5c3c28 }, 
+            { id: 8, name: "Water", color: 0x38BDF8, type: 'liquid', opacity: 0.6 },
+            { id: 9, name: "Lava", color: 0xea580c, type: 'liquid', opacity: 0.8 },
+            { id: 10, name: "Acid", color: 0x84cc16, type: 'liquid', opacity: 0.6 },
+            { id: 11, name: "Poison", color: 0x14532d, type: 'liquid', opacity: 0.7 },
+            { id: 12, name: "Wood Stairs", color: 0x8B4513, type: 'stair_wood', color2: 0x5c3c28 },
+            { id: 13, name: "Dungeon Stairs", color: 0x475569, type: 'stair_brick', color2: 0x1e293b },
+            { id: 14, name: "Red Brick Stairs", color: 0x8f3636, type: 'stair_brick', color2: 0x5c3c28 },
         ];
+        
+        // --- CATEGORIES ---
         const CATEGORIES = [
-            { key: '1', label: 'Solid', type: 'block', items: [0, 1, 2, 3, 4, 5, 6] }, { key: '2', label: 'Liquid', type: 'block', items: [7, 8, 9, 10, 11] },
-            { key: '3', label: 'Players', type: 'token', subType: 'player', items: [] }, { key: '4', label: 'Enemies', type: 'token', subType: 'monster', items: [] },
-            { key: '5', label: 'Loot', type: 'loot', items: [] }, { key: '6', label: '-', type: 'none', items: [] },
-            { key: '7', label: '-', type: 'none', items: [] }, { key: '8', label: '-', type: 'none', items: [] }, { key: '9', label: '-', type: 'none', items: [] }, { key: '0', label: '-', type: 'none', items: [] }
+            { key: '1', label: 'Solid', type: 'block', items: [0, 1, 2, 4, 5] },
+            { key: '2', label: 'Textured', type: 'block', items: [3, 6, 7, 12, 13, 14] }, 
+            { key: '3', label: 'Liquids', type: 'block', items: [8, 9, 10, 11] },
+            { key: '4', label: 'Players', type: 'token', subType: 'player', items: [] }, 
+            { key: '5', label: 'Enemies', type: 'token', subType: 'monster', items: [] },
+            { key: '6', label: 'Loot', type: 'loot', items: [] }, 
+            { key: '7', label: '-', type: 'none', items: [] }, 
+            { key: '8', label: '-', type: 'none', items: [] }, 
+            { key: '9', label: '-', type: 'none', items: [] }, 
+            { key: '0', label: '-', type: 'none', items: [] }
         ];
+
+        // --- UPDATED MATERIAL GENERATION ---
+        const materials = MATERIALS.map(m => {
+            const matConfig = { transparent: !!m.opacity, opacity: m.opacity || 1 };
+            if (m.type === 'liquid') { matConfig.color = m.color; matConfig.depthWrite = false; matConfig.side = THREE.FrontSide; } 
+            else if (m.type === 'textured_brick' || m.type === 'stair_brick') { matConfig.map = TextureGenerator.brick(m.color, m.color2 || 0x000000); }
+            else if (m.type === 'textured_wood' || m.type === 'stair_wood') { matConfig.map = TextureGenerator.wood(m.color, m.color2 || 0x000000); }
+            else { matConfig.color = m.color; }
+            return new THREE.MeshLambertMaterial(matConfig);
+        });
+        
         const DIRS = [ {x:1,y:0,z:0}, {x:-1,y:0,z:0}, {x:0,y:1,z:0}, {x:0,y:-1,z:0}, {x:0,y:0,z:1}, {x:0,y:0,z:-1} ];
 
         const state = { 
@@ -361,19 +351,26 @@
             currentTurnIndex: 0,
             isTouch: false, // Updated: controlled by selection
             moveVector: { x: 0, z: 0 }, 
-            touch: { id: null, startX: 0, startY: 0, moveX: 0, moveY: 0 } 
+            touch: { id: null, startX: 0, startY: 0, moveX: 0, moveY: 0 },
+            placementRotation: 0 // New state for manual rotation
         };
 
         const scene = new THREE.Scene(); scene.background = new THREE.Color(CONFIG.colors.bgNight); scene.fog = new THREE.Fog(CONFIG.colors.bgNight, 10, 60);
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(0, 5, 10);
         const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); renderer.shadowMap.enabled = true; document.body.appendChild(renderer.domElement);
+        
+        // FIX: Re-declare all required variables at the top level
+        const controls = new PointerLockControls(camera, document.body);
+        const raycaster = new THREE.Raycaster();
+        const move = { f:false, b:false, l:false, r:false, u:false, d:false };
+        let canJump=false, isFlying=false, velocity = new THREE.Vector3(), prevTime = performance.now();
+
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); scene.add(ambientLight);
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.5); dirLight.position.set(50, 100, 50); scene.add(dirLight);
         const torchLight = new THREE.PointLight(0xffaa00, 1.5, 20); camera.add(torchLight); scene.add(camera);
         const plane = new THREE.Mesh(new THREE.PlaneGeometry(64, 64).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({visible:false})); plane.name = "ground"; scene.add(plane);
         scene.add(new THREE.GridHelper(64, 64, 0x334155, 0x1e293b));
 
-        // MOUSE AND ROTATION TRACKING
         const mouse = new THREE.Vector2();
         let isRightMouseDown = false;
         let lastMouseX = 0;
@@ -384,29 +381,66 @@
         const GeometryManager = {
             cache: new Map(),
             init: () => {
-                const base = new THREE.BoxGeometry(1,1,1); const pos = base.attributes.position, norm = base.attributes.normal, uv = base.attributes.uv, idx = base.index;
-                for (let m=0; m<64; m++) {
-                    const indices = [];
-                    for (let f=0; f<6; f++) if ((m & (1<<f)) === 0) for (let i=0; i<6; i++) indices.push(idx.array[f*6+i]);
-                    const g = new THREE.BufferGeometry(); g.setAttribute('position', pos); g.setAttribute('normal', norm); g.setAttribute('uv', uv); g.setIndex(indices);
-                    GeometryManager.cache.set(m, g);
-                }
+                // Helper to create a BoxGeometry with UVs scaled to match size
+                // This prevents texture "squashing" on smaller stair parts
+                const createBox = (w, h, d, tx, ty, tz) => {
+                    const g = new THREE.BoxGeometry(w, h, d);
+                    // Scale UVs
+                    const uv = g.attributes.uv;
+                    // BoxGeometry creates faces: +x, -x, +y, -y, +z, -z.
+                    // Each face has 4 vertices. 
+                    // To be perfect, we map width/depth/height to u/v.
+                    // Since textures are tilable, we assume 1 unit world space = 1 unit UV.
+                    // Simple BoxGeometry maps 0..1 to each face.
+                    // We modify this by scaling u by width/depth and v by height/depth.
+                    
+                    // Indices for faces: 0-3 (+x), 4-7 (-x), 8-11 (+y), 12-15 (-y), 16-19 (+z), 20-23 (-z)
+                    // +x/-x (Right/Left): Size d * h. U*=d, V*=h
+                    for(let i=0; i<8; i++) { uv.setXY(i, uv.getX(i)*d, uv.getY(i)*h); }
+                    // +y/-y (Top/Bottom): Size w * d. U*=w, V*=d
+                    for(let i=8; i<16; i++) { uv.setXY(i, uv.getX(i)*w, uv.getY(i)*d); }
+                    // +z/-z (Front/Back): Size w * h. U*=w, V*=h
+                    for(let i=16; i<24; i++) { uv.setXY(i, uv.getX(i)*w, uv.getY(i)*h); }
+                    
+                    g.translate(tx, ty, tz);
+                    return g;
+                };
+
+                // Standard Full Block
+                GeometryManager.cache.set(0, createBox(1,1,1, 0,0,0));
+
+                // --- STAIR GEOMETRIES ---
+                // Re-create using Scaled UVs
+                const slab = createBox(1, 0.5, 1, 0, -0.25, 0); 
+                const topBack = createBox(1, 0.5, 0.5, 0, 0.25, -0.25);
+                
+                // Quarters
+                const qTL = createBox(0.5, 0.5, 0.5, -0.25, 0.25, -0.25);
+                const qTR = createBox(0.5, 0.5, 0.5, 0.25, 0.25, -0.25);
+                const qFL = createBox(0.5, 0.5, 0.5, -0.25, 0.25, 0.25);
+                const qFR = createBox(0.5, 0.5, 0.5, 0.25, 0.25, 0.25);
+
+                // 1. Standard Stair
+                GeometryManager.cache.set('stair', BufferGeometryUtils.mergeGeometries([slab.clone(), topBack.clone()]));
+
+                // 2. Outer Left (Pyramid Corner)
+                GeometryManager.cache.set('stair_outer_left', BufferGeometryUtils.mergeGeometries([slab.clone(), qTL.clone()]));
+
+                // 3. Outer Right (Pyramid Corner)
+                GeometryManager.cache.set('stair_outer_right', BufferGeometryUtils.mergeGeometries([slab.clone(), qTR.clone()]));
+
+                // 4. Inner Left (Room Corner)
+                GeometryManager.cache.set('stair_inner_left', BufferGeometryUtils.mergeGeometries([slab.clone(), topBack.clone(), qFL.clone()]));
+
+                // 5. Inner Right (Room Corner)
+                GeometryManager.cache.set('stair_inner_right', BufferGeometryUtils.mergeGeometries([slab.clone(), topBack.clone(), qFR.clone()]));
             },
-            get: (m) => GeometryManager.cache.get(m) || GeometryManager.cache.get(0)
+            get: (m) => {
+                if (typeof m === 'string') return GeometryManager.cache.get(m) || GeometryManager.cache.get('stair');
+                return GeometryManager.cache.get(m) || GeometryManager.cache.get(0);
+            }
         }; GeometryManager.init();
 
-        const materials = MATERIALS.map(m => {
-            const matConfig = {
-                color: m.color,
-                transparent: !!m.opacity,
-                opacity: m.opacity || 1
-            };
-            if (m.type === 'liquid') {
-                matConfig.depthWrite = false; 
-                matConfig.side = THREE.FrontSide;
-            }
-            return new THREE.MeshLambertMaterial(matConfig);
-        });
         const tokenGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.2, 16);
         const lootGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
 
@@ -419,26 +453,21 @@
                 RangeRingManager.group.visible = true;
                 RangeRingManager.group.position.copy(targetToken.position);
                 RangeRingManager.group.position.y = targetToken.position.y - 0.1 + 0.02;
-                
                 const data = targetToken.userData.data;
                 const radius = (state.moveBudget / 5); 
-                
-                // Base Ring
                 const baseRing = new THREE.Mesh(new THREE.RingGeometry(0.4, 0.5, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({color: 0xffffff, side: THREE.DoubleSide, opacity: 0.8, transparent: true}));
                 RangeRingManager.group.add(baseRing);
-
                 if (type === 'movement' && radius > 0) {
                     const mesh = new THREE.Mesh(new THREE.RingGeometry(Math.max(0.1, radius-0.2), radius, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({color: 0x38BDF8, side: THREE.DoubleSide, transparent: true, opacity: 0.4}));
                     RangeRingManager.group.add(mesh);
                 } else if (type === 'conditions' || type === 'focus') {
-                    const moveRadius = 6; // 30ft default vis
+                    const moveRadius = 6; 
                     const mesh = new THREE.Mesh(new THREE.RingGeometry(moveRadius-0.1, moveRadius, 64).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide, transparent: true, opacity: 0.3 }));
                     RangeRingManager.group.add(mesh);
                 }
             }
         }; RangeRingManager.init();
 
-        // --- MAP STORAGE MANAGER ---
         const MapStorageManager = {
             getKeys: () => { try { return JSON.parse(localStorage.getItem('akashic_map_index')) || { 'default': 'Default Map' }; } catch { return { 'default': 'Default Map' }; } },
             saveIndex: (idx) => localStorage.setItem('akashic_map_index', JSON.stringify(idx)),
@@ -446,14 +475,12 @@
                 const idx = MapStorageManager.getKeys();
                 if (!idx[id]) return false;
                 state.currentMapId = id; state.currentMapName = idx[id];
-                
                 const mapNameEl = document.getElementById('current-map-name');
                 if (mapNameEl) mapNameEl.innerText = state.currentMapName;
-                
                 try {
                     const raw = localStorage.getItem(`akashic_map_${id}_voxels`);
                     WorldManager.clear(false); 
-                    if (raw) { JSON.parse(raw).forEach(b => WorldManager.add(b.x, b.y, b.z, b.c, false)); }
+                    if (raw) { JSON.parse(raw).forEach(b => WorldManager.add(b.x, b.y, b.z, b.c, b.r || 0, false)); }
                 } catch(e) { console.error("Map Load Error", e); }
                 try {
                     const posRaw = localStorage.getItem(`akashic_map_${id}_positions`);
@@ -467,7 +494,7 @@
                 return true;
             },
             saveMap: () => {
-                const voxelData = []; state.mapData.forEach(m => voxelData.push({x:m.position.x, y:m.position.y, z:m.position.z, c:m.userData.matIndex}));
+                const voxelData = []; state.mapData.forEach(m => voxelData.push({x:m.position.x, y:m.position.y, z:m.position.z, c:m.userData.matIndex, r: m.rotation.y}));
                 localStorage.setItem(`akashic_map_${state.currentMapId}_voxels`, JSON.stringify(voxelData));
                 const posData = {}; state.tokenData.forEach((m, id) => { posData[id] = {x:m.position.x, y:m.position.y, z:m.position.z}; });
                 localStorage.setItem(`akashic_map_${state.currentMapId}_positions`, JSON.stringify(posData));
@@ -479,9 +506,130 @@
         };
 
         const WorldManager = {
-            add: (x,y,z,mat, updateGeo=true) => { const k = `${x},${y},${z}`; if(state.mapData.has(k)) return; const m = new THREE.Mesh(GeometryManager.get(0), materials[mat]); m.position.set(x,y,z); m.userData={isVoxel:true, matIndex:mat}; scene.add(m); state.mapData.set(k, m); if(updateGeo) { WorldManager.updateGeo(x,y,z); DIRS.forEach(d=>WorldManager.updateGeo(x+d.x, y+d.y, z+d.z)); document.getElementById('block-count').innerText = `${state.mapData.size} Blocks`; MapStorageManager.triggerAutoSave(); } },
-            remove: (m) => { const {x,y,z} = m.position; scene.remove(m); state.mapData.delete(`${x},${y},${z}`); DIRS.forEach(d=>WorldManager.updateGeo(x+d.x, y+d.y, z+d.z)); document.getElementById('block-count').innerText = `${state.mapData.size} Blocks`; MapStorageManager.triggerAutoSave(); },
-            updateGeo: (x,y,z) => { const m = state.mapData.get(`${x},${y},${z}`); if(!m) return; let mask = 0; DIRS.forEach((d,i) => { const n = state.mapData.get(`${x+d.x},${y+d.y},${z+d.z}`); if(n && n.userData.matIndex === m.userData.matIndex) mask |= (1<<i); }); m.geometry = GeometryManager.get(mask); },
+            // Helper to get logic shape for stairs
+            getStairShape: (x, y, z, myRot) => {
+                const getBlock = (dx, dz) => {
+                    const k = `${x+dx},${y},${z+dz}`;
+                    const m = state.mapData.get(k);
+                    if(m && MATERIALS[m.userData.matIndex].type.startsWith('stair')) return m;
+                    return null;
+                };
+
+                // Normalize rotation to 0, 90, 180, 270
+                // 0=North(-Z), 90=West(-X), 180=South(+Z), 270=East(+X)
+                let deg = Math.round(myRot * (180/Math.PI));
+                while(deg < 0) deg += 360;
+                deg = deg % 360;
+
+                // Define Front and Back vectors relative to MY facing direction
+                // CORRECTION: 
+                // Geometry has High side at Local -Z (North).
+                // So "Back" (High side) is in the direction of rotation.
+                // "Front" (Low side, where you step up) is opposite the direction of rotation.
+                
+                let frontVec = {x:0, z:0}; // Low Side (Step up)
+                let backVec = {x:0, z:0};  // High Side (Wall)
+                
+                if (deg === 0) { // North (High side is North/-Z)
+                    backVec = {x:0, z:-1}; frontVec = {x:0, z:1}; 
+                } else if (deg === 90) { // West (High side is West/-X)
+                    backVec = {x:-1, z:0}; frontVec = {x:1, z:0};
+                } else if (deg === 180) { // South (High side is South/+Z)
+                    backVec = {x:0, z:1}; frontVec = {x:0, z:-1};
+                } else if (deg === 270) { // East (High side is East/+X)
+                    backVec = {x:1, z:0}; frontVec = {x:-1, z:0};
+                }
+
+                const frontNeighbor = getBlock(frontVec.x, frontVec.z);
+                const backNeighbor = getBlock(backVec.x, backVec.z);
+
+                const getDeg = (obj) => {
+                    let d = Math.round(obj.rotation.y * (180/Math.PI));
+                    while(d < 0) d += 360; return d % 360;
+                };
+                
+                // Helper: Is neighbor rotated 90 degrees Left or Right relative to me?
+                // Left = +90, Right = -90 (or +270)
+                const getDiff = (n) => (getDeg(n) - deg + 360) % 360;
+
+                // 1. INNER CORNER CHECK (Sofa / Pit)
+                // Rule: Check Neighbor in FRONT (Low side).
+                if (frontNeighbor) {
+                    const d = getDiff(frontNeighbor);
+                    // Standard Logic: Left -> Inner Left, Right -> Inner Right
+                    if (d === 90) return 'stair_inner_left';
+                    if (d === 270) return 'stair_inner_right';
+                }
+
+                // 2. OUTER CORNER CHECK (Pyramid / Column)
+                // Rule: Check Neighbor BEHIND (High side).
+                if (backNeighbor) {
+                    const d = getDiff(backNeighbor);
+                    // Standard Logic: Left -> Outer Left, Right -> Outer Right
+                    if (d === 90) return 'stair_outer_left';
+                    if (d === 270) return 'stair_outer_right';
+                } 
+
+                return 'stair';
+            },
+
+            add: (x,y,z,mat, rot = 0, updateGeo=true) => { 
+                const k = `${x},${y},${z}`; 
+                if(state.mapData.has(k)) return; 
+                
+                const matDef = MATERIALS[mat];
+                let geometry = GeometryManager.get(0);
+                
+                if (matDef.type.startsWith('stair')) {
+                    geometry = GeometryManager.get('stair'); // Initial geometry, updated later
+                }
+
+                const m = new THREE.Mesh(geometry, materials[mat]); 
+                m.position.set(x,y,z); 
+                m.userData={isVoxel:true, matIndex:mat}; 
+                m.rotation.y = rot;
+
+                scene.add(m); 
+                state.mapData.set(k, m); 
+                
+                if(updateGeo) { 
+                    WorldManager.updateGeo(x,y,z); 
+                    // Update neighbors for occlusion AND stair corners
+                    DIRS.forEach(d=>WorldManager.updateGeo(x+d.x, y+d.y, z+d.z)); 
+                    document.getElementById('block-count').innerText = `${state.mapData.size} Blocks`; 
+                    MapStorageManager.triggerAutoSave(); 
+                } 
+            },
+            remove: (m) => { 
+                const {x,y,z} = m.position; 
+                scene.remove(m); 
+                state.mapData.delete(`${x},${y},${z}`); 
+                DIRS.forEach(d=>WorldManager.updateGeo(x+d.x, y+d.y, z+d.z)); 
+                document.getElementById('block-count').innerText = `${state.mapData.size} Blocks`; 
+                MapStorageManager.triggerAutoSave(); 
+            },
+            updateGeo: (x,y,z) => { 
+                const m = state.mapData.get(`${x},${y},${z}`); 
+                if(!m) return; 
+                
+                const matDef = MATERIALS[m.userData.matIndex];
+
+                // STAIR LOGIC
+                if (matDef.type.startsWith('stair')) {
+                    const shape = WorldManager.getStairShape(x, y, z, m.rotation.y);
+                    const newGeo = GeometryManager.get(shape);
+                    if(m.geometry !== newGeo) m.geometry = newGeo;
+                    return;
+                }
+                
+                // STANDARD OCCLUSION
+                let mask = 0; 
+                DIRS.forEach((d,i) => { 
+                    const n = state.mapData.get(`${x+d.x},${y+d.y},${z+d.z}`); 
+                    if(n && n.userData.matIndex === m.userData.matIndex && !MATERIALS[n.userData.matIndex].type.startsWith('stair')) mask |= (1<<i); 
+                }); 
+                m.geometry = GeometryManager.get(mask); 
+            },
             clear: (updateUI=true) => { state.mapData.forEach(m=>scene.remove(m)); state.mapData.clear(); if(updateUI) { document.getElementById('block-count').innerText = `0 Blocks`; MapStorageManager.triggerAutoSave(); } }
         };
 
@@ -490,8 +638,8 @@
                 try {
                     const mons = JSON.parse(localStorage.getItem('dm-tracker-monsters')||'[]');
                     if(!mons.length) { mons.push({id:'p1', name:'Hero', type:'player', currentHp:20, maxHp:20, conditions:['Poisoned']}); mons.push({id:'e1', name:'Goblin', type:'monster', currentHp:7, maxHp:7, conditions:[]}); }
-                    CATEGORIES[2].items = mons.filter(c=>c.type==='player'); CATEGORIES[3].items = mons.filter(c=>c.type==='monster');
-                    const loot = JSON.parse(localStorage.getItem('dm-loot') || '[]'); if (!loot.length) loot.push({id:'l1', name:'Gold', icon:'💰'}, {id:'l2', name:'Sword', icon:'⚔️'}, {id:'l3', name:'Potion', icon:'🧪'}); CATEGORIES[4].items = loot;
+                    CATEGORIES[3].items = mons.filter(c=>c.type==='player'); CATEGORIES[4].items = mons.filter(c=>c.type==='monster');
+                    const loot = JSON.parse(localStorage.getItem('dm-loot') || '[]'); if (!loot.length) loot.push({id:'l1', name:'Gold', icon:'💰'}, {id:'l2', name:'Sword', icon:'⚔️'}, {id:'l3', name:'Potion', icon:'🧪'}); CATEGORIES[5].items = loot;
                     
                     state.tokenData.forEach((m,id) => { if(!m.userData.isLoot && !mons.find(c=>c.id===id)) { scene.remove(m); state.tokenData.delete(id); } });
                     
@@ -520,15 +668,8 @@
                 const token = state.tokenData.get(activeId);
                 if (token) {
                     const tokenType = mons[turn].type; 
-                    if (tokenType === 'player') {
-                        setMode('players');
-                        state.focusIndex = state.focusList.indexOf(token);
-                        snapCameraTo(token);
-                    } else if (tokenType === 'monster') {
-                        setMode('enemies');
-                        state.focusIndex = state.focusList.indexOf(token);
-                        snapCameraTo(token);
-                    }
+                    if (tokenType === 'player') { setMode('players'); state.focusIndex = state.focusList.indexOf(token); snapCameraTo(token); } 
+                    else if (tokenType === 'monster') { setMode('enemies'); state.focusIndex = state.focusList.indexOf(token); snapCameraTo(token); }
                 }
                 EntityManager.updateTurnVisuals();
             },
@@ -549,8 +690,6 @@
                         const btn = document.getElementById('next-turn-btn');
                         btn.classList.remove('hidden');
                         btn.innerHTML = `<span>Next Turn (${mons[turnIndex].name})</span> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>`;
-                        
-                        // Prevent camera movement on this button
                         btn.addEventListener('touchstart', (e) => { e.stopPropagation(); }, {passive: false});
                         btn.addEventListener('touchmove', (e) => { e.stopPropagation(); }, {passive: false});
                         btn.addEventListener('touchend', (e) => { e.stopPropagation(); }, {passive: false});
@@ -568,31 +707,30 @@
                     const item = c.items[state.subSelections[i]||0];
                     let inr = '';
                     if(item !== undefined) {
-                        if(c.type==='block') { const h = MATERIALS[item].color.toString(16).padStart(6,'0'); inr=`<div style="width:24px;height:24px;background:#${h};border:1px solid #fff;border-radius:4px"></div>`; }
+                        if(c.type==='block') { 
+                            const mat = MATERIALS[item];
+                            if (mat.type.startsWith('textured') || mat.type.startsWith('stair')) {
+                                const h = mat.color.toString(16).padStart(6,'0');
+                                inr=`<div style="width:24px;height:24px;background:repeating-linear-gradient(45deg, #${h}, #${h} 5px, #222 5px, #222 10px);border:1px solid #fff;border-radius:4px"></div>`;
+                                if (mat.type.startsWith('stair')) { inr += `<span style="position:absolute; bottom:2px; right:2px; font-size:10px;">◢</span>`; }
+                            } else {
+                                const h = mat.color.toString(16).padStart(6,'0'); 
+                                inr=`<div style="width:24px;height:24px;background:#${h};border:1px solid #fff;border-radius:4px"></div>`; 
+                            }
+                        }
                         else if(c.type==='token') { const cl = c.subType==='monster'?'#ef4444':'#3b82f6'; inr=`<div style="width:12px;height:12px;background:${cl};border-radius:50%"></div><span class="text-[9px] text-white truncate w-full text-center">${item.name}</span>`; }
                         else if(c.type==='loot') inr=`<span style="font-size:20px">${item.icon}</span>`;
                     }
                     div.innerHTML = `<span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-900 text-slate-400 text-[9px] px-1.5 rounded border border-slate-700">${(i+1)%10}</span>${inr}`;
-                    
-                    // Prevent camera movement when touching hotbar
                     div.addEventListener('touchstart', (e) => { e.stopPropagation(); }, {passive: false});
                     div.addEventListener('touchmove', (e) => { e.stopPropagation(); }, {passive: false});
                     div.addEventListener('touchend', (e) => { e.stopPropagation(); }, {passive: false});
-
-                    // Cycle logic on click/tap
                     div.onclick = (e) => { 
                         e.stopPropagation();
                         if (state.activeCategoryIdx === i) {
-                            // Already active, cycle sub-selection
                             const count = c.items.length;
-                            if (count > 1) {
-                                let s = (state.subSelections[i] || 0) + 1;
-                                if (s >= count) s = 0;
-                                state.subSelections[i] = s;
-                            }
-                        } else {
-                            state.activeCategoryIdx = i; 
-                        }
+                            if (count > 1) { let s = (state.subSelections[i] || 0) + 1; if (s >= count) s = 0; state.subSelections[i] = s; }
+                        } else { state.activeCategoryIdx = i; }
                         UIManager.renderHotbar(); 
                     }; 
                     el.appendChild(div);
@@ -600,7 +738,7 @@
             },
             renderSidebar: () => {
                 const el = document.getElementById('sidebar-container'); el.innerHTML='';
-                const parts = [ {l:'Heroes', d:CATEGORIES[2].items}, {l:'Enemies', d:CATEGORIES[3].items} ];
+                const parts = [ {l:'Heroes', d:CATEGORIES[3].items}, {l:'Enemies', d:CATEGORIES[4].items} ];
                 parts.forEach(p => {
                     if(!p.d.length) return;
                     el.innerHTML += `<div class="text-[10px] font-bold text-slate-400 mt-2 mb-1 border-b border-slate-700">${p.l}</div>`;
@@ -634,13 +772,14 @@
             }
         };
 
-        const controls = new PointerLockControls(camera, document.body);
-        const raycaster = new THREE.Raycaster();
-        const move = { f:false, b:false, l:false, r:false, u:false, d:false };
-        let canJump=false, isFlying=false, velocity = new THREE.Vector3(), prevTime = performance.now();
-
         const rollover = new THREE.Mesh(new THREE.BoxGeometry(1.05,1.05,1.05), new THREE.MeshBasicMaterial({color:0x38BDF8, wireframe:true, opacity:0.5, transparent:true})); scene.add(rollover);
         const tokenRoll = new THREE.Mesh(tokenGeo, new THREE.MeshBasicMaterial({color:0xFCD34D, wireframe:true})); tokenRoll.visible=false; scene.add(tokenRoll);
+
+        function rotatePlacement() {
+            state.placementRotation += Math.PI / 2;
+            state.placementRotation = state.placementRotation % (Math.PI * 2);
+            rollover.rotation.y = state.placementRotation;
+        }
 
         function getVoxelPos(pt, norm, mode) { const p = pt.clone(); if(mode==='build') p.add(norm.clone().multiplyScalar(0.5)); else p.add(norm.clone().multiplyScalar(-0.1)); return p.floor().addScalar(0.5); }
         function checkCollision(pos) {
@@ -669,13 +808,8 @@
                     if (mode === 'enemies' && t.userData.data.type === 'monster') state.focusList.push(t);
                 }
             });
-            
             if (state.focusList.length > 0) {
-                if (state.controlledToken && state.focusList.includes(state.controlledToken)) {
-                    state.focusIndex = state.focusList.indexOf(state.controlledToken);
-                } else {
-                    state.focusIndex = 0;
-                }
+                if (state.controlledToken && state.focusList.includes(state.controlledToken)) { state.focusIndex = state.focusList.indexOf(state.controlledToken); } else { state.focusIndex = 0; }
                 snapCameraTo(state.focusList[state.focusIndex]);
                 state.controlledToken = state.focusList[state.focusIndex];
                 state.moveBudget = 30; 
@@ -694,7 +828,6 @@
             state.focusIndex += direction;
             if (state.focusIndex >= state.focusList.length) state.focusIndex = 0;
             if (state.focusIndex < 0) state.focusIndex = state.focusList.length - 1;
-            
             const token = state.focusList[state.focusIndex];
             snapCameraTo(token);
             state.controlledToken = token;
@@ -706,18 +839,9 @@
 
         function handleRaycast() {
             if(!controls.isLocked && !state.isTouch && state.mode!=='view' && state.gameMode !== 'players' && state.gameMode !== 'enemies' && state.gameMode !== 'dm') return;
-            
-            if (controls.isLocked || state.isTouch) { // CHANGED: Always center raycast for touch OR pointer lock
-                raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-            } else {
-                raycaster.setFromCamera(mouse, camera);
-            }
-            
+            if (controls.isLocked || state.isTouch) { raycaster.setFromCamera(new THREE.Vector2(0,0), camera); } else { raycaster.setFromCamera(mouse, camera); }
             const hits = raycaster.intersectObjects([...state.mapData.values(), ...state.tokenData.values(), scene.getObjectByName('ground')]);
-            
-            rollover.visible = false; 
-            tokenRoll.visible = false;
-            UIManager.updateTooltip(null);
+            rollover.visible = false; tokenRoll.visible = false; UIManager.updateTooltip(null);
 
             if(hits.length) {
                 const hit = hits[0]; 
@@ -727,6 +851,7 @@
                     if (state.controlledToken) {
                          if(hit.object.userData.isVoxel || hit.object.name === 'ground') {
                             rollover.visible = true;
+                            if(rollover.geometry !== GeometryManager.get(0)) rollover.geometry = GeometryManager.get(0);
                             let floorY = hit.object.name === 'ground' ? 0 : Math.round(hit.point.y);
                             if (hit.face.normal.y < 0.9 && hit.object.userData.isVoxel) floorY = Math.floor(hit.point.y); 
                             const tx = Math.floor(hit.point.x + hit.face.normal.x*0.1) + 0.5, tz = Math.floor(hit.point.z + hit.face.normal.z*0.1) + 0.5;
@@ -746,11 +871,25 @@
                     if(cat.type === 'block') {
                         rollover.visible = true;
                         if(state.dragStart) {
+                            if (rollover.geometry !== GeometryManager.get(0)) rollover.geometry = GeometryManager.get(0);
                             const s = state.dragStart.pos, e = getVoxelPos(hit.point, hit.face.normal, state.dragStart.mode);
                             const minX=Math.min(s.x,e.x), maxX=Math.max(s.x,e.x), minY=Math.min(s.y,e.y), maxY=Math.max(s.y,e.y), minZ=Math.min(s.z,e.z), maxZ=Math.max(s.z,e.z);
                             rollover.scale.set(maxX-minX+1, maxY-minY+1, maxZ-minZ+1); rollover.position.set(minX+(maxX-minX+1)/2-0.5, minY+(maxY-minY+1)/2-0.5, minZ+(maxZ-minZ+1)/2-0.5);
+                            rollover.rotation.y = 0; 
                             rollover.material.color.setHex(state.dragStart.mode==='delete' ? CONFIG.colors.delete : CONFIG.colors.highlight);
-                        } else { const p = hit.point.clone().add(hit.face.normal.multiplyScalar(0.5)).floor().addScalar(0.5); rollover.scale.set(1,1,1); rollover.position.copy(p); rollover.material.color.setHex(CONFIG.colors.highlight); }
+                        } else { 
+                            const p = hit.point.clone().add(hit.face.normal.multiplyScalar(0.5)).floor().addScalar(0.5); 
+                            rollover.scale.set(1,1,1); rollover.position.copy(p); rollover.material.color.setHex(CONFIG.colors.highlight); 
+                            
+                            const mat = cat.items[state.subSelections[state.activeCategoryIdx]];
+                            if (mat !== undefined && MATERIALS[mat].type.startsWith('stair')) {
+                                if (rollover.geometry !== GeometryManager.get('stair')) rollover.geometry = GeometryManager.get('stair');
+                                rollover.rotation.y = state.placementRotation;
+                            } else {
+                                if (rollover.geometry !== GeometryManager.get(0)) rollover.geometry = GeometryManager.get(0);
+                                rollover.rotation.y = 0;
+                            }
+                        }
                     } else if (cat.type === 'token' || cat.type === 'loot') {
                         tokenRoll.visible = true;
                         const tx = Math.floor(hit.point.x + hit.face.normal.x*0.1) + 0.5, tz = Math.floor(hit.point.z + hit.face.normal.z*0.1) + 0.5;
@@ -760,82 +899,43 @@
                     return {hit, interactable:true};
                 }
             } 
-            
             return {interactable:false};
         }
 
-        // --- MOUSE MOVEMENT TRACKING FOR UNLOCKED CURSOR ---
         document.addEventListener('mousemove', (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1; mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
             if (isRightMouseDown && !controls.isLocked) {
-                const movementX = event.clientX - lastMouseX;
-                const movementY = event.clientY - lastMouseY;
-                camera.rotation.y -= movementX * 0.002;
-                camera.rotation.x -= movementY * 0.002;
+                const movementX = event.clientX - lastMouseX; const movementY = event.clientY - lastMouseY;
+                camera.rotation.y -= movementX * 0.002; camera.rotation.x -= movementY * 0.002;
                 camera.rotation.x = Math.max( - Math.PI / 2, Math.min( Math.PI / 2, camera.rotation.x ) );
             }
-            lastMouseX = event.clientX;
-            lastMouseY = event.clientY;
+            lastMouseX = event.clientX; lastMouseY = event.clientY;
         });
 
-        // Add camera rotation via touch drag
         document.addEventListener('touchmove', (e) => {
-             // FIXED: Ensure we don't catch events from UI buttons by checking event target closest
-             // Actually, touchstart on those buttons calls stopPropagation, so it shouldn't reach here if started on button
-             // But we need to make sure we don't accidentally rotate if a multi-touch gesture happens
-             
              if (touchState.moveId !== null || touchState.lookId !== null) return;
-             
-             // If this is a single touch drag on background (not buttons), rotate camera
-             // But usually on mobile touch scheme, we use joystick. 
-             // This fallback is for "Mouse Scheme" on a touch device if user selected that.
-             
-             if (!state.isTouch && e.touches.length === 1) {
+             if (e.touches.length === 1) {
                  const touch = e.touches[0];
                  if (lastMouseX && lastMouseY) {
-                     const movementX = touch.clientX - lastMouseX;
-                     const movementY = touch.clientY - lastMouseY;
-                     const obj = controls.getObject();
-                     obj.rotation.y -= movementX * 0.005;
-                     camera.rotation.x -= movementY * 0.005;
-                     camera.rotation.x = Math.max( - Math.PI / 2, Math.min( Math.PI / 2, camera.rotation.x ) );
+                     const movementX = touch.clientX - lastMouseX; const movementY = touch.clientY - lastMouseY;
+                     const obj = controls.getObject(); obj.rotation.y -= movementX * 0.005;
+                     camera.rotation.x -= movementY * 0.005; camera.rotation.x = Math.max( - Math.PI / 2, Math.min( Math.PI / 2, camera.rotation.x ) );
                  }
-                 lastMouseX = touch.clientX;
-                 lastMouseY = touch.clientY;
+                 lastMouseX = touch.clientX; lastMouseY = touch.clientY;
              }
         }, { passive: true });
         
-        document.addEventListener('touchstart', (e) => {
-             if (e.touches.length === 1) {
-                 lastMouseX = e.touches[0].clientX;
-                 lastMouseY = e.touches[0].clientY;
-             }
-        }, { passive: true });
+        document.addEventListener('touchstart', (e) => { if (e.touches.length === 1) { lastMouseX = e.touches[0].clientX; lastMouseY = e.touches[0].clientY; } }, { passive: true });
 
-        // --- NEW TOUCH CONTROLS ---
-        const touchState = {
-            moveId: null,
-            moveStart: { x: 0, y: 0 },
-            lookId: null,
-            lookLast: { x: 0, y: 0 }
-        };
-
-        const joyUI = document.getElementById('joystick-ui');
-        const joyKnob = document.getElementById('joystick-knob');
-
+        const touchState = { moveId: null, moveStart: { x: 0, y: 0 }, lookId: null, lookLast: { x: 0, y: 0 } };
+        const joyUI = document.getElementById('joystick-ui'); const joyKnob = document.getElementById('joystick-knob');
         const zoneMove = document.getElementById('zone-move');
+
         zoneMove.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            const touch = e.changedTouches[0];
+            e.preventDefault(); const touch = e.changedTouches[0];
             if(touchState.moveId === null) {
-                touchState.moveId = touch.identifier;
-                touchState.moveStart = { x: touch.clientX, y: touch.clientY };
-                joyUI.style.display = 'block';
-                joyUI.style.left = touch.clientX + 'px';
-                joyUI.style.top = touch.clientY + 'px';
-                joyKnob.style.transform = `translate(-50%, -50%)`;
+                touchState.moveId = touch.identifier; touchState.moveStart = { x: touch.clientX, y: touch.clientY };
+                joyUI.style.display = 'block'; joyUI.style.left = touch.clientX + 'px'; joyUI.style.top = touch.clientY + 'px'; joyKnob.style.transform = `translate(-50%, -50%)`;
             }
         }, { passive: false });
 
@@ -844,94 +944,51 @@
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const touch = e.changedTouches[i];
                 if (touch.identifier === touchState.moveId) {
-                    const maxDist = 50;
-                    let dx = touch.clientX - touchState.moveStart.x;
-                    let dy = touch.clientY - touchState.moveStart.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist > maxDist) { const ratio = maxDist / dist; dx *= ratio; dy *= ratio; }
+                    const maxDist = 50; let dx = touch.clientX - touchState.moveStart.x; let dy = touch.clientY - touchState.moveStart.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy); if (dist > maxDist) { const ratio = maxDist / dist; dx *= ratio; dy *= ratio; }
                     joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-                    state.moveVector.x = dx / maxDist; 
-                    state.moveVector.z = dy / maxDist; 
+                    state.moveVector.x = dx / maxDist; state.moveVector.z = dy / maxDist; 
                 }
             }
         }, { passive: false });
 
-        const endMove = (e) => {
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                if (e.changedTouches[i].identifier === touchState.moveId) {
-                    touchState.moveId = null;
-                    state.moveVector = { x: 0, z: 0 };
-                    joyUI.style.display = 'none';
-                }
-            }
-        };
-        zoneMove.addEventListener('touchend', endMove);
-        zoneMove.addEventListener('touchcancel', endMove);
+        const endMove = (e) => { for (let i = 0; i < e.changedTouches.length; i++) { if (e.changedTouches[i].identifier === touchState.moveId) { touchState.moveId = null; state.moveVector = { x: 0, z: 0 }; joyUI.style.display = 'none'; } } };
+        zoneMove.addEventListener('touchend', endMove); zoneMove.addEventListener('touchcancel', endMove);
 
         const zoneLook = document.getElementById('zone-look');
-        zoneLook.addEventListener('touchstart', (e) => {
-            const touch = e.changedTouches[0];
-            if(touchState.lookId === null) {
-                touchState.lookId = touch.identifier;
-                touchState.lookLast = { x: touch.clientX, y: touch.clientY };
-            }
-        }, { passive: false });
+        zoneLook.addEventListener('touchstart', (e) => { const touch = e.changedTouches[0]; if(touchState.lookId === null) { touchState.lookId = touch.identifier; touchState.lookLast = { x: touch.clientX, y: touch.clientY }; } }, { passive: false });
 
         zoneLook.addEventListener('touchmove', (e) => {
             e.preventDefault(); 
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const touch = e.changedTouches[i];
                 if (touch.identifier === touchState.lookId) {
-                    const dx = touch.clientX - touchState.lookLast.x;
-                    const dy = touch.clientY - touchState.lookLast.y;
-                    
-                    // FIXED: Use Euler order YXZ to prevent roll/yaw coupling (gimbal lock flipping)
-                    const euler = new THREE.Euler(0, 0, 0, 'YXZ');
-                    euler.setFromQuaternion(camera.quaternion);
-                    euler.y -= dx * 0.005;
-                    euler.x -= dy * 0.005;
-                    euler.x = Math.max(- Math.PI / 2, Math.min( Math.PI / 2, euler.x ));
-                    camera.quaternion.setFromEuler(euler);
-                    
-                    touchState.lookLast = { x: touch.clientX, y: touch.clientY };
+                    const dx = touch.clientX - touchState.lookLast.x; const dy = touch.clientY - touchState.lookLast.y;
+                    const euler = new THREE.Euler(0, 0, 0, 'YXZ'); euler.setFromQuaternion(camera.quaternion);
+                    euler.y -= dx * 0.005; euler.x -= dy * 0.005; euler.x = Math.max(- Math.PI / 2, Math.min( Math.PI / 2, euler.x ));
+                    camera.quaternion.setFromEuler(euler); touchState.lookLast = { x: touch.clientX, y: touch.clientY };
                 }
             }
         }, { passive: false });
 
-        const endLook = (e) => {
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                if (e.changedTouches[i].identifier === touchState.lookId) {
-                    touchState.lookId = null;
-                }
-            }
-        };
-        zoneLook.addEventListener('touchend', endLook);
-        zoneLook.addEventListener('touchcancel', endLook);
+        const endLook = (e) => { for (let i = 0; i < e.changedTouches.length; i++) { if (e.changedTouches[i].identifier === touchState.lookId) { touchState.lookId = null; } } };
+        zoneLook.addEventListener('touchend', endLook); zoneLook.addEventListener('touchcancel', endLook);
         
-        const simulateClick = (btn, type) => {
-            const event = new MouseEvent(type, { bubbles: true, cancelable: true, view: window, button: btn });
-            document.dispatchEvent(event);
-        };
-
-        const touchBtns = ['mob-place', 'mob-break', 'mob-fly', 'mob-up', 'mob-down'];
+        const simulateClick = (btn, type) => { const event = new MouseEvent(type, { bubbles: true, cancelable: true, view: window, button: btn }); document.dispatchEvent(event); };
+        const touchBtns = ['mob-place', 'mob-break', 'mob-fly', 'mob-up', 'mob-down', 'mob-rotate'];
         touchBtns.forEach(id => {
             const el = document.getElementById(id);
             if(el) {
                 el.addEventListener('touchstart', (e) => {
-                    e.preventDefault(); 
-                    e.stopPropagation(); // CRITICAL: Stop event from bubbling to camera controls
+                    e.preventDefault(); e.stopPropagation(); 
                     if (id === 'mob-place') { simulateClick(2, 'mousedown'); setTimeout(() => simulateClick(2, 'mouseup'), 50); } 
                     else if (id === 'mob-break') { simulateClick(0, 'mousedown'); setTimeout(() => simulateClick(0, 'mouseup'), 50); } 
                     else if (id === 'mob-fly') { isFlying = !isFlying; velocity.y = 0; el.classList.toggle('bg-yellow-700'); const vControls = document.getElementById('mobile-vertical-controls'); if(vControls) vControls.style.display = isFlying ? 'flex' : 'none'; } 
+                    else if (id === 'mob-rotate') { rotatePlacement(); }
                     else if (id === 'mob-up') { move.u = true; } 
                     else if (id === 'mob-down') { move.d = true; }
                 }, { passive: false });
-                el.addEventListener('touchend', (e) => { 
-                    e.preventDefault(); 
-                    e.stopPropagation(); // CRITICAL
-                    if (id === 'mob-up') move.u = false; 
-                    if (id === 'mob-down') move.d = false; 
-                });
+                el.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); if (id === 'mob-up') move.u = false; if (id === 'mob-down') move.d = false; });
             }
         });
 
@@ -941,13 +998,11 @@
             if(e.code === 'Space') { if(isFlying || state.gameMode === 'dm') move.u=true; else if(canJump) { velocity.y+=15; canJump=false; } }
             if(e.code === 'KeyC') { if(isFlying || state.gameMode === 'dm') move.d=true; } 
             if(e.code === 'KeyF') { isFlying=!isFlying; velocity.y=0; }
+            if(e.code === 'KeyR') { if(e.shiftKey) { } else { rotatePlacement(); } }
             if(e.code === 'Tab') {
                 e.preventDefault();
-                if (state.gameMode === 'players' || state.gameMode === 'enemies') {
-                    if (state.focusList && state.focusList.length > 0) { snapCameraTo(state.focusList[state.focusIndex]); }
-                } else {
-                    if(controls.isLocked) { controls.unlock(); state.mode='menu'; document.getElementById('mouse-mode-badge').style.display='block'; } else { if (!state.isTouch) controls.lock(); state.mode='view'; document.getElementById('mouse-mode-badge').style.display='none'; }
-                }
+                if (state.gameMode === 'players' || state.gameMode === 'enemies') { if (state.focusList && state.focusList.length > 0) { snapCameraTo(state.focusList[state.focusIndex]); } } 
+                else { if(controls.isLocked) { controls.unlock(); state.mode='menu'; document.getElementById('mouse-mode-badge').style.display='block'; } else { if (!state.isTouch) controls.lock(); state.mode='view'; document.getElementById('mouse-mode-badge').style.display='none'; } }
             }
             if(e.code === 'Escape') { if(state.controlledToken) { state.controlledToken = null; state.moveBudget = 30; RangeRingManager.update(null); document.getElementById('move-badge').style.display='none'; } }
             if (e.key >= '0' && e.key <= '9') { const i = e.key==='0'?9:parseInt(e.key)-1; state.heldKeys[i]=true; state.activeCategoryIdx=i; UIManager.renderHotbar(); }
@@ -964,7 +1019,7 @@
             const res = handleRaycast();
             if(!res.interactable) { if(e.button===0) { state.controlledToken = null; state.focusedToken = null; RangeRingManager.update(null); document.getElementById('move-badge').style.display='none'; } return; }
             const {hit} = res;
-            if (state.gameMode === 'players' || state.gameMode === 'enemies' || state.gameMode === 'dm') {
+            if (state.gameMode === 'dm' || state.gameMode === 'players' || state.gameMode === 'enemies') {
                 if (e.button === 0) { 
                     if (state.controlledToken && (hit.object.userData.isVoxel || hit.object.name === 'ground')) {
                         let floorY = hit.object.name==='ground'?0:Math.round(hit.point.y); if(hit.face.normal.y<0.9 && hit.object.userData.isVoxel) floorY=Math.floor(hit.point.y);
@@ -972,11 +1027,8 @@
                         const targetPos = new THREE.Vector3(tx, floorY + 0.1, tz);
                         const cost = Math.ceil(state.controlledToken.position.distanceTo(targetPos)) * 5;
                         if (cost <= state.moveBudget) { 
-                            state.controlledToken.position.copy(targetPos); 
-                            state.moveBudget -= cost; 
-                            document.getElementById('move-badge').innerText = `Movement: ${state.moveBudget}ft`; 
-                            RangeRingManager.update(state.controlledToken, 'movement'); 
-                            MapStorageManager.saveMap();
+                            state.controlledToken.position.copy(targetPos); state.moveBudget -= cost; document.getElementById('move-badge').innerText = `Movement: ${state.moveBudget}ft`; 
+                            RangeRingManager.update(state.controlledToken, 'movement'); MapStorageManager.saveMap();
                         }
                     }
                     return;
@@ -986,7 +1038,7 @@
             if (state.gameMode === 'build') {
                 const cat = CATEGORIES[state.activeCategoryIdx];
                 if(e.button === 2) {
-                    if(cat.type==='block') state.dragStart = {pos:getVoxelPos(hit.point, hit.face.normal, 'build'), mode:'build'};
+                    if(cat.type==='block') { state.dragStart = {pos:getVoxelPos(hit.point, hit.face.normal, 'build'), mode:'build'}; }
                     else if(cat.type==='token' || cat.type==='loot') {
                         const d = cat.items[state.subSelections[state.activeCategoryIdx]];
                         if(d) {
@@ -1012,11 +1064,14 @@
                 const minX=Math.min(s.x,e.x), maxX=Math.max(s.x,e.x), minY=Math.min(s.y,e.y), maxY=Math.max(s.y,e.y), minZ=Math.min(s.z,e.z), maxZ=Math.max(s.z,e.z);
                 const mat = CATEGORIES[state.activeCategoryIdx].items[state.subSelections[state.activeCategoryIdx]];
                 if((maxX-minX)*(maxY-minY)*(maxZ-minZ) > 5000) { alert("Too big"); state.dragStart=null; rollover.scale.set(1,1,1); return; }
+                
+                const rot = state.placementRotation;
                 let chg=0;
                 for(let x=minX; x<=maxX; x++) for(let y=minY; y<=maxY; y++) for(let z=minZ; z<=maxZ; z++) {
-                    if(state.dragStart.mode==='build') { if(mat!==undefined){WorldManager.add(x,y,z,mat,false); chg++;} } 
+                    if(state.dragStart.mode==='build') { if(mat!==undefined){WorldManager.add(x,y,z,mat,rot,false); chg++;} } 
                     else { const m=state.mapData.get(`${x},${y},${z}`); if(m){WorldManager.remove(m); chg++;} }
                 }
+                // Update self and neighbors for corners
                 for(let x=minX-1; x<=maxX+1; x++) for(let y=minY-1; y<=maxY+1; y++) for(let z=minZ-1; z<=maxZ+1; z++) WorldManager.updateGeo(x,y,z);
                 document.getElementById('block-count').innerText = `${state.mapData.size} Blocks`;
                 if(chg) MapStorageManager.saveMap();
@@ -1027,45 +1082,20 @@
         document.addEventListener('wheel', e => {
             if (state.gameMode === 'players' || state.gameMode === 'enemies') {
                 const zoomSpeed = 0.5; const zoomDir = new THREE.Vector3(); camera.getWorldDirection(zoomDir);
-                if (e.deltaY > 0) zoomDir.negate();
-                camera.position.add(zoomDir.multiplyScalar(zoomSpeed));
-                return;
+                if (e.deltaY > 0) zoomDir.negate(); camera.position.add(zoomDir.multiplyScalar(zoomSpeed)); return;
             }
-            const i = Object.keys(state.heldKeys).find(k=>state.heldKeys[k]);
-            const target = i !== undefined ? i : state.activeCategoryIdx;
+            const i = Object.keys(state.heldKeys).find(k=>state.heldKeys[k]); const target = i !== undefined ? i : state.activeCategoryIdx;
             const c = CATEGORIES[target]; if(!c.items.length) return;
             let s = state.subSelections[target] + (e.deltaY>0?1:-1); if(s<0) s=c.items.length-1; if(s>=c.items.length) s=0;
             state.subSelections[target] = s; UIManager.renderHotbar();
         });
 
-        // Dropdown toggle logic
         document.getElementById('btn-apps-dropdown').onclick = (e) => { e.stopPropagation(); document.getElementById('apps-dropdown-content').classList.toggle('show'); };
-        window.onclick = (e) => {
-            if (!e.target.matches('#btn-apps-dropdown') && !e.target.closest('#btn-apps-dropdown')) {
-                const dropdowns = document.getElementsByClassName("dropdown-content");
-                for (let i = 0; i < dropdowns.length; i++) { if (dropdowns[i].classList.contains('show')) dropdowns[i].classList.remove('show'); }
-            }
-        };
+        window.onclick = (e) => { if (!e.target.matches('#btn-apps-dropdown') && !e.target.closest('#btn-apps-dropdown')) { const dropdowns = document.getElementsByClassName("dropdown-content"); for (let i = 0; i < dropdowns.length; i++) { if (dropdowns[i].classList.contains('show')) dropdowns[i].classList.remove('show'); } } };
 
-        // --- INSTRUCTIONS CLICK ---
-        document.getElementById('instructions').onclick = () => {
-            if (state.gameMode === 'players' || state.gameMode === 'enemies') {
-                document.getElementById('instructions').style.display='none';
-                document.getElementById('ui-layer').classList.add('interactive');
-            } else {
-                if (!state.isTouch) controls.lock();
-                else document.getElementById('instructions').style.display='none';
-            }
-        };
-
+        document.getElementById('instructions').onclick = () => { if (state.gameMode === 'players' || state.gameMode === 'enemies') { document.getElementById('instructions').style.display='none'; document.getElementById('ui-layer').classList.add('interactive'); } else { if (!state.isTouch) controls.lock(); else document.getElementById('instructions').style.display='none'; } };
         controls.addEventListener('lock', () => { document.getElementById('instructions').style.display='none'; document.getElementById('ui-layer').classList.remove('interactive'); });
-        controls.addEventListener('unlock', () => { 
-            if(state.mode==='menu' || state.gameMode === 'players' || state.gameMode === 'enemies' || state.gameMode === 'dm') {
-                document.getElementById('ui-layer').classList.add('interactive'); 
-            } else {
-                if(!state.isTouch) document.getElementById('instructions').style.display='block'; 
-            }
-        });
+        controls.addEventListener('unlock', () => { if(state.mode==='menu' || state.gameMode === 'players' || state.gameMode === 'enemies' || state.gameMode === 'dm') { document.getElementById('ui-layer').classList.add('interactive'); } else { if(!state.isTouch) document.getElementById('instructions').style.display='block'; } });
         
         document.getElementById('mode-build').onclick = () => setMode('build'); 
         document.getElementById('mode-dm').onclick = () => setMode('dm');
@@ -1074,113 +1104,45 @@
         
         document.getElementById('focus-next').onclick = () => cycleFocus(1);
         document.getElementById('focus-prev').onclick = () => cycleFocus(-1);
-        
         document.getElementById('next-turn-btn').onclick = () => { EntityManager.advanceTurn(); };
 
-        // --- NEW SLOTS LOGIC ---
         document.getElementById('btn-slots').onclick = () => { UIManager.renderSlots(); document.getElementById('slots-modal').classList.add('open'); };
         document.getElementById('close-slots').onclick = () => document.getElementById('slots-modal').classList.remove('open');
-        document.getElementById('create-map-btn').onclick = () => {
-            const name = document.getElementById('new-map-name').value;
-            if(name) {
-                const id = MapStorageManager.createMap(name);
-                MapStorageManager.loadMap(id);
-                WorldManager.clear(true);
-                UIManager.renderSlots();
-                document.getElementById('new-map-name').value = '';
-            }
-        };
+        document.getElementById('create-map-btn').onclick = () => { const name = document.getElementById('new-map-name').value; if(name) { const id = MapStorageManager.createMap(name); MapStorageManager.loadMap(id); WorldManager.clear(true); UIManager.renderSlots(); document.getElementById('new-map-name').value = ''; } };
 
-        // --- INPUT SCHEME LOGIC ---
         function applyInputScheme(mode) {
-            state.isTouch = (mode === 'touch');
-            localStorage.setItem('akashic_input_scheme', mode);
-            
-            const mobControls = document.getElementById('mobile-controls');
-            const instructions = document.getElementById('instructions');
-            
-            if (state.isTouch) {
-                mobControls.style.display = 'block';
-                instructions.style.display = 'none'; // Don't need click-to-lock on mobile
-            } else {
-                mobControls.style.display = 'none';
-                if(state.gameMode === 'build' && !controls.isLocked) instructions.style.display = 'block';
-            }
+            state.isTouch = (mode === 'touch'); localStorage.setItem('akashic_input_scheme', mode);
+            const mobControls = document.getElementById('mobile-controls'); const instructions = document.getElementById('instructions');
+            if (state.isTouch) { mobControls.style.display = 'block'; instructions.style.display = 'none'; } 
+            else { mobControls.style.display = 'none'; if(state.gameMode === 'build' && !controls.isLocked) instructions.style.display = 'block'; }
             document.getElementById('controls-modal').classList.remove('open');
         }
 
-        function initInputScheme() {
-            const saved = localStorage.getItem('akashic_input_scheme');
-            if (saved) {
-                applyInputScheme(saved);
-            } else {
-                // If no save, check capability but still show modal for choice
-                const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-                // Optional: Auto-select if confident? No, user requested selection on startup.
-                document.getElementById('controls-modal').classList.add('open');
-            }
-        }
+        function initInputScheme() { const saved = localStorage.getItem('akashic_input_scheme'); if (saved) { applyInputScheme(saved); } else { document.getElementById('controls-modal').classList.add('open'); } }
 
         document.getElementById('scheme-mouse').onclick = () => applyInputScheme('mouse');
         document.getElementById('scheme-touch').onclick = () => applyInputScheme('touch');
         document.getElementById('btn-input-toggle').onclick = () => document.getElementById('controls-modal').classList.add('open');
 
         function setMode(m) {
-            state.gameMode = m; 
-            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(`mode-${m}`).classList.add('active');
-            
+            state.gameMode = m; document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active')); document.getElementById(`mode-${m}`).classList.add('active');
             document.getElementById('instr-build').style.display = m==='build'?'grid':'none'; 
             document.getElementById('instr-dm').style.display = m==='dm'?'grid':'none';
             document.getElementById('instr-focus').style.display = (m==='players'||m==='enemies')?'grid':'none';
-            
             const focusControls = document.getElementById('focus-controls');
-            if (m === 'players' || m === 'enemies') {
-                focusControls.classList.add('visible');
-                updateFocusMode(m);
-            } else {
-                focusControls.classList.remove('visible');
-                RangeRingManager.update(null);
-                if(m==='dm') { isFlying=true; velocity.y=0; }
-                
-                if (m === 'build') {
-                    camera.rotation.z = 0;
-                    camera.rotation.x = 0;
-                    camera.up.set(0, 1, 0);
-                    if (!state.isTouch) controls.lock(); 
-                }
-            }
+            if (m === 'players' || m === 'enemies') { focusControls.classList.add('visible'); updateFocusMode(m); } 
+            else { focusControls.classList.remove('visible'); RangeRingManager.update(null); if(m==='dm') { isFlying=true; velocity.y=0; } if (m === 'build') { camera.rotation.z = 0; camera.rotation.x = 0; camera.up.set(0, 1, 0); if (!state.isTouch) controls.lock(); } }
             UIManager.renderHotbar();
         }
         document.getElementById('btn-sync').onclick = EntityManager.sync; 
         document.getElementById('btn-clear').onclick = () => { if(confirm("Nuke this map?")) { WorldManager.clear(); MapStorageManager.saveMap(); } };
-        
-        document.getElementById('btn-export').onclick = () => { 
-            const data = {
-                voxels: JSON.parse(localStorage.getItem(`akashic_map_${state.currentMapId}_voxels`)),
-                positions: JSON.parse(localStorage.getItem(`akashic_map_${state.currentMapId}_positions`))
-            };
-            const b=new Blob([JSON.stringify(data)],{type:'application/json'}); 
-            const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`map_${state.currentMapId}.json`; a.click(); 
-        };
+        document.getElementById('btn-export').onclick = () => { const data = { voxels: JSON.parse(localStorage.getItem(`akashic_map_${state.currentMapId}_voxels`)), positions: JSON.parse(localStorage.getItem(`akashic_map_${state.currentMapId}_positions`)) }; const b=new Blob([JSON.stringify(data)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`map_${state.currentMapId}.json`; a.click(); };
         document.getElementById('btn-import').onclick = () => document.getElementById('file-input').click();
-        document.getElementById('file-input').onchange = (e) => { 
-            const r=new FileReader(); 
-            r.onload=ev=>{
-                try {
-                    const d = JSON.parse(ev.target.result);
-                    localStorage.setItem(`akashic_map_${state.currentMapId}_voxels`, JSON.stringify(d.voxels));
-                    localStorage.setItem(`akashic_map_${state.currentMapId}_positions`, JSON.stringify(d.positions));
-                    MapStorageManager.loadMap(state.currentMapId);
-                } catch(e) { alert("Invalid Map File"); }
-            }; 
-            r.readAsText(e.target.files[0]); 
-        };
+        document.getElementById('file-input').onchange = (e) => { const r=new FileReader(); r.onload=ev=>{ try { const d = JSON.parse(ev.target.result); localStorage.setItem(`akashic_map_${state.currentMapId}_voxels`, JSON.stringify(d.voxels)); localStorage.setItem(`akashic_map_${state.currentMapId}_positions`, JSON.stringify(d.positions)); MapStorageManager.loadMap(state.currentMapId); } catch(e) { alert("Invalid Map File"); } }; r.readAsText(e.target.files[0]); };
 
         function animate() {
             requestAnimationFrame(animate);
             const dt = (performance.now()-prevTime)/1000; prevTime=performance.now();
-            
             const physicsEnabled = (controls.isLocked || state.isTouch) && state.gameMode !== 'players' && state.gameMode !== 'enemies';
 
             if(physicsEnabled) {
@@ -1191,36 +1153,22 @@
                 else velocity.y -= isFlying ? velocity.y * 5.0 * dt : 9.8 * 2.0 * dt;
 
                 const spd = isFlying || state.gameMode==='dm' ? 40 : 15;
+                let inputX = 0; let inputZ = 0;
 
-                let inputX = 0;
-                let inputZ = 0;
-
-                if (state.isTouch) {
-                    // FIXED: Removed negation so dragging Right produces positive X
-                    inputX = state.moveVector.x;
-                    inputZ = state.moveVector.z;
-                } else {
-                    inputZ = Number(move.f) - Number(move.b); 
-                    inputX = Number(move.r) - Number(move.l);
-                }
+                if (state.isTouch) { inputX = state.moveVector.x; inputZ = state.moveVector.z; } 
+                else { inputZ = Number(move.f) - Number(move.b); inputX = Number(move.r) - Number(move.l); }
                 
-                if (inputZ !== 0 || inputX !== 0) {
-                    velocity.z += inputZ * spd * 10.0 * dt; 
-                    velocity.x += inputX * spd * 10.0 * dt;
-                }
-
-                if ((isFlying || state.gameMode==='dm')) { 
-                    if (move.u) velocity.y += spd * 10.0 * dt; 
-                    if (move.d) velocity.y -= spd * 10.0 * dt; 
-                }
+                if (inputZ !== 0 || inputX !== 0) { velocity.z += inputZ * spd * 10.0 * dt; velocity.x += inputX * spd * 10.0 * dt; }
+                if ((isFlying || state.gameMode==='dm')) { if (move.u) velocity.y += spd * 10.0 * dt; if (move.d) velocity.y -= spd * 10.0 * dt; }
 
                 const obj = controls.getObject(), startPos = obj.position.clone();
-                // FIXED: Changed to positive velocity.x to align D/Right with Right movement
                 controls.moveRight(velocity.x * dt); 
-                if(checkCollision(obj.position)) obj.position.x = startPos.x;
+                if(checkCollision(obj.position)) { if (!isFlying && state.gameMode !== 'dm') { obj.position.y += 0.6; if (checkCollision(obj.position)) { obj.position.y = startPos.y; obj.position.x = startPos.x; } } else { obj.position.x = startPos.x; } }
                 
-                controls.moveForward(-velocity.z * dt); 
-                if(checkCollision(obj.position)) obj.position.z = startPos.z;
+                // FIXED: Forward (W) moves in +Z direction relative to camera facing (standard WASD)
+                // If velocity.z is positive (W pressed), moveForward(positive) moves forward.
+                controls.moveForward(velocity.z * dt); 
+                if(checkCollision(obj.position)) { if (!isFlying && state.gameMode !== 'dm') { const currentY = obj.position.y; obj.position.y += 0.6; if (checkCollision(obj.position)) { obj.position.y = currentY; obj.position.z = startPos.z; } } else { obj.position.z = startPos.z; } }
                 
                 obj.position.y += velocity.y * dt;
                 if(checkCollision(obj.position) || (obj.position.y<2 && state.gameMode!=='dm')) { if(velocity.y<0) { canJump=true; obj.position.y = Math.ceil(obj.position.y); } else { obj.position.y = Math.floor(obj.position.y)-0.6; } velocity.y=0; if(obj.position.y < 2) obj.position.y = 2; }
@@ -1230,14 +1178,8 @@
             renderer.render(scene, camera);
         }
 
-        // INIT LOAD
-        if (!MapStorageManager.loadMap('default')) {
-            MapStorageManager.saveIndex({'default': 'Default Map'});
-            MapStorageManager.loadMap('default');
-        }
-        EntityManager.sync(); 
-        UIManager.renderHotbar();
-        initInputScheme(); // Start the selection process
+        if (!MapStorageManager.loadMap('default')) { MapStorageManager.saveIndex({'default': 'Default Map'}); MapStorageManager.loadMap('default'); }
+        EntityManager.sync(); UIManager.renderHotbar(); initInputScheme(); 
         window.addEventListener('resize', () => { camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
         animate();
     </script>
