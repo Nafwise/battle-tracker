@@ -82,7 +82,6 @@
 </head>
 <body>
     <div id="ui-layer" class="flex flex-col justify-between h-full p-4">
-        <!-- HEADER -->
         <div class="flex flex-col md:flex-row justify-between items-start gap-4">
             <div class="interactive bg-slate-900/90 border border-slate-700 p-3 rounded-xl shadow-xl backdrop-blur-sm flex flex-col gap-2 w-full md:w-auto">
                 <div class="flex items-center justify-between gap-4">
@@ -103,7 +102,6 @@
                 </div>
             </div>
 
-            <!-- CONTROLS -->
             <div class="header-controls flex gap-2 relative flex-wrap justify-end w-full md:w-auto">
                 <button id="btn-input-toggle" class="interactive bg-slate-800 border border-slate-600 p-2 rounded-lg text-slate-400 hover:text-white transition-colors shadow-lg" title="Change Controls"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="12" rx="2"/><path d="M6 12h.01"/><path d="M10 12h.01"/><path d="M14 12h.01"/><path d="M18 12h.01"/><path d="M12 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M6 8v.01"/><path d="M18 8v.01"/></svg></button>
                 <button id="btn-atmosphere" class="interactive bg-slate-800 border border-amber-500/50 p-2 rounded-lg text-amber-400 hover:bg-slate-700 transition-colors shadow-lg" title="Toggle Day/Night"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
@@ -357,6 +355,9 @@
 
         const scene = new THREE.Scene(); scene.background = new THREE.Color(CONFIG.colors.bgNight); scene.fog = new THREE.Fog(CONFIG.colors.bgNight, 10, 60);
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(0, 5, 10);
+        // Force rotation order to prevent roll artifacts
+        camera.rotation.order = 'YXZ';
+
         const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); renderer.shadowMap.enabled = true; document.body.appendChild(renderer.domElement);
         
         // FIX: Re-declare all required variables at the top level
@@ -912,21 +913,8 @@
             lastMouseX = event.clientX; lastMouseY = event.clientY;
         });
 
-        document.addEventListener('touchmove', (e) => {
-             if (touchState.moveId !== null || touchState.lookId !== null) return;
-             if (e.touches.length === 1) {
-                 const touch = e.touches[0];
-                 if (lastMouseX && lastMouseY) {
-                     const movementX = touch.clientX - lastMouseX; const movementY = touch.clientY - lastMouseY;
-                     const obj = controls.getObject(); obj.rotation.y -= movementX * 0.005;
-                     camera.rotation.x -= movementY * 0.005; camera.rotation.x = Math.max( - Math.PI / 2, Math.min( Math.PI / 2, camera.rotation.x ) );
-                 }
-                 lastMouseX = touch.clientX; lastMouseY = touch.clientY;
-             }
-        }, { passive: true });
+        // FIXED: Removed global touch listeners which caused snapping issues.
         
-        document.addEventListener('touchstart', (e) => { if (e.touches.length === 1) { lastMouseX = e.touches[0].clientX; lastMouseY = e.touches[0].clientY; } }, { passive: true });
-
         const touchState = { moveId: null, moveStart: { x: 0, y: 0 }, lookId: null, lookLast: { x: 0, y: 0 } };
         const joyUI = document.getElementById('joystick-ui'); const joyKnob = document.getElementById('joystick-knob');
         const zoneMove = document.getElementById('zone-move');
@@ -947,7 +935,10 @@
                     const maxDist = 50; let dx = touch.clientX - touchState.moveStart.x; let dy = touch.clientY - touchState.moveStart.y;
                     const dist = Math.sqrt(dx*dx + dy*dy); if (dist > maxDist) { const ratio = maxDist / dist; dx *= ratio; dy *= ratio; }
                     joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-                    state.moveVector.x = dx / maxDist; state.moveVector.z = dy / maxDist; 
+                    
+                    // FIXED: Inverted Z-axis calculation. Dragging Up (negative dy) should result in forward movement (positive velocity.z input).
+                    state.moveVector.x = dx / maxDist; 
+                    state.moveVector.z = -dy / maxDist; 
                 }
             }
         }, { passive: false });
@@ -963,10 +954,22 @@
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const touch = e.changedTouches[i];
                 if (touch.identifier === touchState.lookId) {
-                    const dx = touch.clientX - touchState.lookLast.x; const dy = touch.clientY - touchState.lookLast.y;
-                    const euler = new THREE.Euler(0, 0, 0, 'YXZ'); euler.setFromQuaternion(camera.quaternion);
-                    euler.y -= dx * 0.005; euler.x -= dy * 0.005; euler.x = Math.max(- Math.PI / 2, Math.min( Math.PI / 2, euler.x ));
-                    camera.quaternion.setFromEuler(euler); touchState.lookLast = { x: touch.clientX, y: touch.clientY };
+                    const dx = touch.clientX - touchState.lookLast.x; 
+                    const dy = touch.clientY - touchState.lookLast.y;
+                    
+                    // FIXED: Pitch Logic. Rotate Body for YAW, Camera for PITCH.
+                    // This separates axes to prevent roll issues.
+                    
+                    // Yaw (Left/Right) - Rotate the Player Body
+                    controls.getObject().rotation.y -= dx * 0.005;
+                    
+                    // Pitch (Up/Down) - Rotate the Camera
+                    camera.rotation.x -= dy * 0.005;
+                    
+                    // Clamp Pitch
+                    camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+                    
+                    touchState.lookLast = { x: touch.clientX, y: touch.clientY };
                 }
             }
         }, { passive: false });
