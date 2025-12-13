@@ -535,7 +535,8 @@
             isTouch: false, // Updated: controlled by selection
             moveVector: { x: 0, z: 0 }, 
             touch: { id: null, startX: 0, startY: 0, moveX: 0, moveY: 0 },
-            placementRotation: 0 // New state for manual rotation
+            placementRotation: 0, // New state for manual rotation
+            isInteracting: false // Track if button is held
         };
 
         const scene = new THREE.Scene(); scene.background = new THREE.Color(CONFIG.colors.bgNight); scene.fog = new THREE.Fog(CONFIG.colors.bgNight, 10, 60);
@@ -1154,6 +1155,67 @@
             return {interactable:false};
         }
 
+        // --- NEW: INTERACTION MANAGER (Handles Touch Drag & Mouse) ---
+        const InteractionManager = {
+            start: (mode) => {
+                if (state.gameMode !== 'build') return;
+                const cat = CATEGORIES[state.activeCategoryIdx];
+                const res = handleRaycast();
+                if (!res.interactable) return;
+
+                if (cat.type === 'block') {
+                    if (mode === 'delete' && res.hit.object.userData.isVoxel) {
+                        state.dragStart = { pos: getVoxelPos(res.hit.point, res.hit.face.normal, 'delete'), mode: 'delete' };
+                    } else if (mode === 'build') {
+                        state.dragStart = { pos: getVoxelPos(res.hit.point, res.hit.face.normal, 'build'), mode: 'build' };
+                    }
+                } else if (cat.type === 'token' || cat.type === 'loot') {
+                    if (mode === 'build') {
+                        // Place Token/Loot logic
+                        const d = cat.items[state.subSelections[state.activeCategoryIdx]];
+                        if(d) {
+                             const p = tokenRoll.position.clone();
+                             if(cat.type==='token') { if(state.tokenData.has(d.id)) state.tokenData.get(d.id).position.copy(p); } 
+                             else { const m = new THREE.Mesh(lootGeo, new THREE.MeshLambertMaterial({color:0xFFD700})); m.position.copy(tokenRoll.position); m.userData={isLoot:true, id:`l${Date.now()}`, data:d}; scene.add(m); state.tokenData.set(m.userData.id, m); }
+                             MapStorageManager.saveMap();
+                        }
+                    } else if (mode === 'delete' && res.hit.object.userData.isLoot) {
+                        scene.remove(res.hit.object); state.tokenData.delete(res.hit.object.userData.id); MapStorageManager.saveMap();
+                    }
+                }
+            },
+            end: () => {
+                if (!state.dragStart) return;
+                const res = handleRaycast();
+                // Even if not currently hitting, use last known good pos? 
+                // For simplicity, we only commit if we are hitting something valid or if we have a valid drag volume
+                
+                // Re-calculate the end position based on current raycast if possible, 
+                // or just use the last updated rollover state (which isn't stored explicitly but can be inferred)
+                
+                if (res.interactable) {
+                    const s = state.dragStart.pos;
+                    const e = getVoxelPos(res.hit.point, res.hit.face.normal, state.dragStart.mode);
+                    const minX=Math.min(s.x,e.x), maxX=Math.max(s.x,e.x), minY=Math.min(s.y,e.y), maxY=Math.max(s.y,e.y), minZ=Math.min(s.z,e.z), maxZ=Math.max(s.z,e.z);
+                    const mat = CATEGORIES[state.activeCategoryIdx].items[state.subSelections[state.activeCategoryIdx]];
+                    
+                    if((maxX-minX)*(maxY-minY)*(maxZ-minZ) > 5000) { console.warn("Too big"); state.dragStart=null; rollover.scale.set(1,1,1); return; }
+                    
+                    const rot = state.placementRotation;
+                    let chg=0;
+                    for(let x=minX; x<=maxX; x++) for(let y=minY; y<=maxY; y++) for(let z=minZ; z<=maxZ; z++) {
+                        if(state.dragStart.mode==='build') { if(mat!==undefined){WorldManager.add(x,y,z,mat,rot,false); chg++;} } 
+                        else { const m=state.mapData.get(`${x},${y},${z}`); if(m){WorldManager.remove(m); chg++;} }
+                    }
+                    for(let x=minX-1; x<=maxX+1; x++) for(let y=minY-1; y<=maxY+1; y++) for(let z=minZ-1; z<=maxZ+1; z++) WorldManager.updateGeo(x,y,z);
+                    document.getElementById('block-count').innerText = `${state.mapData.size} Blocks`;
+                    if(chg) MapStorageManager.saveMap();
+                }
+                state.dragStart = null;
+                rollover.scale.set(1,1,1);
+            }
+        };
+
         document.addEventListener('mousemove', (event) => {
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1; mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
             if (isRightMouseDown && !controls.isLocked) {
@@ -1235,14 +1297,28 @@
             if(el) {
                 el.addEventListener('touchstart', (e) => {
                     e.preventDefault(); e.stopPropagation(); 
-                    if (id === 'mob-place') { simulateClick(2, 'mousedown'); setTimeout(() => simulateClick(2, 'mouseup'), 50); } 
-                    else if (id === 'mob-break') { simulateClick(0, 'mousedown'); setTimeout(() => simulateClick(0, 'mouseup'), 50); } 
+                    if (id === 'mob-place') { 
+                        // Simulate Drag Start
+                        InteractionManager.start('build');
+                    } 
+                    else if (id === 'mob-break') { 
+                        // Simulate Drag Start
+                        InteractionManager.start('delete');
+                    } 
                     else if (id === 'mob-fly') { isFlying = !isFlying; velocity.y = 0; el.classList.toggle('bg-yellow-700'); const vControls = document.getElementById('mobile-vertical-controls'); if(vControls) vControls.style.display = isFlying ? 'flex' : 'none'; } 
                     else if (id === 'mob-rotate') { rotatePlacement(); }
                     else if (id === 'mob-up') { move.u = true; } 
                     else if (id === 'mob-down') { move.d = true; }
                 }, { passive: false });
-                el.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); if (id === 'mob-up') move.u = false; if (id === 'mob-down') move.d = false; });
+                el.addEventListener('touchend', (e) => { 
+                    e.preventDefault(); e.stopPropagation(); 
+                    if (id === 'mob-up') move.u = false; 
+                    if (id === 'mob-down') move.d = false; 
+                    if (id === 'mob-place' || id === 'mob-break') {
+                        // Simulate Drag End
+                        InteractionManager.end();
+                    }
+                });
             }
         });
 
@@ -1268,6 +1344,9 @@
         });
 
         document.addEventListener('mousedown', e => {
+            // FIX: Ignore clicks if the target is a UI element
+            if (e.target.closest('.interactive') && !e.target.closest('.interactive').matches('body')) return;
+
             if (e.button === 2) { isRightMouseDown = true; lastMouseX = e.clientX; lastMouseY = e.clientY; }
             if(!controls.isLocked && state.mode !== 'view' && state.gameMode !== 'players' && state.gameMode !== 'enemies' && state.gameMode !== 'dm') return;
             const res = handleRaycast();
@@ -1290,47 +1369,17 @@
             }
             if (e.shiftKey && e.button === 2 && hit.object.userData.isToken) { state.focusedToken = hit.object; RangeRingManager.update(state.focusedToken, 'conditions'); const p = hit.object.position; controls.getObject().position.set(p.x, p.y+5, p.z+5); controls.getObject().lookAt(p); return; }
             if (state.gameMode === 'build') {
-                const cat = CATEGORIES[state.activeCategoryIdx];
                 if(e.button === 2) {
-                    if(cat.type==='block') { state.dragStart = {pos:getVoxelPos(hit.point, hit.face.normal, 'build'), mode:'build'}; }
-                    else if(cat.type==='token' || cat.type==='loot') {
-                        const d = cat.items[state.subSelections[state.activeCategoryIdx]];
-                        if(d) {
-                             const p = tokenRoll.position.clone();
-                             if(cat.type==='token') { if(state.tokenData.has(d.id)) state.tokenData.get(d.id).position.copy(p); } 
-                             else { const m = new THREE.Mesh(lootGeo, new THREE.MeshLambertMaterial({color:0xFFD700})); m.position.copy(tokenRoll.position); m.userData={isLoot:true, id:`l${Date.now()}`, data:d}; scene.add(m); state.tokenData.set(m.userData.id, m); }
-                             MapStorageManager.saveMap();
-                        }
-                    }
+                    InteractionManager.start('build');
                 } else if(e.button===0) {
-                    if(cat.type==='block' && hit.object.userData.isVoxel) state.dragStart={pos:getVoxelPos(hit.point, hit.face.normal, 'delete'), mode:'delete'};
-                    else if(hit.object.userData.isLoot) { scene.remove(hit.object); state.tokenData.delete(hit.object.userData.id); MapStorageManager.saveMap(); }
+                    InteractionManager.start('delete');
                 }
             }
         });
 
         document.addEventListener('mouseup', (e) => {
             if (e.button === 2) isRightMouseDown = false;
-            if(!state.dragStart) return;
-            const res = handleRaycast();
-            if(res.interactable) {
-                const s = state.dragStart.pos, e = getVoxelPos(res.hit.point, res.hit.face.normal, state.dragStart.mode);
-                const minX=Math.min(s.x,e.x), maxX=Math.max(s.x,e.x), minY=Math.min(s.y,e.y), maxY=Math.max(s.y,e.y), minZ=Math.min(s.z,e.z), maxZ=Math.max(s.z,e.z);
-                const mat = CATEGORIES[state.activeCategoryIdx].items[state.subSelections[state.activeCategoryIdx]];
-                if((maxX-minX)*(maxY-minY)*(maxZ-minZ) > 5000) { console.warn("Too big"); state.dragStart=null; rollover.scale.set(1,1,1); return; }
-                
-                const rot = state.placementRotation;
-                let chg=0;
-                for(let x=minX; x<=maxX; x++) for(let y=minY; y<=maxY; y++) for(let z=minZ; z<=maxZ; z++) {
-                    if(state.dragStart.mode==='build') { if(mat!==undefined){WorldManager.add(x,y,z,mat,rot,false); chg++;} } 
-                    else { const m=state.mapData.get(`${x},${y},${z}`); if(m){WorldManager.remove(m); chg++;} }
-                }
-                // Update self and neighbors for corners
-                for(let x=minX-1; x<=maxX+1; x++) for(let y=minY-1; y<=maxY+1; y++) for(let z=minZ-1; z<=maxZ+1; z++) WorldManager.updateGeo(x,y,z);
-                document.getElementById('block-count').innerText = `${state.mapData.size} Blocks`;
-                if(chg) MapStorageManager.saveMap();
-            }
-            state.dragStart=null; rollover.scale.set(1,1,1);
+            InteractionManager.end();
         });
 
         document.addEventListener('wheel', e => {
