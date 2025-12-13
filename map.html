@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Akashic Atlas | 3D Voxel Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -1344,7 +1347,26 @@
         document.getElementById('btn-apps-dropdown').onclick = (e) => { e.stopPropagation(); document.getElementById('apps-dropdown-content').classList.toggle('show'); };
         window.onclick = (e) => { if (!e.target.matches('#btn-apps-dropdown') && !e.target.closest('#btn-apps-dropdown')) { const dropdowns = document.getElementsByClassName("dropdown-content"); for (let i = 0; i < dropdowns.length; i++) { if (dropdowns[i].classList.contains('show')) dropdowns[i].classList.remove('show'); } } };
 
-        document.getElementById('instructions').onclick = () => { if (state.gameMode === 'players' || state.gameMode === 'enemies') { document.getElementById('instructions').style.display='none'; document.getElementById('ui-layer').classList.add('interactive'); } else { if (!state.isTouch) controls.lock(); else document.getElementById('instructions').style.display='none'; } };
+        document.getElementById('instructions').onclick = () => { 
+            toggleFullScreen(); // Try to enable fullscreen on start click
+            if (state.gameMode === 'players' || state.gameMode === 'enemies') { 
+                document.getElementById('instructions').style.display='none'; 
+                document.getElementById('ui-layer').classList.add('interactive'); 
+            } else { 
+                if (!state.isTouch) controls.lock(); 
+                else document.getElementById('instructions').style.display='none'; 
+            } 
+        };
+        
+        // Fullscreen Helper
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                });
+            }
+        }
+
         controls.addEventListener('lock', () => { document.getElementById('instructions').style.display='none'; document.getElementById('ui-layer').classList.remove('interactive'); });
         controls.addEventListener('unlock', () => { if(state.mode==='menu' || state.gameMode === 'players' || state.gameMode === 'enemies' || state.gameMode === 'dm') { document.getElementById('ui-layer').classList.add('interactive'); } else { if(!state.isTouch) document.getElementById('instructions').style.display='block'; } });
         
@@ -1364,7 +1386,11 @@
         function applyInputScheme(mode) {
             state.isTouch = (mode === 'touch'); localStorage.setItem('akashic_input_scheme', mode);
             const mobControls = document.getElementById('mobile-controls'); const instructions = document.getElementById('instructions');
-            if (state.isTouch) { mobControls.style.display = 'block'; instructions.style.display = 'none'; } 
+            if (state.isTouch) { 
+                mobControls.style.display = 'block'; 
+                instructions.style.display = 'none'; 
+                toggleFullScreen(); // Try to enable fullscreen on touch selection
+            } 
             else { mobControls.style.display = 'none'; if(state.gameMode === 'build' && !controls.isLocked) instructions.style.display = 'block'; }
             document.getElementById('controls-modal').classList.remove('open');
         }
