@@ -1141,15 +1141,37 @@
                 const isLiquid = (idx) => MATERIALS[idx].type === 'liquid';
 
                 let mask = 0; 
+                // FIX: Pre-calculate local face directions based on rotation
+                const invRot = -m.rotation.y;
+                // Helper to find local face index for a world direction
+                const getLocalFace = (wx, wy, wz) => {
+                     // Rotate world vector to local space
+                     const lx = wx * Math.cos(invRot) - wz * Math.sin(invRot);
+                     const lz = wx * Math.sin(invRot) + wz * Math.cos(invRot);
+                     const ly = wy;
+                     
+                     if (lx > 0.5) return 0; // +x Right
+                     if (lx < -0.5) return 1; // -x Left
+                     if (ly > 0.5) return 2; // +y Top
+                     if (ly < -0.5) return 3; // -y Bottom
+                     if (lz > 0.5) return 4; // +z Front
+                     if (lz < -0.5) return 5; // -z Back
+                     return -1;
+                };
+
                 DIRS.forEach((d,i) => { 
                     const n = state.mapData.get(`${x+d.x},${y+d.y},${z+d.z}`); 
                     if (n) {
-                        if (isSolid(m.userData.matIndex)) {
-                            // Only hide if neighbor is also solid
-                            if (isSolid(n.userData.matIndex)) mask |= (1<<i);
-                        } else if (isLiquid(m.userData.matIndex)) {
-                            // Hide if neighbor is same liquid or solid
-                            if (n.userData.matIndex === m.userData.matIndex || isSolid(n.userData.matIndex)) mask |= (1<<i);
+                        // Determine which LOCAL face this neighbor is blocking
+                        const localFace = getLocalFace(d.x, d.y, d.z);
+                        if (localFace !== -1) {
+                            if (isSolid(m.userData.matIndex)) {
+                                // Only hide if neighbor is also solid
+                                if (isSolid(n.userData.matIndex)) mask |= (1<<localFace);
+                            } else if (isLiquid(m.userData.matIndex)) {
+                                // Hide if neighbor is same liquid or solid
+                                if (n.userData.matIndex === m.userData.matIndex || isSolid(n.userData.matIndex)) mask |= (1<<localFace);
+                            }
                         }
                     }
                 }); 
