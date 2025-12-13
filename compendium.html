@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>D&D Expanded Player Compendium</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Import Map for React modules -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "lucide-react": "https://esm.sh/lucide-react?deps=react@18.2.0"
+        }
+    }
+    </script>
+
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #475569; }
+        
+        /* Fade In Animation */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen selection:bg-indigo-500/30">
+
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+          Book, Search, ChevronRight, ChevronDown, Gem, Sword, Shield, Scroll, 
+          Zap, ArrowLeft, Brain, User, Dices, Layers, Aperture, Skull, Anchor, 
+          Wand2, Crown, Ghost, Sparkles, Target, Hammer, Package, Sun
+        } from 'lucide-react';
+
+        // --- COMPREHENSIVE HARDCODED COMPENDIUM DATA ---
+        const COMPENDIUM = {
+          classes: [
+            { name: 'Artificer', source: 'TCE', hitDie: 'd8', primary: 'Intelligence', saves: 'Con, Int', proficiencies: 'Light/Medium Armor, Shields, Simple Weapons, Tinker/Thieves Tools', description: 'Masters of invention, artificers use ingenuity and magic to unlock extraordinary capabilities in objects.' },
+            { name: 'Barbarian', source: 'PHB', hitDie: 'd12', primary: 'Strength', saves: 'Str, Con', proficiencies: 'Light/Medium Armor, Shields, Simple/Martial Weapons', description: 'A fierce warrior of primitive background who can enter a battle rage.' },
+            { name: 'Bard', source: 'PHB', hitDie: 'd8', primary: 'Charisma', saves: 'Dex, Cha', proficiencies: 'Light Armor, Simple Weapons, Longsword, Rapier, Shortsword, 3 Musical Instruments', description: 'An inspiring magician whose power echoes the music of creation.' },
+            { name: 'Cleric', source: 'PHB', hitDie: 'd8', primary: 'Wisdom', saves: 'Wis, Cha', proficiencies: 'Light/Medium Armor, Shields, Simple Weapons', description: 'A priestly champion who wields divine magic in service of a higher power.' },
+            { name: 'Druid', source: 'PHB', hitDie: 'd8', primary: 'Wisdom', saves: 'Int, Wis', proficiencies: 'Light/Medium Armor (nonmetal), Shields (nonmetal), Club, Dagger, Javelin, Mace, Quarterstaff, Scimitar, Sickle, Spear, Sling, Herbalism Kit', description: 'A priest of the Old Faith, wielding the powers of nature and moonlight.' },
+            { name: 'Fighter', source: 'PHB', hitDie: 'd10', primary: 'Str or Dex', saves: 'Str, Con', proficiencies: 'All Armor, Shields, Simple/Martial Weapons', description: 'A master of martial combat, skilled with a variety of weapons and armor.' },
+            { name: 'Monk', source: 'PHB', hitDie: 'd8', primary: 'Dex & Wis', saves: 'Str, Dex', proficiencies: 'Simple Weapons, Shortswords', description: 'A master of martial arts, harnessing the power of the body.' },
+            { name: 'Paladin', source: 'PHB', hitDie: 'd10', primary: 'Str & Cha', saves: 'Wis, Cha', proficiencies: 'All Armor, Shields, Simple/Martial Weapons', description: 'A holy warrior bound to a sacred oath.' },
+            { name: 'Ranger', source: 'PHB', hitDie: 'd10', primary: 'Dex & Wis', saves: 'Str, Dex', proficiencies: 'Light/Medium Armor, Shields, Simple/Martial Weapons', description: 'A warrior who uses martial prowess and nature magic.' },
+            { name: 'Rogue', source: 'PHB', hitDie: 'd8', primary: 'Dexterity', saves: 'Dex, Int', proficiencies: 'Light Armor, Simple Weapons, Hand Crossbows, Longsword, Rapier, Shortsword, Thieves Tools', description: 'A scoundrel who uses stealth and trickery.' },
+            { name: 'Sorcerer', source: 'PHB', hitDie: 'd6', primary: 'Charisma', saves: 'Con, Cha', proficiencies: 'Daggers, Darts, Slings, Quarterstaffs, Light Crossbows', description: 'A spellcaster who draws on inherent magic from a gift or bloodline.' },
+            { name: 'Warlock', source: 'PHB', hitDie: 'd8', primary: 'Charisma', saves: 'Wis, Cha', proficiencies: 'Light Armor, Simple Weapons', description: 'A wielder of magic that is derived from a bargain with an extraplanar entity.' },
+            { name: 'Wizard', source: 'PHB', hitDie: 'd6', primary: 'Intelligence', saves: 'Int, Wis', proficiencies: 'Daggers, Darts, Slings, Quarterstaffs, Light Crossbows', description: 'A scholarly magic-user capable of manipulating the structures of reality.' },
+          ],
+          subclasses: [
+             // ARTIFICER
+             { name: 'Alchemist', class: 'Artificer', source: 'TCE', feature: 'Experimental Elixir, Alchemical Savant.' },
+             { name: 'Armorer', class: 'Artificer', source: 'TCE', feature: 'Arcane Armor (Guardian/Infiltrator), Extra Attack.' },
+             { name: 'Artillerist', class: 'Artificer', source: 'TCE', feature: 'Eldritch Cannon, Arcane Firearm.' },
+             { name: 'Battle Smith', class: 'Artificer', source: 'TCE', feature: 'Steel Defender, Battle Ready (Int to atk).' },
+             // BARBARIAN
+             { name: 'Path of the Berserker', class: 'Barbarian', source: 'PHB', feature: 'Frenzy, Mindless Rage.' },
+             { name: 'Path of the Totem Warrior', class: 'Barbarian', source: 'PHB', feature: 'Totem Spirit (Bear, Eagle, Elk, Tiger, Wolf).' },
+             { name: 'Path of the Ancestral Guardian', class: 'Barbarian', source: 'XGtE', feature: 'Ancestral Protectors.' },
+             { name: 'Path of the Storm Herald', class: 'Barbarian', source: 'XGtE', feature: 'Storm Aura (Desert, Sea, Tundra).' },
+             { name: 'Path of the Zealot', class: 'Barbarian', source: 'XGtE', feature: 'Divine Fury, Rage Beyond Death.' },
+             { name: 'Path of the Beast', class: 'Barbarian', source: 'TCE', feature: 'Form of the Beast.' },
+             { name: 'Path of Wild Magic', class: 'Barbarian', source: 'TCE', feature: 'Wild Surge.' },
+             { name: 'Path of the Battlerager', class: 'Barbarian', source: 'SCAG', feature: 'Spiked Armor, Reckless Abandon.' },
+             { name: 'Path of the Giant', class: 'Barbarian', source: 'BGG', feature: 'Giant\'s Power, Elemental Cleave.' },
+             // BARD
+             { name: 'College of Lore', class: 'Bard', source: 'PHB', feature: 'Cutting Words, Additional Magical Secrets.' },
+             { name: 'College of Valor', class: 'Bard', source: 'PHB', feature: 'Combat Inspiration, Extra Attack.' },
+             { name: 'College of Glamour', class: 'Bard', source: 'XGtE', feature: 'Mantle of Inspiration, Enthralling Performance.' },
+             { name: 'College of Swords', class: 'Bard', source: 'XGtE', feature: 'Blade Flourishes, Extra Attack.' },
+             { name: 'College of Whispers', class: 'Bard', source: 'XGtE', feature: 'Psychic Blades, Words of Terror.' },
+             { name: 'College of Creation', class: 'Bard', source: 'TCE', feature: 'Mote of Potential, Performance of Creation.' },
+             { name: 'College of Eloquence', class: 'Bard', source: 'TCE', feature: 'Silver Tongue, Unsettling Words.' },
+             { name: 'College of Spirits', class: 'Bard', source: 'VRGtR', feature: 'Tales from Beyond, Spiritual Focus.' },
+             // CLERIC
+             { name: 'Knowledge Domain', class: 'Cleric', source: 'PHB', feature: 'Expertise, Read Thoughts.' },
+             { name: 'Life Domain', class: 'Cleric', source: 'PHB', feature: 'Disciple of Life, Preserve Life.' },
+             { name: 'Light Domain', class: 'Cleric', source: 'PHB', feature: 'Warding Flare, Radiance of the Dawn.' },
+             { name: 'Nature Domain', class: 'Cleric', source: 'PHB', feature: 'Acolyte of Nature, Dampen Elements.' },
+             { name: 'Tempest Domain', class: 'Cleric', source: 'PHB', feature: 'Wrath of the Storm, Destructive Wrath.' },
+             { name: 'Trickery Domain', class: 'Cleric', source: 'PHB', feature: 'Blessing of the Trickster, Invoke Duplicity.' },
+             { name: 'War Domain', class: 'Cleric', source: 'PHB', feature: 'War Priest, Guided Strike.' },
+             { name: 'Death Domain', class: 'Cleric', source: 'DMG', feature: 'Reaper, Touch of Death.' },
+             { name: 'Forge Domain', class: 'Cleric', source: 'XGtE', feature: 'Blessing of the Forge, Soul of the Forge.' },
+             { name: 'Grave Domain', class: 'Cleric', source: 'XGtE', feature: 'Circle of Mortality, Path to the Grave.' },
+             { name: 'Arcana Domain', class: 'Cleric', source: 'SCAG', feature: 'Arcane Initiate, Spell Breaker.' },
+             { name: 'Order Domain', class: 'Cleric', source: 'TCE', feature: 'Voice of Authority, Embodiment of the Law.' },
+             { name: 'Peace Domain', class: 'Cleric', source: 'TCE', feature: 'Emboldening Bond, Protective Bond.' },
+             { name: 'Twilight Domain', class: 'Cleric', source: 'TCE', feature: 'Twilight Sanctuary, Vigilant Blessing.' },
+             // DRUID
+             { name: 'Circle of the Land', class: 'Druid', source: 'PHB', feature: 'Natural Recovery, Land Spells.' },
+             { name: 'Circle of the Moon', class: 'Druid', source: 'PHB', feature: 'Combat Wild Shape, Circle Forms.' },
+             { name: 'Circle of Dreams', class: 'Druid', source: 'XGtE', feature: 'Balm of the Summer Court, Hearth of Moonlight.' },
+             { name: 'Circle of the Shepherd', class: 'Druid', source: 'XGtE', feature: 'Spirit Totems, Mighty Summoner.' },
+             { name: 'Circle of Spores', class: 'Druid', source: 'TCE', feature: 'Symbiotic Entity, Halo of Spores.' },
+             { name: 'Circle of Stars', class: 'Druid', source: 'TCE', feature: 'Starry Form.' },
+             { name: 'Circle of Wildfire', class: 'Druid', source: 'TCE', feature: 'Summon Wildfire Spirit.' },
+             // FIGHTER
+             { name: 'Battle Master', class: 'Fighter', source: 'PHB', feature: 'Combat Superiority, Maneuvers.' },
+             { name: 'Champion', class: 'Fighter', source: 'PHB', feature: 'Improved Critical, Remarkable Athlete.' },
+             { name: 'Eldritch Knight', class: 'Fighter', source: 'PHB', feature: 'Spellcasting, Weapon Bond.' },
+             { name: 'Arcane Archer', class: 'Fighter', source: 'XGtE', feature: 'Arcane Shot, Magic Arrow.' },
+             { name: 'Cavalier', class: 'Fighter', source: 'XGtE', feature: 'Unwavering Mark, Warding Maneuver.' },
+             { name: 'Samurai', class: 'Fighter', source: 'XGtE', feature: 'Fighting Spirit, Elegant Courtier.' },
+             { name: 'Echo Knight', class: 'Fighter', source: 'EGtW', feature: 'Manifest Echo, Unleash Incarnation.' },
+             { name: 'Psi Warrior', class: 'Fighter', source: 'TCE', feature: 'Psionic Power.' },
+             { name: 'Rune Knight', class: 'Fighter', source: 'TCE', feature: 'Giant\'s Might, Runes.' },
+             { name: 'Purple Dragon Knight', class: 'Fighter', source: 'SCAG', feature: 'Rallying Cry.' },
+             // MONK
+             { name: 'Way of the Open Hand', class: 'Monk', source: 'PHB', feature: 'Open Hand Technique, Wholeness of Body.' },
+             { name: 'Way of Shadow', class: 'Monk', source: 'PHB', feature: 'Shadow Arts, Shadow Step.' },
+             { name: 'Way of the Four Elements', class: 'Monk', source: 'PHB', feature: 'Elemental Disciplines.' },
+             { name: 'Way of the Drunken Master', class: 'Monk', source: 'XGtE', feature: 'Drunken Technique, Tipsy Sway.' },
+             { name: 'Way of the Kensei', class: 'Monk', source: 'XGtE', feature: 'Kensei Weapons, Agile Parry.' },
+             { name: 'Way of the Sun Soul', class: 'Monk', source: 'XGtE', feature: 'Radiant Sun Bolt, Searing Arc Strike.' },
+             { name: 'Way of Mercy', class: 'Monk', source: 'TCE', feature: 'Hand of Harm, Hand of Healing.' },
+             { name: 'Way of the Astral Self', class: 'Monk', source: 'TCE', feature: 'Arms of the Astral Self.' },
+             { name: 'Way of the Ascendant Dragon', class: 'Monk', source: 'FToD', feature: 'Draconic Disciple, Breath of the Dragon.' },
+             { name: 'Way of the Long Death', class: 'Monk', source: 'SCAG', feature: 'Touch of Death, Hour of Reaping.' },
+             // PALADIN
+             { name: 'Oath of Devotion', class: 'Paladin', source: 'PHB', feature: 'Sacred Weapon, Turn the Unholy.' },
+             { name: 'Oath of the Ancients', class: 'Paladin', source: 'PHB', feature: 'Nature\'s Wrath, Aura of Warding.' },
+             { name: 'Oath of Vengeance', class: 'Paladin', source: 'PHB', feature: 'Vow of Enmity, Avenging Angel.' },
+             { name: 'Oathbreaker', class: 'Paladin', source: 'DMG', feature: 'Aura of Hate, Control Undead.' },
+             { name: 'Oath of Conquest', class: 'Paladin', source: 'XGtE', feature: 'Aura of Conquest, Guided Strike.' },
+             { name: 'Oath of Redemption', class: 'Paladin', source: 'XGtE', feature: 'Rebuking Violent, Aura of the Guardian.' },
+             { name: 'Oath of Glory', class: 'Paladin', source: 'TCE', feature: 'Peerless Athlete, Aura of Alacrity.' },
+             { name: 'Oath of the Watchers', class: 'Paladin', source: 'TCE', feature: 'Watcher\'s Will, Aura of the Sentinel.' },
+             { name: 'Oath of the Crown', class: 'Paladin', source: 'SCAG', feature: 'Champion Challenge, Divine Allegiance.' },
+             // RANGER
+             { name: 'Hunter', class: 'Ranger', source: 'PHB', feature: 'Hunter\'s Prey, Defensive Tactics.' },
+             { name: 'Beast Master', class: 'Ranger', source: 'PHB/TCE', feature: 'Primal Companion.' },
+             { name: 'Gloom Stalker', class: 'Ranger', source: 'XGtE', feature: 'Dread Ambusher, Umbral Sight.' },
+             { name: 'Horizon Walker', class: 'Ranger', source: 'XGtE', feature: 'Planar Warrior, Distant Strike.' },
+             { name: 'Monster Slayer', class: 'Ranger', source: 'XGtE', feature: 'Slayer\'s Prey, Supernatural Defense.' },
+             { name: 'Fey Wanderer', class: 'Ranger', source: 'TCE', feature: 'Dreadful Strikes, Otherworldly Glamour.' },
+             { name: 'Swarmkeeper', class: 'Ranger', source: 'TCE', feature: 'Gathered Swarm.' },
+             { name: 'Drakewarden', class: 'Ranger', source: 'FToD', feature: 'Drake Companion, Drake\'s Breath.' },
+             // ROGUE
+             { name: 'Thief', class: 'Rogue', source: 'PHB', feature: 'Fast Hands, Second-Story Work.' },
+             { name: 'Assassin', class: 'Rogue', source: 'PHB', feature: 'Assassinate, Impostor.' },
+             { name: 'Arcane Trickster', class: 'Rogue', source: 'PHB', feature: 'Spellcasting, Mage Hand Legerdemain.' },
+             { name: 'Inquisitive', class: 'Rogue', source: 'XGtE', feature: 'Insightful Fighting, Eye for Detail.' },
+             { name: 'Mastermind', class: 'Rogue', source: 'XGtE', feature: 'Master of Tactics, Soul of Deceit.' },
+             { name: 'Scout', class: 'Rogue', source: 'XGtE', feature: 'Skirmisher, Survivalist.' },
+             { name: 'Swashbuckler', class: 'Rogue', source: 'XGtE', feature: 'Rakish Audacity, Fancy Footwork.' },
+             { name: 'Phantom', class: 'Rogue', source: 'TCE', feature: 'Wails from the Grave, Tokens of the Departed.' },
+             { name: 'Soulknife', class: 'Rogue', source: 'TCE', feature: 'Psychic Blades, Psi-Bolstered Knack.' },
+             // SORCERER
+             { name: 'Draconic Bloodline', class: 'Sorcerer', source: 'PHB', feature: 'Draconic Resilience, Elemental Affinity.' },
+             { name: 'Wild Magic', class: 'Sorcerer', source: 'PHB', feature: 'Wild Magic Surge, Tides of Chaos.' },
+             { name: 'Divine Soul', class: 'Sorcerer', source: 'XGtE', feature: 'Divine Magic, Favored by the Gods.' },
+             { name: 'Shadow Magic', class: 'Sorcerer', source: 'XGtE', feature: 'Strength of the Grave, Hound of Ill Omen.' },
+             { name: 'Storm Sorcery', class: 'Sorcerer', source: 'XGtE', feature: 'Tempestuous Magic, Heart of the Storm.' },
+             { name: 'Aberrant Mind', class: 'Sorcerer', source: 'TCE', feature: 'Psionic Spells, Psionic Sorcery.' },
+             { name: 'Clockwork Soul', class: 'Sorcerer', source: 'TCE', feature: 'Restore Balance, Bastion of Law.' },
+             { name: 'Lunar Sorcery', class: 'Sorcerer', source: 'DSotDQ', feature: 'Lunar Embodiment, Lunar Boons.' },
+             // WARLOCK
+             { name: 'The Archfey', class: 'Warlock', source: 'PHB', feature: 'Fey Presence, Misty Escape.' },
+             { name: 'The Fiend', class: 'Warlock', source: 'PHB', feature: 'Dark One\'s Blessing, Hurl Through Hell.' },
+             { name: 'The Great Old One', class: 'Warlock', source: 'PHB', feature: 'Awakened Mind, Create Thrall.' },
+             { name: 'The Celestial', class: 'Warlock', source: 'XGtE', feature: 'Healing Light, Radiant Soul.' },
+             { name: 'The Hexblade', class: 'Warlock', source: 'XGtE', feature: 'Hex Warrior, Hexblade\'s Curse.' },
+             { name: 'The Fathomless', class: 'Warlock', source: 'TCE', feature: 'Tentacle of the Deeps, Oceanic Soul.' },
+             { name: 'The Genie', class: 'Warlock', source: 'TCE', feature: 'Genie\'s Vessel, Genie\'s Wrath.' },
+             { name: 'The Undying', class: 'Warlock', source: 'SCAG', feature: 'Among the Dead, Defy Death.' },
+             { name: 'The Undead', class: 'Warlock', source: 'VRGtR', feature: 'Form of Dread, Grave Touched.' },
+             // WIZARD
+             { name: 'School of Evocation', class: 'Wizard', source: 'PHB', feature: 'Sculpt Spells, Potent Cantrip.' },
+             { name: 'School of Divination', class: 'Wizard', source: 'PHB', feature: 'Portent, Expert Divination.' },
+             { name: 'School of Abjuration', class: 'Wizard', source: 'PHB', feature: 'Arcane Ward, Improved Abjuration.' },
+             { name: 'School of Necromancy', class: 'Wizard', source: 'PHB', feature: 'Grim Harvest, Undead Thralls.' },
+             { name: 'School of Conjuration', class: 'Wizard', source: 'PHB', feature: 'Minor Conjuration, Benign Transposition.' },
+             { name: 'School of Enchantment', class: 'Wizard', source: 'PHB', feature: 'Hypnotic Gaze, Split Enchantment.' },
+             { name: 'School of Illusion', class: 'Wizard', source: 'PHB', feature: 'Improved Minor Illusion, Malleable Illusions.' },
+             { name: 'School of Transmutation', class: 'Wizard', source: 'PHB', feature: 'Minor Alchemy, Transmuter\'s Stone.' },
+             { name: 'Bladesinging', class: 'Wizard', source: 'TCE', feature: 'Bladesong, Extra Attack.' },
+             { name: 'Order of Scribes', class: 'Wizard', source: 'TCE', feature: 'Wizardly Quill, Awakened Spellbook.' },
+             { name: 'War Magic', class: 'Wizard', source: 'XGtE', feature: 'Arcane Deflection, Tactical Wit.' },
+             { name: 'Chronurgy Magic', class: 'Wizard', source: 'EGtW', feature: 'Chronal Shift, Temporal Awareness.' },
+             { name: 'Graviturgy Magic', class: 'Wizard', source: 'EGtW', feature: 'Adjust Density, Gravity Well.' },
+          ],
+          invocations: [
+            // ... (Previous Invocations remain) ...
+            { name: 'Agonizing Blast', source: 'PHB', prereq: 'Eldritch Blast', benefit: 'Add Charisma modifier to Eldritch Blast damage.' },
+            { name: 'Armor of Shadows', source: 'PHB', prereq: 'None', benefit: 'Cast Mage Armor on yourself at will, without spell slots or material components.' },
+            { name: 'Ascendant Step', source: 'PHB', prereq: '9th level', benefit: 'Cast Levitate on yourself at will, without spell slots or material components.' },
+            { name: 'Aspect of the Moon', source: 'XGtE', prereq: 'Pact of the Tome', benefit: 'You no longer need to sleep and can\'t be forced to sleep by any means.' },
+            { name: 'Beast Speech', source: 'PHB', prereq: 'None', benefit: 'Cast Speak with Animals at will, without spell slots.' },
+            { name: 'Bond of the Talisman', source: 'TCE', prereq: '12th level, Pact of the Talisman', benefit: 'Teleport to talisman holder (or vice versa) as an action.' },
+            { name: 'Book of Ancient Secrets', source: 'PHB', prereq: 'Pact of the Tome', benefit: 'Add ritual spells from any class to your Book of Shadows.' },
+            { name: 'Cloak of Flies', source: 'XGtE', prereq: '5th level', benefit: 'Bonus action to surround self with buzzing flies (Adv on Intimidation, poison dmg to nearby enemies).' },
+            { name: 'Devil\'s Sight', source: 'PHB', prereq: 'None', benefit: 'See normally in darkness, both magical and nonmagical, to a distance of 120 feet.' },
+            { name: 'Eldritch Mind', source: 'TCE', prereq: 'None', benefit: 'Advantage on Constitution saving throws to maintain concentration on a spell.' },
+            { name: 'Eldritch Sight', source: 'PHB', prereq: 'None', benefit: 'Cast Detect Magic at will, without spell slots.' },
+            { name: 'Eldritch Smite', source: 'XGtE', prereq: '5th level, Pact of the Blade', benefit: 'Expend spell slot to deal force damage + knock prone on hit.' },
+            { name: 'Eyes of the Rune Keeper', source: 'PHB', prereq: 'None', benefit: 'You can read all writing.' },
+            { name: 'Fiendish Vigor', source: 'PHB', prereq: 'None', benefit: 'Cast False Life on yourself at will as a 1st-level spell.' },
+            { name: 'Gaze of Two Minds', source: 'PHB', prereq: 'None', benefit: 'Use your action to touch a humanoid and perceive through their senses.' },
+            { name: 'Ghostly Gaze', source: 'XGtE', prereq: '7th level', benefit: 'See through solid objects to a range of 30 feet.' },
+            { name: 'Gift of the Depths', source: 'XGtE', prereq: '5th level', benefit: 'Breathe underwater, swim speed, cast Water Breathing once per long rest.' },
+            { name: 'Gift of the Ever-Living Ones', source: 'XGtE', prereq: 'Pact of the Chain', benefit: 'Maximize healing dice rolled for you while your familiar is within 100 feet.' },
+            { name: 'Grasp of Hadar', source: 'XGtE', prereq: 'Eldritch Blast', benefit: 'Pull creature hit by Eldritch Blast 10 feet closer to you.' },
+            { name: 'Improved Pact Weapon', source: 'XGtE', prereq: 'Pact of the Blade', benefit: 'Pact weapon is +1 magical weapon. Can use bows/crossbows.' },
+            { name: 'Investment of the Chain Master', source: 'TCE', prereq: 'Pact of the Chain', benefit: 'Familiar gains fly/swim speed, attacks count as magical, uses your save DC.' },
+            { name: 'Lance of Lethargy', source: 'XGtE', prereq: 'Eldritch Blast', benefit: 'Reduce target speed by 10 feet on hit.' },
+            { name: 'Lifedrinker', source: 'PHB', prereq: '12th level, Pact of the Blade', benefit: 'Add Charisma modifier to necrotic damage on hit.' },
+            { name: 'Maddening Hex', source: 'XGtE', prereq: '5th level, Hex spell or feature', benefit: 'Bonus action to deal Charisma mod psychic damage to cursed target and adjacent enemies.' },
+            { name: 'Mask of Many Faces', source: 'PHB', prereq: 'None', benefit: 'Cast Disguise Self at will, without spell slots.' },
+            { name: 'Master of Myriad Forms', source: 'PHB', prereq: '15th level', benefit: 'Cast Alter Self at will, without spell slots.' },
+            { name: 'Misty Visions', source: 'PHB', prereq: 'None', benefit: 'Cast Silent Image at will, without spell slots.' },
+            { name: 'One with Shadows', source: 'PHB', prereq: '5th level', benefit: 'Become invisible in dim light or darkness as an action (until you move/act).' },
+            { name: 'Protection of the Talisman', source: 'TCE', prereq: '7th level, Pact of the Talisman', benefit: 'Wearer adds d4 to failed saving throws.' },
+            { name: 'Rebuke of the Talisman', source: 'TCE', prereq: 'Pact of the Talisman', benefit: 'Reaction to push attacker 10ft and deal damage.' },
+            { name: 'Relentless Hex', source: 'XGtE', prereq: '7th level, Hex spell or feature', benefit: 'Bonus action to teleport to cursed target.' },
+            { name: 'Repelling Blast', source: 'PHB', prereq: 'Eldritch Blast', benefit: 'Push creature hit by Eldritch Blast 10 feet away.' },
+            { name: 'Sculptor of Flesh', source: 'PHB', prereq: '7th level', benefit: 'Cast Polymorph once using a warlock spell slot.' },
+            { name: 'Shroud of Shadow', source: 'XGtE', prereq: '15th level', benefit: 'Cast Invisibility at will, without spell slots.' },
+            { name: 'Thirsting Blade', source: 'PHB', prereq: '5th level, Pact of the Blade', benefit: 'Attack twice with your pact weapon when you take the Attack action.' },
+            { name: 'Tomb of Levistus', source: 'XGtE', prereq: '5th level', benefit: 'Reaction to entomb self in ice (gaining 10 temp HP per level) when taking damage.' },
+            { name: 'Undying Servitude', source: 'TCE', prereq: '5th level', benefit: 'Cast Animate Dead without using a spell slot (once/long rest).' },
+            { name: 'Whispers of the Grave', source: 'PHB', prereq: '9th level', benefit: 'Cast Speak with Dead at will, without spell slots.' },
+          ],
+          metamagic: [
+            // ... (Previous Metamagic remain) ...
+            { name: 'Careful Spell', source: 'PHB', cost: '1 SP', benefit: 'Protect allies from your AOE spells (they automatically succeed saves).' },
+            { name: 'Distant Spell', source: 'PHB', cost: '1 SP', benefit: 'Double range of spell. Touch spells become 30ft range.' },
+            { name: 'Empowered Spell', source: 'PHB', cost: '1 SP', benefit: 'Reroll damage dice (up to Cha mod). Can be used with other metamagic.' },
+            { name: 'Extended Spell', source: 'PHB', cost: '1 SP', benefit: 'Double duration of spell (max 24 hours).' },
+            { name: 'Heightened Spell', source: 'PHB', cost: '3 SP', benefit: 'One target has disadvantage on its first saving throw against the spell.' },
+            { name: 'Quickened Spell', source: 'PHB', cost: '2 SP', benefit: 'Cast an Action spell as a Bonus Action.' },
+            { name: 'Seeking Spell', source: 'TCE', cost: '2 SP', benefit: 'Reroll a missed spell attack roll. Ignore cover.' },
+            { name: 'Subtle Spell', source: 'PHB', cost: '1 SP', benefit: 'Cast spell without Somatic or Verbal components.' },
+            { name: 'Transmuted Spell', source: 'TCE', cost: '1 SP', benefit: 'Change damage type (Acid, Cold, Fire, Lightning, Poison, Thunder) to another from that list.' },
+            { name: 'Twinned Spell', source: 'PHB', cost: 'SP = Level', benefit: 'Target a second creature with a single-target spell.' },
+          ],
+          maneuvers: [
+            // ... (Previous Maneuvers remain) ...
+            { name: 'Ambush', source: 'TCE', benefit: 'Add Superiority Die to Stealth check or Initiative roll.' },
+            { name: 'Bait and Switch', source: 'TCE', benefit: 'Switch places with ally, add SD to their AC.' },
+            { name: 'Brace', source: 'TCE', benefit: 'Reaction attack when enemy moves into reach.' },
+            { name: 'Commander\'s Strike', source: 'PHB', benefit: 'Forgo attack to let ally attack as reaction + add SD to damage.' },
+            { name: 'Disarming Attack', source: 'PHB', benefit: 'Add SD to damage, force Strength save or drop item.' },
+            { name: 'Distracting Strike', source: 'PHB', benefit: 'Add SD to damage, next attack against target has advantage.' },
+            { name: 'Evasive Footwork', source: 'PHB', benefit: 'Add SD to AC while moving.' },
+            { name: 'Feinting Attack', source: 'PHB', benefit: 'Bonus action, adv on next attack + add SD to damage.' },
+            { name: 'Goading Attack', source: 'PHB', benefit: 'Add SD to damage, target has disadv on attacks vs others.' },
+            { name: 'Grappling Strike', source: 'TCE', benefit: 'Bonus action grapple after hit, add SD to check.' },
+            { name: 'Lunging Attack', source: 'PHB', benefit: 'Increase reach by 5ft, add SD to damage.' },
+            { name: 'Maneuvering Attack', source: 'PHB', benefit: 'Add SD to damage, ally moves half speed without OA.' },
+            { name: 'Menacing Attack', source: 'PHB', benefit: 'Add SD to damage, target frightened (Wis save).' },
+            { name: 'Parry', source: 'PHB', benefit: 'Reaction reduce melee damage by SD + Dex.' },
+            { name: 'Precision Attack', source: 'PHB', benefit: 'Add SD to attack roll.' },
+            { name: 'Pushing Attack', source: 'PHB', benefit: 'Add SD to damage, push target 15ft (Str save).' },
+            { name: 'Quick Toss', source: 'TCE', benefit: 'Bonus action throw weapon, add SD to damage.' },
+            { name: 'Rally', source: 'PHB', benefit: 'Bonus action give ally temp HP equal to SD + Cha.' },
+            { name: 'Riposte', source: 'PHB', benefit: 'Reaction attack when enemy misses you.' },
+            { name: 'Sweeping Attack', source: 'PHB', benefit: 'Apply SD damage to second adjacent creature.' },
+            { name: 'Tactical Assessment', source: 'TCE', benefit: 'Add SD to History, Insight, or Investigation check.' },
+            { name: 'Trip Attack', source: 'PHB', benefit: 'Add SD to damage, knock target prone (Str save).' },
+          ],
+          infusions: [
+            // ... (Previous Infusions remain) ...
+            { name: 'Arcane Propulsion Armor', source: 'Eberron', prereq: '14th level', benefit: '+5 speed, gauntlet weapons (1d8 force, thrown 20/60).' },
+            { name: 'Armor of Magical Strength', source: 'TCE', prereq: 'None', benefit: 'Add Int to Str check/save. Avoid being knocked prone.' },
+            { name: 'Boots of the Winding Path', source: 'TCE', prereq: '6th level', benefit: 'Bonus action teleport 15ft to unoccupied space you were previously in.' },
+            { name: 'Enhanced Arcane Focus', source: 'Eberron/TCE', prereq: 'None', benefit: '+1 to spell attacks. Ignores half cover. Becomes +2 at 10th level.' },
+            { name: 'Enhanced Defense', source: 'Eberron/TCE', prereq: 'None', benefit: '+1 AC. Becomes +2 at 10th level.' },
+            { name: 'Enhanced Weapon', source: 'Eberron/TCE', prereq: 'None', benefit: '+1 to hit/damage. Becomes +2 at 10th level.' },
+            { name: 'Helm of Awareness', source: 'TCE', prereq: '10th level', benefit: 'Advantage on Initiative. Cannot be surprised.' },
+            { name: 'Homunculus Servant', source: 'Eberron/TCE', prereq: 'None', benefit: 'Create a construct companion that can fly and attack.' },
+            { name: 'Mind Sharpener', source: 'TCE', prereq: 'None', benefit: 'Reaction to succeed on a failed Concentration save (4 charges).' },
+            { name: 'Radiant Weapon', source: 'Eberron/TCE', prereq: '6th level', benefit: '+1 to hit/damage. Sheds light. Reaction to blind attacker.' },
+            { name: 'Repeating Shot', source: 'Eberron/TCE', prereq: 'None', benefit: '+1 to hit/damage. Ignores loading property. Creates own ammo.' },
+            { name: 'Replicate Magic Item', source: 'Eberron/TCE', prereq: 'Varies', benefit: 'Create a specific magic item (e.g., Bag of Holding, Goggles of Night).' },
+            { name: 'Repulsion Shield', source: 'Eberron/TCE', prereq: '6th level', benefit: '+1 AC. Reaction to push attacker 15ft.' },
+            { name: 'Returning Weapon', source: 'Eberron/TCE', prereq: 'None', benefit: '+1 to hit/damage. Weapon returns to hand after thrown.' },
+            { name: 'Spell-Refueling Ring', source: 'TCE', prereq: '6th level', benefit: 'Action to recover one spell slot up to 3rd level.' },
+          ],
+          gear: [
+            // ... (Previous Gear remains) ...
+            { name: 'Backpack', cost: '2 gp', weight: '5 lb.', description: 'Holds 1 cubic foot/30 lbs of gear.' },
+            { name: 'Bedroll', cost: '1 gp', weight: '7 lb.', description: 'For sleeping outdoors.' },
+            { name: 'Burglar\'s Pack', cost: '16 gp', contents: 'Backpack, ball bearings, string, bell, candles, crowbar, hammer, pitons, lantern, oil, rations, tinderbox, waterskin.' },
+            { name: 'Crowbar', cost: '2 gp', weight: '5 lb.', description: 'Advantage on Strength checks to pry open.' },
+            { name: 'Diplomat\'s Pack', cost: '39 gp', contents: 'Chest, map/scroll cases, clothes, ink, pen, lamp, oil, paper, perfume, wax, soap.' },
+            { name: 'Dungeonneer\'s Pack', cost: '12 gp', contents: 'Backpack, crowbar, hammer, pitons, torches, tinderbox, rations, waterskin, rope.' },
+            { name: 'Explorer\'s Pack', cost: '10 gp', contents: 'Backpack, bedroll, mess kit, tinderbox, torches, rations, waterskin, rope.' },
+            { name: 'Healer\'s Kit', cost: '5 gp', weight: '3 lb.', description: '10 uses. Action to stabilize creature at 0 HP.' },
+            { name: 'Holy Symbol', cost: '5-25 gp', weight: '1 lb.', description: 'Focus for Cleric/Paladin spells.' },
+            { name: 'Lantern, Hooded', cost: '5 gp', weight: '2 lb.', description: '30ft bright light + 30ft dim. Lowers hood to 5ft dim.' },
+            { name: 'Lock', cost: '10 gp', weight: '1 lb.', description: 'DC 15 to pick.' },
+            { name: 'Magnifying Glass', cost: '100 gp', weight: '-', description: 'Advantage on investigation for small details. Start fire.' },
+            { name: 'Manacles', cost: '2 gp', weight: '6 lb.', description: 'DC 20 Str to break, DC 15 Dex to pick.' },
+            { name: 'Mess Kit', cost: '2 sp', weight: '1 lb.', description: 'Tin box with cup and cutlery.' },
+            { name: 'Oil (flask)', cost: '1 sp', weight: '1 lb.', description: 'Fuel for lamp. Can be thrown (1d4 + 5 fire dmg over 2 turns if lit).' },
+            { name: 'Poison, Basic', cost: '100 gp', weight: '-', description: 'Coat weapon. DC 10 Con save or 1d4 poison dmg.' },
+            { name: 'Potion of Healing', cost: '50 gp', weight: '0.5 lb.', description: 'Heals 2d4 + 2 HP.' },
+            { name: 'Rations (1 day)', cost: '5 sp', weight: '2 lb.', description: 'Dry food.' },
+            { name: 'Rope, Hempen (50 ft)', cost: '1 gp', weight: '10 lb.', description: 'DC 17 Strength to burst.' },
+            { name: 'Rope, Silk (50 ft)', cost: '10 gp', weight: '5 lb.', description: 'DC 17 Strength to burst.' },
+            { name: 'Spyglass', cost: '1,000 gp', weight: '1 lb.', description: 'Magnifies objects 2x.' },
+            { name: 'Thieves\' Tools', cost: '25 gp', weight: '1 lb.', description: 'Add PB to checks to pick locks/disarm traps (if proficient).' },
+            { name: 'Tinderbox', cost: '5 sp', weight: '1 lb.', description: 'Light fire (action).' },
+            { name: 'Torch', cost: '1 cp', weight: '1 lb.', description: '20ft bright light + 20ft dim. Burns 1 hour.' },
+          ],
+          deities: [
+            // ... (Previous Deities remain) ...
+            { name: 'Auril', domain: 'Nature, Tempest', alignment: 'NE', description: 'Goddess of Winter.' },
+            { name: 'Azuth', domain: 'Arcana, Knowledge', alignment: 'LN', description: 'God of Wizards.' },
+            { name: 'Bane', domain: 'Order, War', alignment: 'LE', description: 'God of Tyranny.' },
+            { name: 'Bahamut', domain: 'Life, War', alignment: 'LG', description: 'Dragon God of Justice.' },
+            { name: 'Bhaal', domain: 'Death', alignment: 'NE', description: 'God of Murder.' },
+            { name: 'Chauntea', domain: 'Life', alignment: 'NG', description: 'Goddess of Agriculture.' },
+            { name: 'Corellon Larethian', domain: 'Arcana, Light', alignment: 'CG', description: 'Elf God of Art and Magic.' },
+            { name: 'Cyric', domain: 'Trickery', alignment: 'CE', description: 'God of Lies.' },
+            { name: 'Gond', domain: 'Forge', alignment: 'N', description: 'God of Craft.' },
+            { name: 'Helm', domain: 'Life, Light, Twilight', alignment: 'LN', description: 'God of Protection.' },
+            { name: 'Ilmater', domain: 'Life, Twilight', alignment: 'LG', description: 'God of Endurance.' },
+            { name: 'Kelemvor', domain: 'Grave, Death', alignment: 'LN', description: 'God of the Dead.' },
+            { name: 'Lathander', domain: 'Life, Light', alignment: 'NG', description: 'God of Birth and Renewal.' },
+            { name: 'Lolth', domain: 'Trickery, War', alignment: 'CE', description: 'Goddess of Spiders.' },
+            { name: 'Moradin', domain: 'Forge, Knowledge', alignment: 'LG', description: 'Dwarf God of Creation.' },
+            { name: 'Mystra', domain: 'Arcana, Knowledge', alignment: 'NG', description: 'Goddess of Magic.' },
+            { name: 'Oghma', domain: 'Knowledge', alignment: 'N', description: 'God of Knowledge.' },
+            { name: 'Pelor', domain: 'Life, Light', alignment: 'NG', description: 'God of the Sun (Greyhawk/Standard).' },
+            { name: 'Raven Queen', domain: 'Grave, Twilight', alignment: 'LN', description: 'Goddess of Death and Memories.' },
+            { name: 'Selûne', domain: 'Knowledge, Life, Twilight', alignment: 'CG', description: 'Goddess of the Moon.' },
+            { name: 'Shar', domain: 'Death, Trickery', alignment: 'NE', description: 'Goddess of Darkness and Loss.' },
+            { name: 'Silvanus', domain: 'Nature', alignment: 'N', description: 'God of Wild Nature.' },
+            { name: 'Sune', domain: 'Life, Light', alignment: 'CG', description: 'Goddess of Love and Beauty.' },
+            { name: 'Talos', domain: 'Tempest', alignment: 'CE', description: 'God of Storms.' },
+            { name: 'Tempus', domain: 'War', alignment: 'N', description: 'God of War.' },
+            { name: 'Tiamat', domain: 'Trickery, War', alignment: 'LE', description: 'Dragon Goddess of Greed.' },
+            { name: 'Torm', domain: 'War', alignment: 'LG', description: 'God of Courage and Self-sacrifice.' },
+            { name: 'Tymora', domain: 'Trickery', alignment: 'CG', description: 'Goddess of Good Fortune.' },
+            { name: 'Tyr', domain: 'War', alignment: 'LG', description: 'God of Justice.' },
+            { name: 'Umberlee', domain: 'Tempest', alignment: 'CE', description: 'Goddess of the Sea.' },
+            { name: 'Waukeen', domain: 'Knowledge, Trickery', alignment: 'N', description: 'Goddess of Trade.' },
+          ],
+          races: [
+            // ... (Previous Races remain, including Ravnica/Eberron/Etc) ...
+            { 
+              name: 'Dwarf', 
+              source: 'PHB', 
+              asi: '+2 Con', 
+              speed: '25 ft', 
+              traits: 'Darkvision, Dwarven Resilience (Poison Adv/Resist), Combat Training, Tool Proficiency, Stonecunning.',
+              subraces: [
+                { name: 'Hill Dwarf', asi: '+1 Wis', traits: 'Dwarven Toughness (+1 HP per level).' },
+                { name: 'Mountain Dwarf', asi: '+2 Str', traits: 'Dwarven Armor Training (Light/Medium Armor).' },
+                { name: 'Duergar (Gray Dwarf)', source: 'SCAG/MToF', asi: '+1 Str', traits: 'Superior Darkvision (120ft), Duergar Resilience (Charm/Paralyze adv), Duergar Magic (Enlarge/Reduce, Invisibility), Sunlight Sensitivity.' }
+              ]
+            },
+            { 
+              name: 'Elf', 
+              source: 'PHB', 
+              asi: '+2 Dex', 
+              speed: '30 ft', 
+              traits: 'Darkvision, Keen Senses (Perception), Fey Ancestry (Charm adv, Sleep immune), Trance.',
+              subraces: [
+                { name: 'High Elf', asi: '+1 Int', traits: 'Elf Weapon Training, Cantrip (Wizard), Extra Language.' },
+                { name: 'Wood Elf', asi: '+1 Wis', speed: '35 ft', traits: 'Elf Weapon Training, Fleet of Foot, Mask of the Wild (Hide in nature).' },
+                { name: 'Drow (Dark Elf)', asi: '+1 Cha', traits: 'Superior Darkvision (120ft), Sunlight Sensitivity, Drow Magic (Dancing Lights, Faerie Fire, Darkness), Drow Weapon Training.' },
+                { name: 'Eladrin', source: 'MToF', asi: '+1 Cha', traits: 'Fey Step (Bonus action teleport w/ rider effect based on Season).' },
+                { name: 'Sea Elf', source: 'MToF', asi: '+1 Con', traits: 'Sea Elf Training, Child of the Sea (Swim 30ft, breathe water), Friend of the Sea.' },
+                { name: 'Shadar-kai', source: 'MToF', asi: '+1 Con', traits: 'Necrotic Resistance, Blessing of the Raven Queen (Teleport + resist all dmg).' },
+                { name: 'Astral Elf', source: 'BAM', asi: '+1 Any', traits: 'Astral Trance (Proficiencies), Starlight Step (Teleport), Radiant Soul.' }
+              ]
+            },
+            { 
+              name: 'Halfling', 
+              source: 'PHB', 
+              asi: '+2 Dex', 
+              speed: '25 ft', 
+              traits: 'Lucky (Reroll 1s), Brave (Fear adv), Halfling Nimbleness (Move through larger creatures space).',
+              subraces: [
+                { name: 'Lightfoot', asi: '+1 Cha', traits: 'Naturally Stealthy (Hide behind larger creature).' },
+                { name: 'Stout', asi: '+1 Con', traits: 'Stout Resilience (Poison adv/resist).' },
+                { name: 'Ghostwise', source: 'SCAG', asi: '+1 Wis', traits: 'Silent Speech (Telepathy 30ft).' }
+              ]
+            },
+            { 
+              name: 'Human', 
+              source: 'PHB', 
+              speed: '30 ft', 
+              traits: 'Extra Language.',
+              subraces: [
+                { name: 'Standard Human', asi: '+1 to All Ability Scores', traits: 'None.' },
+                { name: 'Variant Human', asi: '+1 to Two Ability Scores', traits: 'Gain one Skill Proficiency and one Feat.' }
+              ]
+            },
+            { 
+              name: 'Dragonborn', 
+              source: 'PHB', 
+              asi: '+2 Str, +1 Cha', 
+              speed: '30 ft', 
+              traits: 'Draconic Ancestry (Breath Weapon + Resistance).',
+              options: {
+                  label: "Draconic Ancestry",
+                  choices: [
+                      { name: 'Black (Acid)', traits: 'Breath: 5 by 30 ft. line (Dex save).' },
+                      { name: 'Blue (Lightning)', traits: 'Breath: 5 by 30 ft. line (Dex save).' },
+                      { name: 'Brass (Fire)', traits: 'Breath: 5 by 30 ft. line (Dex save).' },
+                      { name: 'Bronze (Lightning)', traits: 'Breath: 5 by 30 ft. line (Dex save).' },
+                      { name: 'Copper (Acid)', traits: 'Breath: 5 by 30 ft. line (Dex save).' },
+                      { name: 'Gold (Fire)', traits: 'Breath: 15 ft. cone (Dex save).' },
+                      { name: 'Green (Poison)', traits: 'Breath: 15 ft. cone (Con save).' },
+                      { name: 'Red (Fire)', traits: 'Breath: 15 ft. cone (Dex save).' },
+                      { name: 'Silver (Cold)', traits: 'Breath: 15 ft. cone (Con save).' },
+                      { name: 'White (Cold)', traits: 'Breath: 15 ft. cone (Con save).' },
+                      { name: 'Gem (Amethyst)', source: 'FToD', traits: 'Force damage. Breath: 15ft cone. Psionic Mind (Telepathy).' },
+                      { name: 'Gem (Crystal)', source: 'FToD', traits: 'Radiant damage. Breath: 15ft cone. Psionic Mind.' },
+                      { name: 'Gem (Emerald)', source: 'FToD', traits: 'Psychic damage. Breath: 15ft cone. Psionic Mind.' },
+                      { name: 'Gem (Sapphire)', source: 'FToD', traits: 'Thunder damage. Breath: 15ft cone. Psionic Mind.' },
+                      { name: 'Gem (Topaz)', source: 'FToD', traits: 'Necrotic damage. Breath: 15ft cone. Psionic Mind.' }
+                  ]
+              }
+            },
+            { 
+              name: 'Gnome', 
+              source: 'PHB', 
+              asi: '+2 Int', 
+              speed: '25 ft', 
+              traits: 'Darkvision, Gnome Cunning (Adv on Int/Wis/Cha magic saves).',
+              subraces: [
+                { name: 'Forest Gnome', asi: '+1 Dex', traits: 'Natural Illusionist (Minor Illusion), Speak with Small Beasts.' },
+                { name: 'Rock Gnome', asi: '+1 Con', traits: 'Artificer\'s Lore, Tinker (Make small clockwork devices).' },
+                { name: 'Deep Gnome (Svirfneblin)', source: 'MToF', asi: '+1 Dex', traits: 'Superior Darkvision (120ft), Stone Camouflage (Stealth adv in rocky terrain).' },
+                { name: 'Autognome', source: 'BAM', asi: '+1 Any', traits: 'Built for Success (Add d4 to roll), Mechanical Nature, Sentry\'s Rest.' }
+              ]
+            },
+            { 
+              name: 'Half-Elf', 
+              source: 'PHB', 
+              asi: '+2 Cha, +1/+1 Other', 
+              speed: '30 ft', 
+              traits: 'Darkvision, Fey Ancestry, Skill Versatility (2 skills).',
+              subraces: [
+                  { name: 'Standard', traits: 'Skill Versatility.' },
+                  { name: 'Wood Elf Descent', source: 'SCAG', traits: 'Elf Weapon Training OR Fleet of Foot OR Mask of the Wild.' },
+                  { name: 'High Elf Descent', source: 'SCAG', traits: 'Elf Weapon Training OR One Wizard Cantrip.' },
+                  { name: 'Drow Descent', source: 'SCAG', traits: 'Drow Magic.' },
+                  { name: 'Aquatic Descent', source: 'SCAG', traits: 'Swim Speed 30ft.' }
+              ]
+            },
+            { name: 'Half-Orc', source: 'PHB', asi: '+2 Str, +1 Con', speed: '30 ft', traits: 'Darkvision, Menacing, Relentless Endurance (1 HP instead of 0), Savage Attacks (extra crit die).' },
+            { 
+              name: 'Tiefling', 
+              source: 'PHB', 
+              asi: '+2 Cha, +1 Int', 
+              speed: '30 ft', 
+              traits: 'Darkvision, Hellish Resistance (Fire).',
+              subraces: [
+                  { name: 'Infernal (PHB)', traits: 'Thaumaturgy, Hellish Rebuke (Lvl 3), Darkness (Lvl 5).' },
+                  { name: 'Bloodline of Asmodeus', source: 'MToF', asi: '+1 Int', traits: 'Standard traits.' },
+                  { name: 'Bloodline of Baalzebul', source: 'MToF', asi: '+1 Int', traits: 'Thaumaturgy, Ray of Sickness, Crown of Madness.' },
+                  { name: 'Bloodline of Dispater', source: 'MToF', asi: '+1 Dex', traits: 'Thaumaturgy, Disguise Self, Detect Thoughts.' },
+                  { name: 'Bloodline of Fierna', source: 'MToF', asi: '+1 Wis', traits: 'Friends, Charm Person, Suggestion.' },
+                  { name: 'Bloodline of Glasya', source: 'MToF', asi: '+1 Dex', traits: 'Minor Illusion, Disguise Self, Invisibility.' },
+                  { name: 'Bloodline of Levistus', source: 'MToF', asi: '+1 Con', traits: 'Ray of Frost, Armor of Agathys, Darkness.' },
+                  { name: 'Bloodline of Mammon', source: 'MToF', asi: '+1 Int', traits: 'Mage Hand, Tenser\'s Floating Disk, Arcane Lock.' },
+                  { name: 'Bloodline of Mephistopheles', source: 'MToF', asi: '+1 Int', traits: 'Mage Hand, Burning Hands, Flame Blade.' },
+                  { name: 'Bloodline of Zariel', source: 'MToF', asi: '+1 Str', traits: 'Thaumaturgy, Searing Smite, Branding Smite.' },
+                  { name: 'Feral', source: 'SCAG', asi: '+2 Dex, +1 Int', traits: 'Standard spells.' },
+                  { name: 'Winged', source: 'SCAG', traits: 'Fly speed 30ft (Replaces Infernal Legacy).' }
+              ]
+            },
+            { 
+              name: 'Aasimar', 
+              source: 'VGM', 
+              asi: '+2 Cha', 
+              speed: '30 ft', 
+              traits: 'Darkvision, Healing Hands (Heal level HP), Light Bearer (Light cantrip), Celestial Resistance (Necrotic/Radiant).',
+              subraces: [
+                { name: 'Protector', asi: '+1 Wis', traits: 'Radiant Soul (Action: Fly 30ft + Radiant dmg).' },
+                { name: 'Scourge', asi: '+1 Con', traits: 'Radiant Consumption (Action: AOE Radiant dmg).' },
+                { name: 'Fallen', asi: '+1 Str', traits: 'Necrotic Shroud (Action: AOE Fear + Necrotic dmg).' }
+              ]
+            },
+            { 
+              name: 'Genasi', 
+              source: 'EEPC', 
+              asi: '+2 Con', 
+              speed: '30 ft', 
+              traits: 'Languages: Primordial.',
+              subraces: [
+                { name: 'Air Genasi', asi: '+1 Dex', traits: 'Unending Breath (Hold breath indefinitely), Mingle with the Wind (Levitate once/day).' },
+                { name: 'Earth Genasi', asi: '+1 Str', traits: 'Earth Walk (Ignore difficult terrain), Merge with Stone (Pass Without Trace once/day).' },
+                { name: 'Fire Genasi', asi: '+1 Int', traits: 'Darkvision, Fire Resistance, Reach to the Blaze (Produce Flame, Burning Hands).' },
+                { name: 'Water Genasi', asi: '+1 Wis', traits: 'Acid Resistance, Amphibious, Swim 30ft, Call to the Wave (Shape Water, Create/Destroy Water).' }
+              ]
+            },
+            { name: 'Goliath', source: 'VGM', asi: '+2 Str, +1 Con', speed: '30 ft', traits: 'Stone\'s Endurance (reaction reduce dmg d12+Con), Powerful Build, Mountain Born, Athletics Prof.' },
+            { name: 'Tabaxi', source: 'VGM', asi: '+2 Dex, +1 Cha', speed: '30 ft, 20 Climb', traits: 'Darkvision, Feline Agility (0 movement to double speed next turn), Cat\'s Claws (d4 unarmed), Cat\'s Talent (Perception/Stealth).' },
+            { name: 'Firbolg', source: 'VGM', asi: '+2 Wis, +1 Str', speed: '30 ft', traits: 'Firbolg Magic (Detect Magic/Disguise Self), Hidden Step (Bonus action invis), Powerful Build, Speech of Beast and Leaf.' },
+            { 
+                name: 'Kobold', 
+                source: 'VGM', 
+                asi: '+2 Dex, -2 Str', 
+                speed: '30 ft', 
+                traits: 'Sunlight Sensitivity, Pack Tactics (Advantage if ally is within 5ft), Grovel Cower and Beg.',
+                options: {
+                    label: "Draconic Ancestry (Flavor/Homebrew)",
+                    choices: [
+                        { name: 'Black (Acid)', traits: 'Standard traits.' },
+                        { name: 'Blue (Lightning)', traits: 'Standard traits.' },
+                        { name: 'Green (Poison)', traits: 'Standard traits.' },
+                        { name: 'Red (Fire)', traits: 'Standard traits.' },
+                        { name: 'White (Cold)', traits: 'Standard traits.' }
+                    ]
+                }
+            },
+            { name: 'Kenku', source: 'VGM', asi: '+2 Dex, +1 Wis', speed: '30 ft', traits: 'Expert Forgery, Kenku Training (2 skills), Mimicry (Cannot speak normally, only mimic sounds).' },
+            { name: 'Lizardfolk', source: 'VGM', asi: '+2 Con, +1 Wis', speed: '30 ft, 30 Swim', traits: 'Bite (1d6), Cunning Artisan (make items), Hold Breath (15 min), Natural Armor (13+Dex), Hungry Jaws (Bonus action bite + THP).' },
+            { name: 'Orc', source: 'VGM', asi: '+2 Str, +1 Con', speed: '30 ft', traits: 'Darkvision, Aggressive (Bonus action move toward enemy), Powerful Build, Primal Intuition (2 skills).' },
+            { name: 'Triton', source: 'VGM', asi: '+1 Str, +1 Con, +1 Cha', speed: '30 ft, 30 Swim', traits: 'Amphibious, Control Air and Water (Fog Cloud, Gust of Wind, Wall of Water), Emissary of the Sea, Cold Resistance.' },
+            { name: 'Goblin', source: 'VGM', asi: '+2 Dex, +1 Con', speed: '30 ft', traits: 'Darkvision, Fury of the Small (Add level to dmg), Nimble Escape (Bonus action Disengage/Hide).' },
+            { name: 'Bugbear', source: 'VGM', asi: '+2 Str, +1 Dex', speed: '30 ft', traits: 'Darkvision, Long-Limbed (Reach +5ft), Powerful Build, Sneaky (Stealth prof), Surprise Attack (+2d6 dmg).' },
+            { name: 'Hobgoblin', source: 'VGM', asi: '+2 Con, +1 Int', speed: '30 ft', traits: 'Darkvision, Martial Training, Saving Face (Add allies count to failed roll).' },
+            { name: 'Yuan-ti Pureblood', source: 'VGM', asi: '+2 Cha, +1 Int', speed: '30 ft', traits: 'Darkvision, Magic Resistance (Advantage on all magic saves), Poison Immunity, Innate Spellcasting (Poison Spray, Animal Friendship, Suggestion).' },
+            { 
+              name: 'Shifter', 
+              source: 'Eberron', 
+              asi: 'Varies', 
+              speed: '30 ft', 
+              traits: 'Darkvision, Shifting (Bonus action, 1 min duration, Temp HP).',
+              subraces: [
+                  { name: 'Beasthide', asi: '+1 Con', traits: 'Shifting: +1d6 THP, +1 AC.' },
+                  { name: 'Longtooth', asi: '+1 Str', traits: 'Shifting: Bonus action Bite (1d6 + Str).' },
+                  { name: 'Swiftstride', asi: '+1 Dex', traits: 'Shifting: +10ft walking speed. Reaction move 10ft when enemy ends turn 5ft away.' },
+                  { name: 'Wildhunt', asi: '+1 Wis', traits: 'Shifting: Advantage on Wis checks. No creature within 30ft can have advantage against you.' }
+              ]
+            },
+            { name: 'Changeling', source: 'Eberron', asi: '+2 Cha, +1 Any', speed: '30 ft', traits: 'Shapechanger (Action to change appearance), Changeling Instincts (2 skills).' },
+            { name: 'Kalashtar', source: 'Eberron', asi: '+2 Wis, +1 Cha', speed: '30 ft', traits: 'Dual Mind (Wis save adv), Mental Discipline (Psychic resist), Mind Link (Telepathy).' },
+            { name: 'Warforged', source: 'Eberron', asi: '+2 Con, +1 Any', speed: '30 ft', traits: 'Constructed Resilience (Poison adv/resist, no sleep/eat/breathe), Sentry\'s Rest, Integrated Protection (+1 AC), Specialized Design.' },
+            { name: 'Thri-Kreen', source: 'BAM', asi: '+1 Any', speed: '30 ft', traits: 'Chameleon Carapace (AC 13+Dex), Secondary Arms, Sleepless.' },
+            { name: 'Plasmoid', source: 'BAM', asi: '+1 Any', speed: '30 ft', traits: 'Amorphous (Squeeze through 1 inch), Hold Breath (1 hr), Shape Self.' },
+            { name: 'Hadozee', source: 'BAM', asi: '+1 Any', speed: '30 ft, 30 Climb', traits: 'Dexterous Feet (Use object with feet), Glide.' },
+            { name: 'Fairy', source: 'WBtW', asi: '+1 Any', speed: '30 ft, Fly 30ft', traits: 'Fairy Magic (Druidcraft, Faerie Fire, Enlarge/Reduce), Flight.' },
+            { name: 'Harengon', source: 'WBtW', asi: '+1 Any', speed: '30 ft', traits: 'Hare-Trigger (Add PB to Init), Leporine Senses (Perception), Lucky Footwork (Dex save bonus), Rabbit Hop.' },
+            { name: 'Owlin', source: 'SCC', asi: '+1 Any', speed: '30 ft, Fly 30ft', traits: 'Darkvision (120ft), Flight (Silent feathers).' },
+            { name: 'Leonin', source: 'MOT', asi: '+2 Con, +1 Str', speed: '35 ft', traits: 'Darkvision, Claws (1d4), Hunter\'s Instincts, Daunting Roar (AOE fear).' },
+            { name: 'Satyr', source: 'MOT', asi: '+2 Cha, +1 Dex', speed: '35 ft', traits: 'Fey (type), Ram (1d6), Magic Resistance (Adv on magic saves), Mirthful Leaps.' },
+            { name: 'Loxodon', source: 'GGR', asi: '+2 Con, +1 Wis', speed: '30 ft', traits: 'Loxodon Serenity (Adv vs charm/fear), Natural Armor (12+Con), Trunk (grapple/lift), Powerful Build.' },
+            { name: 'Minotaur', source: 'GGR/MOT', asi: '+2 Str, +1 Con', speed: '30 ft', traits: 'Horns (1d6), Goring Rush (Bonus action attack after dash), Hammering Horns (Bonus action shove), Imposing Presence.' },
+            { name: 'Simic Hybrid', source: 'GGR', asi: '+2 Con, +1 Other', speed: '30 ft', traits: 'Darkvision, Animal Enhancement (Choose: Glide/Swim/Climb/Carapace/Acid Spit/Grapple).' },
+            { name: 'Vedalken', source: 'GGR', asi: '+2 Int, +1 Wis', speed: '30 ft', traits: 'Vedalken Dispassion (Adv on Int/Wis/Cha saves), Tireless Precision (d4 to skill/tool), Partially Amphibious.' },
+            { name: 'Verdan', source: 'AI', asi: '+2 Con, +1 Cha', speed: '30 ft', traits: 'Black Blood Healing (Max healing on HD 1s/2s), Limited Telepathy, Telepathic Insight (Adv Wis saves).' },
+            { name: 'Locathah', source: 'LR', asi: '+2 Str, +1 Dex', speed: '30 ft, 30 Swim', traits: 'Natural Armor (12+Dex), Leviathan Will (Adv vs charm/frighten/paralyze/poison/stun/sleep), Limited Amphibiousness.' },
+            { name: 'Grung', source: 'OGA', asi: '+2 Dex, +1 Con', speed: '25 ft, 25 Climb', traits: 'Arboreal Alertness, Poisonous Skin (Contact poison), Standing Leap, Water Dependency.' },
+          ],
+          feats: [
+            // ... (Previous Feats remain) ...
+            { name: 'Aberrant Dragonmark', source: 'Eberron', benefit: '+1 Con. Learn cantrip + 1st lvl spell from Sorcerer list. Cast using Con.' },
+            { name: 'Actor', source: 'PHB', prereq: 'None', benefit: '+1 Cha. Advantage on Deception/Performance to mimic. Mimic speech/sounds.' },
+            { name: 'Alert', source: 'PHB', prereq: 'None', benefit: '+5 Initiative. Cannot be surprised. No hidden attacker advantage.' },
+            { name: 'Artificer Initiate', source: 'TCE', benefit: 'Learn 1 cantrip/1st lvl spell from Artificer list. Proficiency with one artisan tool.' },
+            { name: 'Athlete', source: 'PHB', prereq: 'None', benefit: '+1 Str/Dex. Stand from prone uses 5ft. Climb speed = walk speed.' },
+            { name: 'Bountiful Luck', source: 'XGtE', prereq: 'Halfling', benefit: 'Reaction to let ally reroll a 1 on d20 (30ft range).' },
+            { name: 'Chef', source: 'TCE', benefit: '+1 Con/Wis. Cook food for extra short rest healing. Treats grant temp HP.' },
+            { name: 'Crossbow Expert', source: 'PHB', prereq: 'None', benefit: 'Ignore loading property. No melee disadvantage. Bonus action hand crossbow attack.' },
+            { name: 'Crusher', source: 'TCE', prereq: 'Str/Con', benefit: '+1 Str/Con. Bludgeoning push 5ft. Crit grants advantage.' },
+            { name: 'Defensive Duelist', source: 'PHB', prereq: 'Dex 13', benefit: 'Reaction +PB to AC vs melee attack with finesse weapon.' },
+            { name: 'Dragon Fear', source: 'XGtE', prereq: 'Dragonborn', benefit: '+1 Str/Con/Cha. Expends Breath Weapon to roar (30ft fear).' },
+            { name: 'Dragon Hide', source: 'XGtE', prereq: 'Dragonborn', benefit: '+1 Str/Con/Cha. AC 13+Dex. Claws (1d4).' },
+            { name: 'Drow High Magic', source: 'XGtE', prereq: 'Drow', benefit: 'Learn Detect Magic at-will, Levitate (1/day), Dispel Magic (1/day).' },
+            { name: 'Dual Wielder', source: 'PHB', prereq: 'None', benefit: '+1 AC with 2 weapons. Use non-light weapons. Draw/stow 2 weapons.' },
+            { name: 'Dungeon Delver', source: 'PHB', prereq: 'None', benefit: 'Advantage on trap detection/saves. Resistance to trap damage. Fast search.' },
+            { name: 'Durable', source: 'PHB', prereq: 'None', benefit: '+1 Con. Minimum HP rolled on Hit Die is 2x Con Mod.' },
+            { name: 'Dwarven Fortitude', source: 'XGtE', prereq: 'Dwarf', benefit: '+1 Con. Dodge action lets you spend Hit Die to heal.' },
+            { name: 'Eldritch Adept', source: 'TCE', prereq: 'Spellcasting', benefit: 'Learn one Warlock Invocation.' },
+            { name: 'Elemental Adept', source: 'PHB', prereq: 'Spellcasting', benefit: 'Choose acid/cold/fire/lightning/thunder. Spells ignore resistance. Treat 1s as 2s.' },
+            { name: 'Elven Accuracy', source: 'XGtE', prereq: 'Elf/Half-Elf', benefit: '+1 Dex/Int/Wis/Cha. Reroll one die when you have advantage.' },
+            { name: 'Fade Away', source: 'XGtE', prereq: 'Gnome', benefit: '+1 Dex/Int. Reaction to become invisible when damaged (once/short rest).' },
+            { name: 'Fey Teleportation', source: 'XGtE', prereq: 'High Elf', benefit: '+1 Int/Cha. Learn Misty Step (1/short rest) and Sylvan.' },
+            { name: 'Fey Touched', source: 'TCE', prereq: 'None', benefit: '+1 Int/Wis/Cha. Misty Step + 1st lvl Div/Ench spell.' },
+            { name: 'Fighting Initiate', source: 'TCE', prereq: 'Martial Weapon', benefit: 'Learn one Fighting Style.' },
+            { name: 'Flames of Phlegethos', source: 'XGtE', prereq: 'Tiefling', benefit: '+1 Int/Cha. Reroll 1s on fire dmg. Fire wreath deals dmg to attackers.' },
+            { name: 'Gift of the Chromatic Dragon', source: 'FToD', benefit: 'Reaction absorb elemental dmg (resist). Bonus action infuse weapon with 1d4 elemental dmg.' },
+            { name: 'Gift of the Gem Dragon', source: 'FToD', benefit: '+1 Int/Wis/Cha. Reaction telekinetic push 10ft + 2d8 force dmg when hit.' },
+            { name: 'Gift of the Metallic Dragon', source: 'FToD', benefit: 'Learn Cure Wounds. Reaction to give +PB to AC to self or ally within 5ft.' },
+            { name: 'Grappler', source: 'PHB', prereq: 'Str 13', benefit: 'Advantage on attacks vs creature you grapple. Action to pin (restrained).' },
+            { name: 'Great Weapon Master', source: 'PHB', prereq: 'None', benefit: '-5 hit/+10 dmg with heavy weapons. Bonus action attack on crit/kill.' },
+            { name: 'Gunner', source: 'TCE', benefit: '+1 Dex. Firearm proficiency. Ignore loading. No disadvantage in melee.' },
+            { name: 'Healer', source: 'PHB', prereq: 'None', benefit: 'Healer\'s Kit heals 1d6+4+Level (once/rest) or 1 HP (stabilize).' },
+            { name: 'Heavily Armored', source: 'PHB', prereq: 'Med Armor Prof', benefit: '+1 Str. Heavy Armor Proficiency.' },
+            { name: 'Heavy Armor Master', source: 'PHB', prereq: 'Heavy Armor Prof', benefit: '+1 Str. Reduce non-magical bludgeoning/piercing/slashing dmg by 3.' },
+            { name: 'Infernal Constitution', source: 'XGtE', prereq: 'Tiefling', benefit: '+1 Con. Cold/Poison resistance. Adv vs Poison saves.' },
+            { name: 'Inspiring Leader', source: 'PHB', prereq: 'Cha 13', benefit: '10 min speech gives 6 allies Temp HP (Level + Cha Mod).' },
+            { name: 'Keen Mind', source: 'PHB', prereq: 'None', benefit: '+1 Int. Know north, time, and recall events perfectly from last month.' },
+            { name: 'Lightly Armored', source: 'PHB', benefit: '+1 Str/Dex. Light Armor proficiency.' },
+            { name: 'Linguist', source: 'PHB', benefit: '+1 Int. Learn 3 languages. Create ciphers.' },
+            { name: 'Lucky', source: 'PHB', prereq: 'None', benefit: '3 Luck Points/day. Reroll d20 or force enemy reroll.' },
+            { name: 'Mage Slayer', source: 'PHB', prereq: 'None', benefit: 'Reaction attack when spell cast within 5ft. Disadvantage on concentration. Adv on saves vs spell.' },
+            { name: 'Magic Initiate', source: 'PHB', prereq: 'None', benefit: 'Choose class: 2 cantrips + 1st lvl spell (1/day).' },
+            { name: 'Martial Adept', source: 'PHB', benefit: 'Learn 2 maneuvers, 1d6 superiority die.' },
+            { name: 'Medium Armor Master', source: 'PHB', benefit: 'Max Dex +3 (instead of +2). No stealth disadvantage.' },
+            { name: 'Metamagic Adept', source: 'TCE', benefit: 'Learn 2 Metamagic options. 2 Sorcery Points.' },
+            { name: 'Mobile', source: 'PHB', prereq: 'None', benefit: '+10ft speed. Dash ignores difficult terrain. Melee attack prevents opportunity attack.' },
+            { name: 'Moderately Armored', source: 'PHB', benefit: '+1 Str/Dex. Medium Armor + Shield prof.' },
+            { name: 'Mounted Combatant', source: 'PHB', benefit: 'Advantage vs unmounted smaller target. Redirect attack to self.' },
+            { name: 'Observant', source: 'PHB', prereq: 'None', benefit: '+1 Int/Wis. Read lips. +5 Passive Perception/Investigation.' },
+            { name: 'Orcish Fury', source: 'XGtE', prereq: 'Half-Orc', benefit: '+1 Str/Con. Add extra damage die once/rest. Reaction attack on Relentless Endurance.' },
+            { name: 'Piercer', source: 'TCE', prereq: 'Str/Dex', benefit: '+1 Str/Dex. Reroll piercing dmg. Crit adds 1 die.' },
+            { name: 'Poisoner', source: 'TCE', benefit: 'Ignore poison resist. Apply poison as bonus action. Create potent poison.' },
+            { name: 'Polearm Master', source: 'PHB', prereq: 'None', benefit: 'Bonus action butt attack (d4). Opportunity attack when enemy enters reach.' },
+            { name: 'Prodigy', source: 'XGtE', prereq: 'Human/Half-Elf/Half-Orc', benefit: '1 Skill, 1 Tool, 1 Language. Expertise in one skill.' },
+            { name: 'Resilient', source: 'PHB', prereq: 'None', benefit: '+1 Stat. Proficiency in that save.' },
+            { name: 'Ritual Caster', source: 'PHB', prereq: 'Int/Wis 13', benefit: 'Book with 2 ritual spells. Can copy rituals.' },
+            { name: 'Savage Attacker', source: 'PHB', benefit: 'Reroll melee damage dice once per turn.' },
+            { name: 'Second Chance', source: 'XGtE', prereq: 'Halfling', benefit: '+1 Dex/Con/Cha. Reaction force enemy reroll attack (once/combat).' },
+            { name: 'Sentinel', source: 'PHB', prereq: 'None', benefit: 'Hit on opportunity attack stops movement. Reaction attack if ally attacked. Ignore disengage.' },
+            { name: 'Shadow Touched', source: 'TCE', prereq: 'None', benefit: '+1 Int/Wis/Cha. Invisibility + 1st lvl Ill/Necro spell.' },
+            { name: 'Sharpshooter', source: 'PHB', prereq: 'None', benefit: '-5 hit/+10 dmg ranged. Ignore cover. No long range disadvantage.' },
+            { name: 'Shield Master', source: 'PHB', prereq: 'None', benefit: 'Bonus action shove. Add shield AC to Dex saves. Reaction to take 0 dmg on save.' },
+            { name: 'Skill Expert', source: 'TCE', prereq: 'None', benefit: '+1 Stat. 1 Skill Proficiency. 1 Expertise.' },
+            { name: 'Skilled', source: 'PHB', prereq: 'None', benefit: 'Proficiency in 3 skills or tools.' },
+            { name: 'Skulker', source: 'PHB', benefit: 'Hide in light obscurement. Missed ranged attack reveals nothing.' },
+            { name: 'Slasher', source: 'TCE', prereq: 'Str/Dex', benefit: '+1 Str/Dex. Slashing reduces speed. Crit gives disadvantage.' },
+            { name: 'Spell Sniper', source: 'PHB', prereq: 'Spellcasting', benefit: 'Double spell attack range. Ignore cover. Learn 1 attack cantrip.' },
+            { name: 'Squat Nimbleness', source: 'XGtE', prereq: 'Dwarf/Gnome/Halfling', benefit: '+1 Str/Dex. Speed +5ft. Adv on Acrobatics/Grapple escapes.' },
+            { name: 'Strike of the Giants', source: 'BGG', benefit: 'Choose Giant type. Add damage/effect to melee attack (PB times/long rest).' },
+            { name: 'Tavern Brawler', source: 'PHB', prereq: 'None', benefit: '+1 Str/Con. Proficient in improvised weapons/unarmed (d4). Bonus action grapple on hit.' },
+            { name: 'Telekinetic', source: 'TCE', prereq: 'None', benefit: '+1 Int/Wis/Cha. Invisible Mage Hand. Bonus action shove.' },
+            { name: 'Telepathic', source: 'TCE', prereq: 'None', benefit: '+1 Int/Wis/Cha. Detect Thoughts. Telepathy 60ft.' },
+            { name: 'Tough', source: 'PHB', prereq: 'None', benefit: '+2 HP per level.' },
+            { name: 'War Caster', source: 'PHB', prereq: 'Spellcasting', benefit: 'Advantage on Con saves. Somatic with weapons. Spell opportunity attacks.' },
+            { name: 'Weapon Master', source: 'PHB', benefit: '+1 Str/Dex. Proficiency with 4 weapons.' },
+            { name: 'Wood Elf Magic', source: 'XGtE', prereq: 'Wood Elf', benefit: 'Learn Druidcraft, Longstrider, Pass Without Trace (1/day).' },
+          ],
+          fightingstyles: [
+            { name: 'Archery', source: 'PHB', classes: 'Fighter, Ranger', benefit: '+2 bonus to attack rolls with ranged weapons.' },
+            { name: 'Defense', source: 'PHB', classes: 'Fighter, Paladin, Ranger', benefit: '+1 bonus to AC while wearing armor.' },
+            { name: 'Dueling', source: 'PHB', classes: 'Fighter, Paladin, Ranger', benefit: '+2 bonus to damage rolls with a single one-handed melee weapon.' },
+            { name: 'Great Weapon Fighting', source: 'PHB', classes: 'Fighter, Paladin', benefit: 'Reroll 1s and 2s on damage dice for two-handed/versatile weapons.' },
+            { name: 'Protection', source: 'PHB', classes: 'Fighter, Paladin', benefit: 'Use reaction and shield to impose disadvantage on attack against ally.' },
+            { name: 'Two-Weapon Fighting', source: 'PHB', classes: 'Fighter, Ranger', benefit: 'Add ability modifier to the damage of the second attack.' },
+            { name: 'Blind Fighting', source: 'TCE', classes: 'Fighter, Paladin, Ranger', benefit: 'Blindsight 10ft.' },
+            { name: 'Interception', source: 'TCE', classes: 'Fighter, Paladin', benefit: 'Reaction to reduce damage to ally by 1d10+PB.' },
+            { name: 'Thrown Weapon Fighting', source: 'TCE', classes: 'Fighter, Ranger', benefit: 'Draw thrown weapon as part of attack. +2 damage with thrown weapons.' },
+            { name: 'Unarmed Fighting', source: 'TCE', classes: 'Fighter', benefit: 'd6 (or d8) damage for unarmed strikes. Deal d4 to grappled target.' },
+            { name: 'Blessed Warrior', source: 'TCE', classes: 'Paladin', benefit: 'Learn two Cleric cantrips.' },
+            { name: 'Druidic Warrior', source: 'TCE', classes: 'Ranger', benefit: 'Learn two Druid cantrips.' },
+            { name: 'Superior Technique', source: 'TCE', classes: 'Fighter', benefit: 'Learn one maneuver and gain one d6 superiority die.' },
+          ],
+          backgrounds: [
+            { name: 'Acolyte', source: 'PHB', skills: 'Insight, Religion', feature: 'Shelter of the Faithful' },
+            { name: 'Anthropologist', source: 'ToA', skills: 'Insight, Religion', feature: 'Adept Linguist (Communicate with humanoids over a day).' },
+            { name: 'Archaeologist', source: 'ToA', skills: 'History, Survival', feature: 'Historical Knowledge (ID origin of ruins/items).' },
+            { name: 'Athlete', source: 'MOT', skills: 'Acrobatics, Athletics', feature: 'Echoes of Victory.' },
+            { name: 'Charlatan', source: 'PHB', skills: 'Deception, Sleight of Hand', feature: 'False Identity' },
+            { name: 'City Watch', source: 'SCAG', skills: 'Athletics, Insight', feature: 'Watcher\'s Eye.' },
+            { name: 'Clan Crafter', source: 'SCAG', skills: 'History, Insight', feature: 'Respect of the Stout Folk.' },
+            { name: 'Cloistered Scholar', source: 'SCAG', skills: 'History + 1 other', feature: 'Library Access.' },
+            { name: 'Courtier', source: 'SCAG', skills: 'Insight, Persuasion', feature: 'Court Functionary.' },
+            { name: 'Criminal', source: 'PHB', skills: 'Deception, Stealth', feature: 'Criminal Contact' },
+            { name: 'Entertainer', source: 'PHB', skills: 'Acrobatics, Performance', feature: 'By Popular Demand' },
+            { name: 'Faceless', source: 'BitG', skills: 'Deception, Intimidation', feature: 'Dual Personalities.' },
+            { name: 'Faction Agent', source: 'SCAG', skills: 'Insight + 1 faction skill', feature: 'Safe Haven.' },
+            { name: 'Far Traveler', source: 'SCAG', skills: 'Insight, Perception', feature: 'All Eyes on You' },
+            { name: 'Feylost', source: 'WBtW', skills: 'Deception, Survival', feature: 'Feywild Connection.' },
+            { name: 'Fisher', source: 'GoS', skills: 'History, Survival', feature: 'Harvest the Water.' },
+            { name: 'Folk Hero', source: 'PHB', skills: 'Animal Handling, Survival', feature: 'Rustic Hospitality' },
+            { name: 'Gladiator', source: 'PHB', skills: 'Acrobatics, Performance', feature: 'By Popular Demand (Variant).' },
+            { name: 'Guild Artisan', source: 'PHB', skills: 'Insight, Persuasion', feature: 'Guild Membership' },
+            { name: 'Haunted One', source: 'CoS', skills: 'Choose 2', feature: 'Heart of Darkness' },
+            { name: 'Hermit', source: 'PHB', skills: 'Medicine, Religion', feature: 'Discovery' },
+            { name: 'House Agent', source: 'Eberron', skills: 'Investigation, Persuasion', feature: 'House Connections.' },
+            { name: 'Inheritor', source: 'SCAG', skills: 'Survival + 1 other', feature: 'Inheritance.' },
+            { name: 'Investigator', source: 'VRGtR', skills: 'Insight, Investigation', feature: 'Official Inquiry.' },
+            { name: 'Knight', source: 'PHB', skills: 'History, Persuasion', feature: 'Retainers (Variant of Noble).' },
+            { name: 'Knight of the Order', source: 'SCAG', skills: 'Persuasion + 1 other', feature: 'Knightly Regard.' },
+            { name: 'Marine', source: 'GoS', skills: 'Athletics, Survival', feature: 'Steady.' },
+            { name: 'Mercenary Veteran', source: 'SCAG', skills: 'Athletics, Persuasion', feature: 'Mercenary Life.' },
+            { name: 'Noble', source: 'PHB', skills: 'History, Persuasion', feature: 'Position of Privilege' },
+            { name: 'Outlander', source: 'PHB', skills: 'Athletics, Survival', feature: 'Wanderer' },
+            { name: 'Pirate', source: 'PHB', skills: 'Athletics, Perception', feature: 'Bad Reputation (Variant of Sailor).' },
+            { name: 'Sage', source: 'PHB', skills: 'Arcana, History', feature: 'Researcher' },
+            { name: 'Sailor', source: 'PHB', skills: 'Athletics, Perception', feature: 'Ship\'s Passage' },
+            { name: 'Shipwright', source: 'GoS', skills: 'History, Perception', feature: 'I\'ll Patch It!.' },
+            { name: 'Smuggler', source: 'GoS', skills: 'Athletics, Deception', feature: 'Down Low.' },
+            { name: 'Soldier', source: 'PHB', skills: 'Athletics, Intimidation', feature: 'Military Rank' },
+            { name: 'Spy', source: 'PHB', skills: 'Deception, Stealth', feature: 'Criminal Contact (Variant of Criminal).' },
+            { name: 'Urban Bounty Hunter', source: 'SCAG', skills: 'Choose 2 from Insight/Stealth/Persuasion/Deception', feature: 'Ear to the Ground.' },
+            { name: 'Urchin', source: 'PHB', skills: 'Sleight of Hand, Stealth', feature: 'City Secrets' },
+            { name: 'Uthgardt Tribe Member', source: 'SCAG', skills: 'Athletics, Survival', feature: 'Uthgardt Heritage.' },
+            { name: 'Waterdhavian Noble', source: 'SCAG', skills: 'History, Persuasion', feature: 'Kept in Style.' },
+            { name: 'Witchlight Hand', source: 'WBtW', skills: 'Performance, Sleight of Hand', feature: 'Carnival Fixture.' },
+          ],
+          spells: [
+             // ... (Previous Spells remain) ...
+             // CANTRIPS (0)
+             { name: 'Booming Blade', level: 0, school: 'Evocation', time: '1 Action', range: 'Self (5ft)', classes: 'Sorcerer, Warlock, Wizard', effect: 'Melee atk + thunder dmg if target moves.' },
+             { name: 'Chill Touch', level: 0, school: 'Necromancy', time: '1 Action', range: '120 ft', classes: 'Sorcerer, Warlock, Wizard', effect: '1d8 necrotic, prevents healing.' },
+             { name: 'Druidcraft', level: 0, school: 'Transmutation', time: '1 Action', range: '30 ft', classes: 'Druid', effect: 'Weather prediction, small nature effects.' },
+             { name: 'Eldritch Blast', level: 0, school: 'Evocation', time: '1 Action', range: '120 ft', classes: 'Warlock', effect: '1d10 force damage beam.' },
+             { name: 'Fire Bolt', level: 0, school: 'Evocation', time: '1 Action', range: '120 ft', classes: 'Sorcerer, Wizard', effect: '1d10 fire damage.' },
+             { name: 'Green-Flame Blade', level: 0, school: 'Evocation', time: '1 Action', range: 'Self (5ft)', classes: 'Sorcerer, Warlock, Wizard', effect: 'Melee atk + fire dmg to adjacent target.' },
+             { name: 'Guidance', level: 0, school: 'Divination', time: '1 Action', range: 'Touch', classes: 'Cleric, Druid', effect: '+1d4 to ability check.' },
+             { name: 'Light', level: 0, school: 'Evocation', time: '1 Action', range: 'Touch', classes: 'Bard, Cleric, Sorcerer, Wizard', effect: 'Object sheds bright light.' },
+             { name: 'Mage Hand', level: 0, school: 'Conjuration', time: '1 Action', range: '30 ft', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: 'Move object up to 10 lbs.' },
+             { name: 'Message', level: 0, school: 'Transmutation', time: '1 Action', range: '120 ft', classes: 'Bard, Sorcerer, Wizard', effect: 'Whisper message to creature.' },
+             { name: 'Mind Sliver', level: 0, school: 'Enchantment', time: '1 Action', range: '60 ft', classes: 'Sorcerer, Warlock, Wizard', effect: '1d6 psychic + minus 1d4 to next save.' },
+             { name: 'Minor Illusion', level: 0, school: 'Illusion', time: '1 Action', range: '30 ft', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: 'Create sound or image.' },
+             { name: 'Prestidigitation', level: 0, school: 'Transmutation', time: '1 Action', range: '10 ft', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: 'Minor sensory effects, clean/soil, light/snuff.' },
+             { name: 'Ray of Frost', level: 0, school: 'Evocation', time: '1 Action', range: '60 ft', classes: 'Sorcerer, Wizard', effect: '1d8 cold dmg and slow 10ft.' },
+             { name: 'Sacred Flame', level: 0, school: 'Evocation', time: '1 Action', range: '60 ft', classes: 'Cleric', effect: '1d8 radiant dmg (Dex save).' },
+             { name: 'Shillelagh', level: 0, school: 'Transmutation', time: '1 Bonus Action', range: 'Touch', classes: 'Druid', effect: 'Club/staff uses Wis and deals d8.' },
+             { name: 'Shocking Grasp', level: 0, school: 'Evocation', time: '1 Action', range: 'Touch', classes: 'Sorcerer, Wizard', effect: '1d8 lightning, no reaction.' },
+             { name: 'Thaumaturgy', level: 0, school: 'Transmutation', time: '1 Action', range: '30 ft', classes: 'Cleric', effect: 'Minor divine sensory effects.' },
+             { name: 'Toll the Dead', level: 0, school: 'Necromancy', time: '1 Action', range: '60 ft', classes: 'Cleric, Warlock, Wizard', effect: 'd8/d12 necrotic dmg (Wis save).' },
+             { name: 'Vicious Mockery', level: 0, school: 'Enchantment', time: '1 Action', range: '60 ft', classes: 'Bard', effect: '1d4 psychic + disadvantage on next attack.' },
+             // LEVEL 1
+             { name: 'Absorb Elements', level: 1, school: 'Abjuration', time: '1 Reaction', range: 'Self', classes: 'Druid, Ranger, Sorcerer, Wizard', effect: 'Resistance to trigger dmg type + melee dmg.' },
+             { name: 'Armor of Agathys', level: 1, school: 'Abjuration', time: '1 Action', range: 'Self', classes: 'Warlock', effect: '5 temp HP, deal 5 cold dmg to melee attacker.' },
+             { name: 'Bane', level: 1, school: 'Enchantment', time: '1 Action', range: '30 ft', classes: 'Bard, Cleric', effect: '-1d4 to attacks/saves for 3 targets.' },
+             { name: 'Bless', level: 1, school: 'Enchantment', time: '1 Action', range: '30 ft', classes: 'Cleric, Paladin', effect: '+1d4 to attacks/saves for 3 targets.' },
+             { name: 'Burning Hands', level: 1, school: 'Evocation', time: '1 Action', range: '15 ft Cone', classes: 'Sorcerer, Wizard', effect: '3d6 fire damage (Dex save).' },
+             { name: 'Catapult', level: 1, school: 'Transmutation', time: '1 Action', range: '60 ft', classes: 'Sorcerer, Wizard', effect: 'Launch object dealing 3d8 bludgeoning.' },
+             { name: 'Chaos Bolt', level: 1, school: 'Evocation', time: '1 Action', range: '120 ft', classes: 'Sorcerer', effect: '2d8 + 1d6 random type damage.' },
+             { name: 'Charm Person', level: 1, school: 'Enchantment', time: '1 Action', range: '30 ft', classes: 'Bard, Druid, Sorcerer, Warlock, Wizard', effect: 'Humanoid regards you as friend.' },
+             { name: 'Chromatic Orb', level: 1, school: 'Evocation', time: '1 Action', range: '90 ft', classes: 'Sorcerer, Wizard', effect: '3d8 damage of chosen type.' },
+             { name: 'Command', level: 1, school: 'Enchantment', time: '1 Action', range: '60 ft', classes: 'Cleric, Paladin', effect: 'One word command (Grovel, Flee, etc).' },
+             { name: 'Comprehend Languages', level: 1, school: 'Divination', time: '1 Action', range: 'Self', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: 'Understand any spoken/written language.' },
+             { name: 'Cure Wounds', level: 1, school: 'Evocation', time: '1 Action', range: 'Touch', classes: 'Bard, Cleric, Druid, Paladin, Ranger', effect: 'Heals 1d8 + Mod.' },
+             { name: 'Detect Magic', level: 1, school: 'Divination', time: '1 Action', range: 'Self', classes: 'All', effect: 'Sense magic aura within 30 ft.' },
+             { name: 'Disguise Self', level: 1, school: 'Illusion', time: '1 Action', range: 'Self', classes: 'Bard, Sorcerer, Wizard', effect: 'Change appearance magically.' },
+             { name: 'Dissonant Whispers', level: 1, school: 'Enchantment', time: '1 Action', range: '60 ft', classes: 'Bard', effect: '3d6 psychic + reaction move away.' },
+             { name: 'Entangle', level: 1, school: 'Conjuration', time: '1 Action', range: '90 ft', classes: 'Druid', effect: 'Restraining vines in 20ft square.' },
+             { name: 'Faerie Fire', level: 1, school: 'Evocation', time: '1 Action', range: '60 ft', classes: 'Bard, Druid', effect: 'Outline targets in light; advantage to hit them.' },
+             { name: 'Feather Fall', level: 1, school: 'Transmutation', time: '1 Reaction', range: '60 ft', classes: 'Bard, Sorcerer, Wizard', effect: 'Slow fall for 5 creatures.' },
+             { name: 'Find Familiar', level: 1, school: 'Conjuration', time: '1 Hour', range: '10 ft', classes: 'Wizard', effect: 'Gain a magical spirit animal companion.' },
+             { name: 'Goodberry', level: 1, school: 'Transmutation', time: '1 Action', range: 'Touch', classes: 'Druid, Ranger', effect: 'Create 10 berries, 1 HP each.' },
+             { name: 'Grease', level: 1, school: 'Conjuration', time: '1 Action', range: '60 ft', classes: 'Wizard', effect: 'Slick area causes prone.' },
+             { name: 'Guiding Bolt', level: 1, school: 'Evocation', time: '1 Action', range: '120 ft', classes: 'Cleric', effect: '4d6 radiant + advantage on next attack vs target.' },
+             { name: 'Healing Word', level: 1, school: 'Evocation', time: '1 Bonus Action', range: '60 ft', classes: 'Bard, Cleric, Druid', effect: 'Heals 1d4 + Mod.' },
+             { name: 'Hellish Rebuke', level: 1, school: 'Evocation', time: '1 Reaction', range: '60 ft', classes: 'Warlock', effect: '2d10 fire to attacker.' },
+             { name: 'Hex', level: 1, school: 'Enchantment', time: '1 Bonus Action', range: '90 ft', classes: 'Warlock', effect: '+1d6 necrotic dmg, disadv on one ability check.' },
+             { name: 'Hunter\'s Mark', level: 1, school: 'Divination', time: '1 Bonus Action', range: '90 ft', classes: 'Ranger', effect: '+1d6 dmg, advantage on tracking/perception.' },
+             { name: 'Identify', level: 1, school: 'Divination', time: '1 Minute', range: 'Touch', classes: 'Bard, Wizard', effect: 'Learn magical properties of an item.' },
+             { name: 'Mage Armor', level: 1, school: 'Abjuration', time: '1 Action', range: 'Touch', classes: 'Sorcerer, Wizard', effect: 'AC becomes 13 + Dex.' },
+             { name: 'Magic Missile', level: 1, school: 'Evocation', time: '1 Action', range: '120 ft', classes: 'Sorcerer, Wizard', effect: '3 darts deal 1d4+1 force dmg each (auto-hit).' },
+             { name: 'Protection from Evil and Good', level: 1, school: 'Abjuration', time: '1 Action', range: 'Touch', classes: 'Cleric, Paladin, Warlock, Wizard', effect: 'Protection vs aberrations, celestials, elementals, fey, fiends, undead.' },
+             { name: 'Shield', level: 1, school: 'Abjuration', time: '1 Reaction', range: 'Self', classes: 'Sorcerer, Wizard', effect: '+5 AC until start of next turn.' },
+             { name: 'Shield of Faith', level: 1, school: 'Abjuration', time: '1 Bonus Action', range: '60 ft', classes: 'Cleric, Paladin', effect: '+2 AC.' },
+             { name: 'Silvery Barbs', level: 1, school: 'Enchantment', time: '1 Reaction', range: '60 ft', classes: 'Bard, Sorcerer, Wizard', effect: 'Force reroll on success, give advantage to another.' },
+             { name: 'Silent Image', level: 1, school: 'Illusion', time: '1 Action', range: '60 ft', classes: 'Bard, Sorcerer, Wizard', effect: 'Visual illusion of object/creature.' },
+             { name: 'Sleep', level: 1, school: 'Enchantment', time: '1 Action', range: '90 ft', classes: 'Bard, Sorcerer, Wizard', effect: 'Put 5d8 HP of creatures to sleep.' },
+             { name: 'Tasha\'s Hideous Laughter', level: 1, school: 'Enchantment', time: '1 Action', range: '30 ft', classes: 'Bard, Wizard', effect: 'Target falls prone incapacitate with laughter.' },
+             { name: 'Thunderwave', level: 1, school: 'Evocation', time: '1 Action', range: '15 ft Cube', classes: 'Bard, Druid, Sorcerer, Wizard', effect: '2d8 thunder + push 10 ft.' },
+             { name: 'Zephyr Strike', level: 1, school: 'Transmutation', time: '1 Bonus Action', range: 'Self', classes: 'Ranger', effect: 'No opportunity attacks, adv on one attack + 1d8 force.' },
+             // LEVEL 2
+             { name: 'Aid', level: 2, school: 'Abjuration', time: '1 Action', range: '30 ft', classes: 'Cleric, Paladin', effect: '+5 max HP to 3 creatures.' },
+             { name: 'Augury', level: 2, school: 'Divination', time: '1 Minute', range: 'Self', classes: 'Cleric', effect: 'Predict future outcomes.' },
+             { name: 'Blindness/Deafness', level: 2, school: 'Necromancy', time: '1 Action', range: '30 ft', classes: 'Bard, Cleric, Sorcerer, Wizard', effect: 'Blind or Deafen foe (Con save).' },
+             { name: 'Blur', level: 2, school: 'Illusion', time: '1 Action', range: 'Self', classes: 'Sorcerer, Wizard', effect: 'Attacks against you have disadvantage.' },
+             { name: 'Darkness', level: 2, school: 'Evocation', time: '1 Action', range: '60 ft', classes: 'Sorcerer, Warlock, Wizard', effect: 'Magical darkness sphere.' },
+             { name: 'Detect Thoughts', level: 2, school: 'Divination', time: '1 Action', range: 'Self', classes: 'Bard, Sorcerer, Wizard', effect: 'Read surface thoughts.' },
+             { name: 'Dragon\'s Breath', level: 2, school: 'Transmutation', time: '1 Bonus Action', range: 'Touch', classes: 'Sorcerer, Wizard', effect: 'Touch creature gains 3d6 breath weapon.' },
+             { name: 'Enhance Ability', level: 2, school: 'Transmutation', time: '1 Action', range: 'Touch', classes: 'Bard, Cleric, Druid, Sorcerer', effect: 'Advantage on checks for one stat.' },
+             { name: 'Enlarge/Reduce', level: 2, school: 'Transmutation', time: '1 Action', range: '30 ft', classes: 'Sorcerer, Wizard', effect: 'Change size +1d4/-1d4 damage.' },
+             { name: 'Flaming Sphere', level: 2, school: 'Conjuration', time: '1 Action', range: '60 ft', classes: 'Druid, Wizard', effect: 'Movable ball of fire deals 2d6.' },
+             { name: 'Heat Metal', level: 2, school: 'Transmutation', time: '1 Action', range: '60 ft', classes: 'Bard, Druid', effect: '2d8 fire dmg to metal armor/weapon user.' },
+             { name: 'Hold Person', level: 2, school: 'Enchantment', time: '1 Action', range: '60 ft', classes: 'Bard, Cleric, Druid, Sorcerer, Warlock, Wizard', effect: 'Paralyze humanoid (Wis save).' },
+             { name: 'Invisibility', level: 2, school: 'Illusion', time: '1 Action', range: 'Touch', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: 'Target becomes invisible.' },
+             { name: 'Knock', level: 2, school: 'Transmutation', time: '1 Action', range: '60 ft', classes: 'Bard, Sorcerer, Wizard', effect: 'Unlock object.' },
+             { name: 'Lesser Restoration', level: 2, school: 'Abjuration', time: '1 Action', range: 'Touch', classes: 'Bard, Cleric, Druid, Paladin, Ranger', effect: 'End disease, blind, deaf, paralyzed, poisoned.' },
+             { name: 'Levitate', level: 2, school: 'Transmutation', time: '1 Action', range: '60 ft', classes: 'Sorcerer, Wizard', effect: 'Rise vertically 20 ft.' },
+             { name: 'Magic Weapon', level: 2, school: 'Transmutation', time: '1 Bonus Action', range: 'Touch', classes: 'Paladin, Wizard', effect: 'Weapon becomes +1 magical.' },
+             { name: 'Maximilian\'s Earthen Grasp', level: 2, school: 'Transmutation', time: '1 Action', range: '30 ft', classes: 'Sorcerer, Wizard', effect: 'Hand restrains target dealing 2d6.' },
+             { name: 'Mirror Image', level: 2, school: 'Illusion', time: '1 Action', range: 'Self', classes: 'Sorcerer, Warlock, Wizard', effect: 'Creates 3 duplicates that absorb attacks.' },
+             { name: 'Misty Step', level: 2, school: 'Conjuration', time: '1 Bonus Action', range: 'Self', classes: 'Sorcerer, Warlock, Wizard', effect: 'Teleport 30 ft.' },
+             { name: 'Pass Without Trace', level: 2, school: 'Abjuration', time: '1 Action', range: 'Self', classes: 'Druid, Ranger', effect: '+10 Stealth for group.' },
+             { name: 'Phantasmal Force', level: 2, school: 'Illusion', time: '1 Action', range: '60 ft', classes: 'Bard, Sorcerer, Wizard', effect: 'Illusion damages/deceives one target.' },
+             { name: 'Scorching Ray', level: 2, school: 'Evocation', time: '1 Action', range: '120 ft', classes: 'Sorcerer, Wizard', effect: '3 rays deal 2d6 fire each.' },
+             { name: 'Shadow Blade', level: 2, school: 'Illusion', time: '1 Bonus Action', range: 'Self', classes: 'Sorcerer, Warlock, Wizard', effect: 'Manifest 2d8 psychic finesse weapon.' },
+             { name: 'Shatter', level: 2, school: 'Evocation', time: '1 Action', range: '60 ft', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: '3d8 thunder damage in 10ft radius.' },
+             { name: 'Silence', level: 2, school: 'Illusion', time: '1 Action', range: '120 ft', classes: 'Bard, Cleric, Ranger', effect: 'No sound in 20ft sphere (no spells).' },
+             { name: 'Spike Growth', level: 2, school: 'Transmutation', time: '1 Action', range: '150 ft', classes: 'Druid, Ranger', effect: 'Difficult terrain deals 2d4/5ft.' },
+             { name: 'Spiritual Weapon', level: 2, school: 'Evocation', time: '1 Bonus Action', range: '60 ft', classes: 'Cleric', effect: 'Spectral weapon deals 1d8+Mod force dmg.' },
+             { name: 'Suggestion', level: 2, school: 'Enchantment', time: '1 Action', range: '30 ft', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: 'Influence creature activity (Wis save).' },
+             { name: 'Vortex Warp', level: 2, school: 'Conjuration', time: '1 Action', range: '90 ft', classes: 'Artificer, Sorcerer, Wizard', effect: 'Teleport another creature to a space you can see.' },
+             { name: 'Web', level: 2, school: 'Conjuration', time: '1 Action', range: '60 ft', classes: 'Sorcerer, Wizard', effect: 'Restrain foes in sticky webbing.' },
+             { name: 'Wither and Bloom', level: 2, school: 'Necromancy', time: '1 Action', range: '60 ft', classes: 'Druid, Sorcerer, Wizard', effect: '2d6 necrotic in area, one creature heals using Hit Die.' },
+             // LEVEL 3
+             { name: 'Ashardalon\'s Stride', level: 3, school: 'Transmutation', time: '1 Bonus Action', range: 'Self', classes: 'Artificer, Ranger, Sorcerer, Wizard', effect: '+20ft speed, no OA, 1d6 fire dmg to those you pass.' },
+             { name: 'Aura of Vitality', level: 3, school: 'Evocation', time: '1 Action', range: 'Self', classes: 'Paladin', effect: 'Bonus action heal 2d6 to one creature.' },
+             { name: 'Blink', level: 3, school: 'Transmutation', time: '1 Action', range: 'Self', classes: 'Sorcerer, Wizard', effect: '50% chance to vanish to Ethereal Plane.' },
+             { name: 'Call Lightning', level: 3, school: 'Conjuration', time: '1 Action', range: '120 ft', classes: 'Druid', effect: '3d10 lightning bolts from storm.' },
+             { name: 'Catnap', level: 3, school: 'Enchantment', time: '1 Action', range: '30 ft', classes: 'Bard, Sorcerer, Wizard', effect: '10 min Short Rest for 3 creatures.' },
+             { name: 'Counterspell', level: 3, school: 'Abjuration', time: '1 Reaction', range: '60 ft', classes: 'Sorcerer, Warlock, Wizard', effect: 'Interrupt a spell cast.' },
+             { name: 'Crusader\'s Mantle', level: 3, school: 'Evocation', time: '1 Action', range: 'Self', classes: 'Paladin', effect: 'Allies add 1d4 radiant to attacks.' },
+             { name: 'Dispel Magic', level: 3, school: 'Abjuration', time: '1 Action', range: '120 ft', classes: 'All Casters', effect: 'End magical effects.' },
+             { name: 'Erupting Earth', level: 3, school: 'Transmutation', time: '1 Action', range: '120 ft', classes: 'Druid, Sorcerer, Wizard', effect: '3d12 bludgeoning + difficult terrain.' },
+             { name: 'Fear', level: 3, school: 'Illusion', time: '1 Action', range: 'Self (30ft Cone)', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: 'Creatures drop items and flee.' },
+             { name: 'Fireball', level: 3, school: 'Evocation', time: '1 Action', range: '150 ft', classes: 'Sorcerer, Wizard', effect: '8d6 fire damage in 20ft radius.' },
+             { name: 'Fly', level: 3, school: 'Transmutation', time: '1 Action', range: 'Touch', classes: 'Sorcerer, Warlock, Wizard', effect: 'Grant 60ft fly speed.' },
+             { name: 'Haste', level: 3, school: 'Transmutation', time: '1 Action', range: '30 ft', classes: 'Sorcerer, Wizard', effect: '+2 AC, double speed, extra action.' },
+             { name: 'Hunger of Hadar', level: 3, school: 'Conjuration', time: '1 Action', range: '150 ft', classes: 'Warlock', effect: 'Cold/Acid damage sphere blinding.' },
+             { name: 'Hypnotic Pattern', level: 3, school: 'Illusion', time: '1 Action', range: '120 ft', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: 'Charm/Incapacitate creatures in cube.' },
+             { name: 'Leomund\'s Tiny Hut', level: 3, school: 'Evocation', time: '1 Minute', range: 'Self', classes: 'Bard, Wizard', effect: 'Safe dome for rest.' },
+             { name: 'Life Transference', level: 3, school: 'Necromancy', time: '1 Action', range: '30 ft', classes: 'Cleric, Wizard', effect: 'Take 4d8 dmg to heal ally twice that.' },
+             { name: 'Lightning Bolt', level: 3, school: 'Evocation', time: '1 Action', range: 'Self (100ft Line)', classes: 'Sorcerer, Wizard', effect: '8d6 lightning damage.' },
+             { name: 'Major Image', level: 3, school: 'Illusion', time: '1 Action', range: '120 ft', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: 'Complex illusion with sound/smell.' },
+             { name: 'Mass Healing Word', level: 3, school: 'Evocation', time: '1 Bonus Action', range: '60 ft', classes: 'Cleric', effect: 'Heal 6 creatures 1d4+Mod.' },
+             { name: 'Melf\'s Minute Meteors', level: 3, school: 'Evocation', time: '1 Action', range: 'Self', classes: 'Sorcerer, Wizard', effect: 'Create 6 meteors dealing 2d6 each.' },
+             { name: 'Pulse Wave', level: 3, school: 'Evocation', time: '1 Action', range: '30 ft Cone', classes: 'Wizard', effect: '6d6 force + push/pull 15ft.' },
+             { name: 'Revivify', level: 3, school: 'Necromancy', time: '1 Action', range: 'Touch', classes: 'Cleric, Paladin, Ranger', effect: 'Revive creature dead <1 min.' },
+             { name: 'Sending', level: 3, school: 'Evocation', time: '1 Action', range: 'Unlimited', classes: 'Bard, Cleric, Wizard', effect: 'Send 25 word mental message.' },
+             { name: 'Slow', level: 3, school: 'Transmutation', time: '1 Action', range: '120 ft', classes: 'Sorcerer, Wizard', effect: 'Limit actions/reactions, -2 AC.' },
+             { name: 'Speak with Dead', level: 3, school: 'Necromancy', time: '1 Action', range: '10 ft', classes: 'Bard, Cleric', effect: 'Ask corpse 5 questions.' },
+             { name: 'Spirit Guardians', level: 3, school: 'Conjuration', time: '1 Action', range: 'Self (15ft)', classes: 'Cleric', effect: '3d8 radiant/necrotic dmg aura.' },
+             { name: 'Stinking Cloud', level: 3, school: 'Conjuration', time: '1 Action', range: '90 ft', classes: 'Bard, Sorcerer, Wizard', effect: 'Nauseating gas costs action.' },
+             { name: 'Thunder Step', level: 3, school: 'Conjuration', time: '1 Action', range: '90 ft', classes: 'Sorcerer, Warlock, Wizard', effect: 'Teleport + 3d10 thunder dmg.' },
+             { name: 'Tidal Wave', level: 3, school: 'Conjuration', time: '1 Action', range: '120 ft', classes: 'Druid, Sorcerer, Wizard', effect: '4d8 bludgeoning + knock prone.' },
+             { name: 'Tongues', level: 3, school: 'Divination', time: '1 Action', range: 'Touch', classes: 'Bard, Cleric, Sorcerer, Warlock, Wizard', effect: 'Understand/Speak any language.' },
+             { name: 'Vampiric Touch', level: 3, school: 'Necromancy', time: '1 Action', range: 'Self', classes: 'Warlock, Wizard', effect: '3d6 necrotic dmg, heal half.' },
+             { name: 'Water Breathing', level: 3, school: 'Transmutation', time: '1 Action', range: '30 ft', classes: 'Druid, Ranger, Sorcerer, Wizard', effect: '10 creatures can breathe water.' },
+             { name: 'Water Walk', level: 3, school: 'Transmutation', time: '1 Action', range: '30 ft', classes: 'Cleric, Druid, Ranger, Sorcerer', effect: '10 creatures walk on liquids.' },
+             // LEVEL 4
+             { name: 'Arcane Eye', level: 4, school: 'Divination', time: '1 Action', range: '30 ft', classes: 'Wizard', effect: 'Invisible eye scouts for you.' },
+             { name: 'Banishment', level: 4, school: 'Abjuration', time: '1 Action', range: '60 ft', classes: 'Cleric, Paladin, Sorcerer, Warlock, Wizard', effect: 'Send target to another plane.' },
+             { name: 'Dimension Door', level: 4, school: 'Conjuration', time: '1 Action', range: '500 ft', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: 'Teleport self and one other.' },
+             { name: 'Greater Invisibility', level: 4, school: 'Illusion', time: '1 Action', range: 'Touch', classes: 'Bard, Sorcerer, Wizard', effect: 'Invisible and can attack.' },
+             { name: 'Polymorph', level: 4, school: 'Transmutation', time: '1 Action', range: '60 ft', classes: 'Bard, Druid, Sorcerer, Wizard', effect: 'Turn creature into beast.' },
+             { name: 'Raulothim\'s Psychic Lance', level: 4, school: 'Enchantment', time: '1 Action', range: '120 ft', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: '7d6 psychic to name/seen target + Incapacitated.' },
+             { name: 'Wall of Fire', level: 4, school: 'Evocation', time: '1 Action', range: '120 ft', classes: 'Druid, Sorcerer, Wizard', effect: '5d8 fire damage barrier.' },
+             // LEVEL 5
+             { name: 'Animate Objects', level: 5, school: 'Transmutation', time: '1 Action', range: '120 ft', classes: 'Bard, Sorcerer, Wizard', effect: 'Bring objects to life to attack.' },
+             { name: 'Bigby\'s Hand', level: 5, school: 'Evocation', time: '1 Action', range: '120 ft', classes: 'Wizard', effect: 'Giant hand attacks/pushes/grapples.' },
+             { name: 'Cone of Cold', level: 5, school: 'Evocation', time: '1 Action', range: 'Self (60ft Cone)', classes: 'Sorcerer, Wizard', effect: '8d8 cold damage.' },
+             { name: 'Dominate Person', level: 5, school: 'Enchantment', time: '1 Action', range: '60 ft', classes: 'Bard, Sorcerer, Wizard', effect: 'Control humanoid actions.' },
+             { name: 'Greater Restoration', level: 5, school: 'Abjuration', time: '1 Action', range: 'Touch', classes: 'Bard, Cleric, Druid', effect: 'End charm, petrify, curse, stat reduction.' },
+             { name: 'Hold Monster', level: 5, school: 'Enchantment', time: '1 Action', range: '90 ft', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: 'Paralyze any creature.' },
+             { name: 'Mass Cure Wounds', level: 5, school: 'Evocation', time: '1 Action', range: '60 ft', classes: 'Bard, Cleric, Druid', effect: 'Heal 6 creatures 3d8+Mod.' },
+             { name: 'Raise Dead', level: 5, school: 'Necromancy', time: '1 Hour', range: 'Touch', classes: 'Bard, Cleric, Paladin', effect: 'Revive creature dead <10 days.' },
+             { name: 'Scrying', level: 5, school: 'Divination', time: '10 Minutes', range: 'Self', classes: 'Bard, Cleric, Druid, Warlock, Wizard', effect: 'Spy on distant target.' },
+             { name: 'Teleportation Circle', level: 5, school: 'Conjuration', time: '1 Minute', range: '10 ft', classes: 'Bard, Sorcerer, Wizard', effect: 'Portal to permanent circle.' },
+             { name: 'Wall of Force', level: 5, school: 'Evocation', time: '1 Action', range: '120 ft', classes: 'Wizard', effect: 'Indestructible invisible wall.' },
+             // LEVEL 6
+             { name: 'Chain Lightning', level: 6, school: 'Evocation', time: '1 Action', range: '150 ft', classes: 'Sorcerer, Wizard', effect: '10d8 lightning to 4 targets.' },
+             { name: 'Disintegrate', level: 6, school: 'Transmutation', time: '1 Action', range: '60 ft', classes: 'Sorcerer, Wizard', effect: '10d40+40 force dmg, turns to dust.' },
+             { name: 'Fizban\'s Platinum Shield', level: 6, school: 'Abjuration', time: '1 Bonus Action', range: '60 ft', classes: 'Sorcerer, Wizard', effect: 'Target gains half cover, resistance, and Evasion.' },
+             { name: 'Heal', level: 6, school: 'Evocation', time: '1 Action', range: '60 ft', classes: 'Cleric, Druid', effect: 'Heal 70 HP, end blindness/diseases.' },
+             { name: 'Mass Suggestion', level: 6, school: 'Enchantment', time: '1 Action', range: '60 ft', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: 'Influence 12 creatures.' },
+             { name: 'Sunbeam', level: 6, school: 'Evocation', time: '1 Action', range: 'Self (60ft Line)', classes: 'Druid, Sorcerer, Wizard', effect: '6d8 radiant + blind.' },
+             // LEVEL 7
+             { name: 'Draconic Transformation', level: 7, school: 'Transmutation', time: '1 Bonus Action', range: 'Self', classes: 'Druid, Sorcerer, Wizard', effect: 'Blindsight 30ft, Fly 60ft, 6d8 Force breath as bonus action.' },
+             { name: 'Finger of Death', level: 7, school: 'Necromancy', time: '1 Action', range: '60 ft', classes: 'Sorcerer, Warlock, Wizard', effect: '7d8+30 dmg, kill creates zombie.' },
+             { name: 'Fire Storm', level: 7, school: 'Evocation', time: '1 Action', range: '150 ft', classes: 'Cleric, Druid, Sorcerer', effect: '7d10 fire in massive area.' },
+             { name: 'Plane Shift', level: 7, school: 'Conjuration', time: '1 Action', range: 'Touch', classes: 'Cleric, Druid, Sorcerer, Warlock, Wizard', effect: 'Travel to other planes or banish foe.' },
+             { name: 'Resurrection', level: 7, school: 'Necromancy', time: '1 Hour', range: 'Touch', classes: 'Bard, Cleric', effect: 'Revive creature dead <100 years.' },
+             { name: 'Teleport', level: 7, school: 'Conjuration', time: '1 Action', range: '10 ft', classes: 'Bard, Sorcerer, Wizard', effect: 'Instantly transport group anywhere.' },
+             // LEVEL 8
+             { name: 'Antimagic Field', level: 8, school: 'Abjuration', time: '1 Action', range: 'Self (10ft)', classes: 'Cleric, Wizard', effect: 'Suppress all magic.' },
+             { name: 'Dominate Monster', level: 8, school: 'Enchantment', time: '1 Action', range: '60 ft', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: 'Control any creature.' },
+             { name: 'Feeblemind', level: 8, school: 'Enchantment', time: '1 Action', range: '150 ft', classes: 'Bard, Druid, Warlock, Wizard', effect: 'Reduce Int/Cha to 1.' },
+             { name: 'Power Word Stun', level: 8, school: 'Enchantment', time: '1 Action', range: '60 ft', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: 'Stun target with <150 HP.' },
+             { name: 'Sunburst', level: 8, school: 'Evocation', time: '1 Action', range: '150 ft', classes: 'Druid, Sorcerer, Wizard', effect: '12d6 radiant + blind massive area.' },
+             // LEVEL 9
+             { name: 'Foresight', level: 9, school: 'Divination', time: '1 Minute', range: 'Touch', classes: 'Bard, Druid, Warlock, Wizard', effect: 'Advantage on everything, foes have disadvantage.' },
+             { name: 'Gate', level: 9, school: 'Conjuration', time: '1 Action', range: '60 ft', classes: 'Cleric, Sorcerer, Wizard', effect: 'Portal to other plane or summon creature.' },
+             { name: 'Mass Heal', level: 9, school: 'Evocation', time: '1 Action', range: '60 ft', classes: 'Cleric', effect: 'Heal 700 HP split among targets.' },
+             { name: 'Meteor Swarm', level: 9, school: 'Evocation', time: '1 Action', range: '1 Mile', classes: 'Sorcerer, Wizard', effect: '40d6 damage in massive areas.' },
+             { name: 'Power Word Kill', level: 9, school: 'Enchantment', time: '1 Action', range: '60 ft', classes: 'Bard, Sorcerer, Warlock, Wizard', effect: 'Kill target with <100 HP.' },
+             { name: 'Time Stop', level: 9, school: 'Transmutation', time: '1 Action', range: 'Self', classes: 'Sorcerer, Wizard', effect: 'Take 1d4+1 turns in a row.' },
+             { name: 'True Polymorph', level: 9, school: 'Transmutation', time: '1 Action', range: '30 ft', classes: 'Bard, Warlock, Wizard', effect: 'Creature to Creature/Object (permanent).' },
+             { name: 'Wish', level: 9, school: 'Conjuration', time: '1 Action', range: 'Self', classes: 'Sorcerer, Wizard', effect: 'Alter reality.' },
+          ],
+          magicitems: [
+            // COMMON
+            { name: 'Potion of Healing', rarity: 'Common', type: 'Potion', attunement: 'No', description: 'Regain 2d4 + 2 hit points.' },
+            { name: 'Spell Scroll', rarity: 'Common', type: 'Scroll', attunement: 'No', description: 'Contains a single spell.' },
+            { name: 'Cloak of Billowing', rarity: 'Common', type: 'Wondrous Item', attunement: 'No', description: 'Bonus action to make it billow dramatically.' },
+            { name: 'Heward\'s Handy Spice Pouch', rarity: 'Common', type: 'Wondrous Item', attunement: 'No', description: 'Appear seasoning from pouch.' },
+            // UNCOMMON
+            { name: 'Weapon +1', rarity: 'Uncommon', type: 'Weapon', attunement: 'No', description: '+1 bonus to attack and damage rolls.' },
+            { name: 'Shield +1', rarity: 'Uncommon', type: 'Armor', attunement: 'No', description: '+1 bonus to AC in addition to shield\'s normal bonus.' },
+            { name: 'Adamantine Armor', rarity: 'Uncommon', type: 'Armor', attunement: 'No', description: 'Critical hits against you become normal hits.' },
+            { name: 'Bag of Holding', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'No', description: 'Holds 500 lbs, weighs 15 lbs.' },
+            { name: 'Boots of Elvenkind', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'No', description: 'Silent steps. Stealth advantage.' },
+            { name: 'Boots of Striding and Springing', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'Yes', description: 'Speed 30ft min. 3x Jump distance.' },
+            { name: 'Broom of Flying', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'No', description: 'Fly 50ft (or 30ft if heavy).' },
+            { name: 'Cloak of Elvenkind', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'Yes', description: 'Stealth advantage. Disadvantage to see you.' },
+            { name: 'Cloak of Protection', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'Yes', description: '+1 bonus to AC and Saving Throws.' },
+            { name: 'Decanter of Endless Water', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'No', description: 'Pour 1 gal, 5 gal, or geyser (30 gal/bludgeoning).' },
+            { name: 'Efficient Quiver', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'No', description: 'Holds 60 arrows, 18 javelins, 6 bows.' },
+            { name: 'Eyes of Charming', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'Yes', description: 'Cast Charm Person (3 charges).' },
+            { name: 'Eyes of the Eagle', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'Yes', description: 'Perception advantage (sight). See detail 1 mile away.' },
+            { name: 'Gauntlets of Ogre Power', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'Yes', description: 'Strength becomes 19.' },
+            { name: 'Goggles of Night', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'No', description: 'Darkvision 60ft (or +60ft).' },
+            { name: 'Hat of Disguise', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'Yes', description: 'Cast Disguise Self at will.' },
+            { name: 'Headband of Intellect', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'Yes', description: 'Intelligence becomes 19.' },
+            { name: 'Immovable Rod', rarity: 'Uncommon', type: 'Rod', attunement: 'No', description: 'Fixed in space (holds 8000 lbs).' },
+            { name: 'Lantern of Revealing', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'No', description: 'Reveals invisible creatures/objects in light.' },
+            { name: 'Mithral Armor', rarity: 'Uncommon', type: 'Armor', attunement: 'No', description: 'No Str req. No stealth disadvantage.' },
+            { name: 'Pearl of Power', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'Yes', description: 'Regain spell slot up to lvl 3.' },
+            { name: 'Ring of Mind Shielding', rarity: 'Uncommon', type: 'Ring', attunement: 'Yes', description: 'Immune to telepathy/lie detection.' },
+            { name: 'Ring of Swimming', rarity: 'Uncommon', type: 'Ring', attunement: 'No', description: 'Swim speed 40ft.' },
+            { name: 'Ring of Water Walking', rarity: 'Uncommon', type: 'Ring', attunement: 'No', description: 'Walk on liquid.' },
+            { name: 'Slippers of Spider Climbing', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'Yes', description: 'Climb speed = walk. Walk on walls/ceilings.' },
+            { name: 'Wand of Magic Missiles', rarity: 'Uncommon', type: 'Wand', attunement: 'No', description: 'Cast Magic Missile (7 charges).' },
+            { name: 'Weapon of Warning', rarity: 'Uncommon', type: 'Weapon', attunement: 'Yes', description: 'Advantage on Init. Can\'t be surprised.' },
+            { name: 'Winged Boots', rarity: 'Uncommon', type: 'Wondrous Item', attunement: 'Yes', description: 'Fly speed = walk speed (4 hours).' },
+            // RARE
+            { name: 'Weapon +2', rarity: 'Rare', type: 'Weapon', attunement: 'No', description: '+2 bonus to attack and damage.' },
+            { name: 'Armor +1', rarity: 'Rare', type: 'Armor', attunement: 'No', description: '+1 AC.' },
+            { name: 'Amulet of Health', rarity: 'Rare', type: 'Wondrous Item', attunement: 'Yes', description: 'Constitution becomes 19.' },
+            { name: 'Belt of Hill Giant Strength', rarity: 'Rare', type: 'Wondrous Item', attunement: 'Yes', description: 'Strength becomes 21.' },
+            { name: 'Boots of Speed', rarity: 'Rare', type: 'Wondrous Item', attunement: 'Yes', description: 'Double speed (10 mins). Disadv on attacks vs you.' },
+            { name: 'Bracers of Defense', rarity: 'Rare', type: 'Wondrous Item', attunement: 'Yes', description: '+2 AC if no armor/shield.' },
+            { name: 'Cloak of the Bat', rarity: 'Rare', type: 'Wondrous Item', attunement: 'Yes', description: 'Fly in dim light. Polymorph into bat.' },
+            { name: 'Cloak of Displacement', rarity: 'Rare', type: 'Wondrous Item', attunement: 'Yes', description: 'Disadvantage on attacks vs you.' },
+            { name: 'Cube of Force', rarity: 'Rare', type: 'Wondrous Item', attunement: 'Yes', description: 'Create barrier (various types).' },
+            { name: 'Flame Tongue', rarity: 'Rare', type: 'Weapon', attunement: 'Yes', description: '+2d6 fire damage on hit.' },
+            { name: 'Mace of Disruption', rarity: 'Rare', type: 'Weapon', attunement: 'Yes', description: '+2d6 radiant to fiends/undead. Destroy undead.' },
+            { name: 'Mace of Smiting', rarity: 'Rare', type: 'Weapon', attunement: 'No', description: '+1 weapon. Extra dmg on crit/constructs.' },
+            { name: 'Mantle of Spell Resistance', rarity: 'Rare', type: 'Wondrous Item', attunement: 'Yes', description: 'Advantage on saves vs spells.' },
+            { name: 'Necklace of Fireballs', rarity: 'Rare', type: 'Wondrous Item', attunement: 'No', description: 'Beads cast Fireball.' },
+            { name: 'Periapt of Wound Closure', rarity: 'Rare', type: 'Wondrous Item', attunement: 'Yes', description: 'Auto-stabilize. Double healing from Hit Dice.' },
+            { name: 'Portable Hole', rarity: 'Rare', type: 'Wondrous Item', attunement: 'No', description: '6ft diameter extra-dimensional hole.' },
+            { name: 'Ring of Evasion', rarity: 'Rare', type: 'Ring', attunement: 'Yes', description: 'Succeed failed Dex save (3 charges).' },
+            { name: 'Ring of Feather Falling', rarity: 'Rare', type: 'Ring', attunement: 'Yes', description: 'Feather Fall (automatic).' },
+            { name: 'Ring of Free Action', rarity: 'Rare', type: 'Ring', attunement: 'Yes', description: 'Ignore difficult terrain. Immune to paralyze/restrain.' },
+            { name: 'Ring of Protection', rarity: 'Rare', type: 'Ring', attunement: 'Yes', description: '+1 AC and Saves.' },
+            { name: 'Sun Blade', rarity: 'Rare', type: 'Weapon', attunement: 'Yes', description: 'Finesse longsword. Radiant dmg. +2 vs undead.' },
+            { name: 'Sword of Life Stealing', rarity: 'Rare', type: 'Weapon', attunement: 'Yes', description: 'Crit deals extra 10 necrotic, gain 10 temp HP.' },
+            { name: 'Wand of Fireballs', rarity: 'Rare', type: 'Wand', attunement: 'Yes', description: 'Cast Fireball (7 charges).' },
+            // VERY RARE
+            { name: 'Weapon +3', rarity: 'Very Rare', type: 'Weapon', attunement: 'No', description: '+3 bonus to attack and damage.' },
+            { name: 'Armor +2', rarity: 'Very Rare', type: 'Armor', attunement: 'No', description: '+2 AC.' },
+            { name: 'Belt of Fire Giant Strength', rarity: 'Very Rare', type: 'Wondrous Item', attunement: 'Yes', description: 'Strength becomes 25.' },
+            { name: 'Dwarven Thrower', rarity: 'Very Rare', type: 'Weapon', attunement: 'Yes', description: 'Thrown hammer returns. Extra damage vs giants.' },
+            { name: 'Frost Brand', rarity: 'Very Rare', type: 'Weapon', attunement: 'Yes', description: '+1d6 cold dmg. Fire resistance.' },
+            { name: 'Oathbow', rarity: 'Very Rare', type: 'Weapon', attunement: 'Yes', description: 'Sworn Enemy: Adv on attack, +3d6 dmg, ignore cover.' },
+            { name: 'Ring of Regeneration', rarity: 'Very Rare', type: 'Ring', attunement: 'Yes', description: 'Regain 1d6 HP every 10 mins. Regrow limbs.' },
+            { name: 'Ring of Telekinesis', rarity: 'Very Rare', type: 'Ring', attunement: 'Yes', description: 'Cast Telekinesis at will.' },
+            { name: 'Staff of Power', rarity: 'Very Rare', type: 'Staff', attunement: 'Yes', description: '+2 AC/Atk/Spell. Spells. Retributive Strike.' },
+            // LEGENDARY
+            { name: 'Armor +3', rarity: 'Legendary', type: 'Armor', attunement: 'No', description: '+3 AC.' },
+            { name: 'Belt of Storm Giant Strength', rarity: 'Legendary', type: 'Wondrous Item', attunement: 'Yes', description: 'Strength becomes 29.' },
+            { name: 'Cloak of Invisibility', rarity: 'Legendary', type: 'Wondrous Item', attunement: 'Yes', description: 'Invisibility (2 hours max).' },
+            { name: 'Deck of Many Things', rarity: 'Legendary', type: 'Wondrous Item', attunement: 'No', description: 'Random powerful effects.' },
+            { name: 'Holy Avenger', rarity: 'Legendary', type: 'Weapon', attunement: 'Yes', description: '+3 weapon. Radiant dmg. Aura of adv vs magic.' },
+            { name: 'Luck Blade', rarity: 'Legendary', type: 'Weapon', attunement: 'Yes', description: '+1 weapon/save. Reroll d20. Wishes (1d4-1).' },
+            { name: 'Ring of Three Wishes', rarity: 'Legendary', type: 'Ring', attunement: 'No', description: '3 charges of Wish.' },
+            { name: 'Robe of the Archmagi', rarity: 'Legendary', type: 'Wondrous Item', attunement: 'Yes', description: 'AC 15+Dex. Spell Adv/DC bonus.' },
+            { name: 'Rod of Lordly Might', rarity: 'Legendary', type: 'Rod', attunement: 'Yes', description: 'Transform into weapons. Paralyze/Drain/Fear buttons.' },
+            { name: 'Staff of the Magi', rarity: 'Legendary', type: 'Staff', attunement: 'Yes', description: 'Absorb spells. Many spells. Plane Shift.' },
+            { name: 'Vorpal Sword', rarity: 'Legendary', type: 'Weapon', attunement: 'Yes', description: '+3 weapon. Decapitate on nat 20.' },
+            // TASHA'S CLASS ITEMS
+            { name: 'All-Purpose Tool', rarity: 'Uncommon (+1), Rare (+2), Very Rare (+3)', type: 'Wondrous Item', attunement: 'Yes (Artificer)', description: 'Bonus to spell attacks/DC. Learn any cantrip for 8 hours.' },
+            { name: 'Amulet of the Devout', rarity: 'Uncommon (+1), Rare (+2), Very Rare (+3)', type: 'Wondrous Item', attunement: 'Yes (Cleric/Paladin)', description: 'Bonus to spell attacks/DC. Extra Channel Divinity use.' },
+            { name: 'Arcane Grimoire', rarity: 'Uncommon (+1), Rare (+2), Very Rare (+3)', type: 'Wondrous Item', attunement: 'Yes (Wizard)', description: 'Bonus to spell attacks/DC. Boosts Arcane Recovery.' },
+            { name: 'Bloodwell Vial', rarity: 'Uncommon (+1), Rare (+2), Very Rare (+3)', type: 'Wondrous Item', attunement: 'Yes (Sorcerer)', description: 'Bonus to spell attacks/DC. Regain 5 Sorcery Points on HD roll.' },
+            { name: 'Dragonhide Belt', rarity: 'Uncommon (+1), Rare (+2), Very Rare (+3)', type: 'Wondrous Item', attunement: 'Yes (Monk)', description: 'Bonus to Ki save DC. Regain Ki die as action.' },
+            { name: 'Moon Sickle', rarity: 'Uncommon (+1), Rare (+2), Very Rare (+3)', type: 'Weapon (Sickle)', attunement: 'Yes (Druid/Ranger)', description: 'Bonus to attacks/dmg and spell attacks/DC. Extra healing on spells.' },
+            { name: 'Rhythm-Maker\'s Drum', rarity: 'Uncommon (+1), Rare (+2), Very Rare (+3)', type: 'Wondrous Item', attunement: 'Yes (Bard)', description: 'Bonus to spell attacks/DC. Regain Bardic Inspiration as action.' },
+            { name: 'Rod of the Pact Keeper', rarity: 'Uncommon (+1), Rare (+2), Very Rare (+3)', type: 'Rod', attunement: 'Yes (Warlock)', description: 'Bonus to spell attacks/DC. Regain Warlock spell slot.' },
+          ],
+          boons: [
+            { name: 'Blessing of Health', type: 'Blessing', source: 'DMG', description: '+2 Constitution (up to 22).' },
+            { name: 'Blessing of Protection', type: 'Blessing', source: 'DMG', description: '+1 bonus to AC and saving throws.' },
+            { name: 'Blessing of Magic Resistance', type: 'Blessing', source: 'DMG', description: 'Advantage on saving throws against spells and other magical effects.' },
+            { name: 'Blessing of Understanding', type: 'Blessing', source: 'DMG', description: '+2 Wisdom (up to 22).' },
+            { name: 'Blessing of Valhalla', type: 'Blessing', source: 'DMG', description: 'Summon Horn of Valhalla spirits.' },
+            { name: 'Blessing of Weapon Enhancement', type: 'Blessing', source: 'DMG', description: 'One non-magical weapon becomes a +1 weapon.' },
+            { name: 'Blessing of Wound Closure', type: 'Blessing', source: 'DMG', description: 'Stabilize at start of turn. Hit Dice heal max HP.' },
+            // GREATER BOONS (EPIC BOONS)
+            { name: 'Boon of Combat Prowess', type: 'Epic Boon', source: 'DMG', description: 'When you miss an attack, you can choose to hit instead (once/short rest).' },
+            { name: 'Boon of Dimensional Travel', type: 'Epic Boon', source: 'DMG', description: 'Cast Misty Step as an action without a spell slot (once/short rest).' },
+            { name: 'Boon of Fate', type: 'Epic Boon', source: 'DMG', description: 'Add/subtract d10 from a d20 roll (once/short rest).' },
+            { name: 'Boon of Fortitude', type: 'Epic Boon', source: 'DMG', description: '+40 hit points max.' },
+            { name: 'Boon of High Magic', type: 'Epic Boon', source: 'DMG', description: 'One additional 9th-level spell slot.' },
+            { name: 'Boon of Immortality', type: 'Epic Boon', source: 'DMG', description: 'You stop aging. Immunity to magical aging.' },
+            { name: 'Boon of Invincibility', type: 'Epic Boon', source: 'DMG', description: 'When you take damage, reduce it to 0 (once/short rest).' },
+            { name: 'Boon of Irresistible Offense', type: 'Epic Boon', source: 'DMG', description: 'Damage you deal ignores resistance.' },
+            { name: 'Boon of Luck', type: 'Epic Boon', source: 'DMG', description: 'Add d10 to an ability check, attack roll, or saving throw (once/short rest).' },
+            { name: 'Boon of Magic Resistance', type: 'Epic Boon', source: 'DMG', description: 'Advantage on saving throws against spells.' },
+            { name: 'Boon of Peerless Aim', type: 'Epic Boon', source: 'DMG', description: 'Add +20 bonus to a ranged attack roll (once/short rest).' },
+            { name: 'Boon of Perfect Health', type: 'Epic Boon', source: 'DMG', description: 'Immunity to all diseases and poison damage. Advantage on Con saves.' },
+            { name: 'Boon of Planetary Magic', type: 'Epic Boon', source: 'DMG', description: 'Cast a chosen 1st-level spell at will.' },
+            { name: 'Boon of Quick Casting', type: 'Epic Boon', source: 'DMG', description: 'Cast a spell (action) as a bonus action (once/short rest).' },
+            { name: 'Boon of Recovery', type: 'Epic Boon', source: 'DMG', description: 'Bonus action to regain half max HP (once/long rest).' },
+            { name: 'Boon of Resilience', type: 'Epic Boon', source: 'DMG', description: 'Resistance to bludgeoning, piercing, and slashing damage from non-magical weapons.' },
+            { name: 'Boon of Skill', type: 'Epic Boon', source: 'DMG', description: 'Proficiency in all skills.' },
+            { name: 'Boon of Speed', type: 'Epic Boon', source: 'DMG', description: '+30 ft walking speed. Dash as bonus action.' },
+            { name: 'Boon of Spell Mastery', type: 'Epic Boon', source: 'DMG', description: 'Choose a 1st-level spell. Cast it at its lowest level without expending a spell slot.' },
+            { name: 'Boon of Stormborn', type: 'Epic Boon', source: 'DMG', description: 'Immunity to lightning/thunder damage.' },
+            { name: 'Boon of the Fire Soul', type: 'Epic Boon', source: 'DMG', description: 'Immunity to fire damage.' },
+            { name: 'Boon of the Night Spirit', type: 'Epic Boon', source: 'DMG', description: 'Become invisible while in dim light or darkness (action).' },
+            { name: 'Boon of the Uncaptured', type: 'Epic Boon', source: 'DMG', description: 'Escape grapples/restraints automatically. Immunity to grapple/restrain.' },
+            { name: 'Boon of Undetectability', type: 'Epic Boon', source: 'DMG', description: '+10 to Stealth checks. Cannot be detected by divination magic.' },
+          ],
+          conditions: [
+            { name: 'Blinded', description: 'Can\'t see, auto-fail sight ability checks. Attacks against you have advantage, your attacks have disadvantage.' },
+            { name: 'Charmed', description: 'Can\'t attack the charmer or target them with harmful abilities. Charmer has advantage on social interactions.' },
+            { name: 'Deafened', description: 'Can\'t hear, auto-fail hearing ability checks.' },
+            { name: 'Frightened', description: 'Disadvantage on ability checks and attack rolls while source of fear is visible. Can\'t willingly move closer to the source.' },
+            { name: 'Grappled', description: 'Speed becomes 0. Ends if grappler is incapacitated or if an effect moves you out of reach.' },
+            { name: 'Incapacitated', description: 'Can\'t take actions or reactions.' },
+            { name: 'Invisible', description: 'Impossible to see without magic/special senses. Heavily obscured. Attacks against you have disadvantage, your attacks have advantage.' },
+            { name: 'Paralyzed', description: 'Incapacitated and can\'t move or speak. Auto-fail Str/Dex saves. Attacks against have advantage. Any hit within 5ft is a crit.' },
+            { name: 'Petrified', description: 'Transformed into stone (incapacitated). Attack against has advantage. Resistance to all damage. Poison/Disease immunity.' },
+            { name: 'Poisoned', description: 'Disadvantage on attack rolls and ability checks.' },
+            { name: 'Prone', description: 'Crawling only. Disadvantage on attacks. Attacks against have advantage if within 5ft, otherwise disadvantage.' },
+            { name: 'Restrained', description: 'Speed 0. Attack against has advantage, your attacks have disadvantage. Disadvantage on Dex saves.' },
+            { name: 'Stunned', description: 'Incapacitated, can\'t move, speak falteringly. Auto-fail Str/Dex saves. Attacks against have advantage.' },
+            { name: 'Unconscious', description: 'Incapacitated, drop what you\'re holding, fall prone. Auto-fail Str/Dex saves. Attacks against have advantage. Any hit within 5ft is a crit.' },
+            { name: 'Exhaustion', description: '1: Disadvantage on checks. 2: Speed halved. 3: Disadvantage on attacks/saves. 4: HP max halved. 5: Speed 0. 6: Death.' },
+          ],
+          weapons: [
+            { name: 'Club', cost: '1 sp', damage: '1d4 bludgeoning', weight: '2 lb.', properties: 'Light' },
+            { name: 'Dagger', cost: '2 gp', damage: '1d4 piercing', weight: '1 lb.', properties: 'Finesse, light, thrown (range 20/60)' },
+            { name: 'Greatclub', cost: '2 sp', damage: '1d8 bludgeoning', weight: '10 lb.', properties: 'Two-handed' },
+            { name: 'Handaxe', cost: '5 gp', damage: '1d6 slashing', weight: '2 lb.', properties: 'Light, thrown (range 20/60)' },
+            { name: 'Javelin', cost: '5 sp', damage: '1d6 piercing', weight: '2 lb.', properties: 'Thrown (range 30/120)' },
+            { name: 'Light Hammer', cost: '2 gp', damage: '1d4 bludgeoning', weight: '2 lb.', properties: 'Light, thrown (range 20/60)' },
+            { name: 'Mace', cost: '5 gp', damage: '1d6 bludgeoning', weight: '4 lb.', properties: '-' },
+            { name: 'Quarterstaff', cost: '2 sp', damage: '1d6 bludgeoning', weight: '4 lb.', properties: 'Versatile (1d8)' },
+            { name: 'Sickle', cost: '1 gp', damage: '1d4 slashing', weight: '2 lb.', properties: 'Light' },
+            { name: 'Spear', cost: '1 gp', damage: '1d6 piercing', weight: '3 lb.', properties: 'Thrown (range 20/60), versatile (1d8)' },
+            { name: 'Light Crossbow', cost: '25 gp', damage: '1d8 piercing', weight: '5 lb.', properties: 'Ammunition (range 80/320), loading, two-handed' },
+            { name: 'Dart', cost: '5 cp', damage: '1d4 piercing', weight: '1/4 lb.', properties: 'Finesse, thrown (range 20/60)' },
+            { name: 'Shortbow', cost: '25 gp', damage: '1d6 piercing', weight: '2 lb.', properties: 'Ammunition (range 80/320), two-handed' },
+            { name: 'Sling', cost: '1 sp', damage: '1d4 bludgeoning', weight: '-', properties: 'Ammunition (range 30/120)' },
+            { name: 'Battleaxe', cost: '10 gp', damage: '1d8 slashing', weight: '4 lb.', properties: 'Versatile (1d10)' },
+            { name: 'Flail', cost: '10 gp', damage: '1d8 bludgeoning', weight: '2 lb.', properties: '-' },
+            { name: 'Glaive', cost: '20 gp', damage: '1d10 slashing', weight: '6 lb.', properties: 'Heavy, reach, two-handed' },
+            { name: 'Greataxe', cost: '30 gp', damage: '1d12 slashing', weight: '7 lb.', properties: 'Heavy, two-handed' },
+            { name: 'Greatsword', cost: '50 gp', damage: '2d6 slashing', weight: '6 lb.', properties: 'Heavy, two-handed' },
+            { name: 'Halberd', cost: '20 gp', damage: '1d10 slashing', weight: '6 lb.', properties: 'Heavy, reach, two-handed' },
+            { name: 'Lance', cost: '10 gp', damage: '1d12 piercing', weight: '6 lb.', properties: 'Reach, special' },
+            { name: 'Longsword', cost: '15 gp', damage: '1d8 slashing', weight: '3 lb.', properties: 'Versatile (1d10)' },
+            { name: 'Maul', cost: '10 gp', damage: '2d6 bludgeoning', weight: '10 lb.', properties: 'Heavy, two-handed' },
+            { name: 'Morningstar', cost: '15 gp', damage: '1d8 piercing', weight: '4 lb.', properties: '-' },
+            { name: 'Pike', cost: '5 gp', damage: '1d10 piercing', weight: '18 lb.', properties: 'Heavy, reach, two-handed' },
+            { name: 'Rapier', cost: '25 gp', damage: '1d8 piercing', weight: '2 lb.', properties: 'Finesse' },
+            { name: 'Scimitar', cost: '25 gp', damage: '1d6 slashing', weight: '3 lb.', properties: 'Finesse, light' },
+            { name: 'Shortsword', cost: '10 gp', damage: '1d6 piercing', weight: '2 lb.', properties: 'Finesse, light' },
+            { name: 'Trident', cost: '5 gp', damage: '1d6 piercing', weight: '4 lb.', properties: 'Thrown (range 20/60), versatile (1d8)' },
+            { name: 'War Pick', cost: '5 gp', damage: '1d8 piercing', weight: '2 lb.', properties: '-' },
+            { name: 'Warhammer', cost: '15 gp', damage: '1d8 bludgeoning', weight: '2 lb.', properties: 'Versatile (1d10)' },
+            { name: 'Whip', cost: '2 gp', damage: '1d4 slashing', weight: '3 lb.', properties: 'Finesse, reach' },
+            { name: 'Blowgun', cost: '10 gp', damage: '1 piercing', weight: '1 lb.', properties: 'Ammunition (range 25/100), loading' },
+            { name: 'Hand Crossbow', cost: '75 gp', damage: '1d6 piercing', weight: '3 lb.', properties: 'Ammunition (range 30/120), light, loading' },
+            { name: 'Heavy Crossbow', cost: '50 gp', damage: '1d10 piercing', weight: '18 lb.', properties: 'Ammunition (range 100/400), heavy, loading, two-handed' },
+            { name: 'Longbow', cost: '50 gp', damage: '1d8 piercing', weight: '2 lb.', properties: 'Ammunition (range 150/600), heavy, two-handed' },
+            { name: 'Net', cost: '1 gp', damage: '-', weight: '3 lb.', properties: 'Special, thrown (range 5/15)' },
+          ],
+          armor: [
+            { name: 'Padded', cost: '5 gp', ac: '11 + Dex', strength: '-', stealth: 'Disadvantage', weight: '8 lb.' },
+            { name: 'Leather', cost: '10 gp', ac: '11 + Dex', strength: '-', stealth: '-', weight: '10 lb.' },
+            { name: 'Studded Leather', cost: '45 gp', ac: '12 + Dex', strength: '-', stealth: '-', weight: '13 lb.' },
+            { name: 'Hide', cost: '10 gp', ac: '12 + Dex (max 2)', strength: '-', stealth: '-', weight: '12 lb.' },
+            { name: 'Chain Shirt', cost: '50 gp', ac: '13 + Dex (max 2)', strength: '-', stealth: '-', weight: '20 lb.' },
+            { name: 'Scale Mail', cost: '50 gp', ac: '14 + Dex (max 2)', strength: '-', stealth: 'Disadvantage', weight: '45 lb.' },
+            { name: 'Breastplate', cost: '400 gp', ac: '14 + Dex (max 2)', strength: '-', stealth: '-', weight: '20 lb.' },
+            { name: 'Half Plate', cost: '750 gp', ac: '15 + Dex (max 2)', strength: '-', stealth: 'Disadvantage', weight: '40 lb.' },
+            { name: 'Ring Mail', cost: '30 gp', ac: '14', strength: '-', stealth: 'Disadvantage', weight: '40 lb.' },
+            { name: 'Chain Mail', cost: '75 gp', ac: '16', strength: 'Str 13', stealth: 'Disadvantage', weight: '55 lb.' },
+            { name: 'Splint', cost: '200 gp', ac: '17', strength: 'Str 15', stealth: 'Disadvantage', weight: '60 lb.' },
+            { name: 'Plate', cost: '1,500 gp', ac: '18', strength: 'Str 15', stealth: 'Disadvantage', weight: '65 lb.' },
+            { name: 'Shield', cost: '10 gp', ac: '+2', strength: '-', stealth: '-', weight: '6 lb.' },
+          ]
+        };
+
+        const ATTRIBUTES = [
+          { id: 'str', label: 'Strength', short: 'STR' },
+          { id: 'dex', label: 'Dexterity', short: 'DEX' },
+          { id: 'con', label: 'Constitution', short: 'CON' },
+          { id: 'int', label: 'Intelligence', short: 'INT' },
+          { id: 'wis', label: 'Wisdom', short: 'WIS' },
+          { id: 'cha', label: 'Charisma', short: 'CHA' },
+        ];
+
+        // --- SOURCE BOOK STYLES MAPPING ---
+        const SOURCE_STYLES = {
+            'PHB': 'bg-green-900/30 text-green-400 border-green-500/30',
+            'XGtE': 'bg-purple-900/30 text-purple-400 border-purple-500/30',
+            'TCE': 'bg-pink-900/30 text-pink-400 border-pink-500/30',
+            'Eberron': 'bg-amber-900/30 text-amber-400 border-amber-500/30',
+            'VGM': 'bg-red-900/30 text-red-400 border-red-500/30',
+            'MPMM': 'bg-red-900/30 text-red-400 border-red-500/30',
+            'SCAG': 'bg-blue-900/30 text-blue-400 border-blue-500/30',
+            'DMG': 'bg-slate-700/50 text-slate-300 border-slate-500/30',
+            'FToD': 'bg-indigo-900/30 text-indigo-400 border-indigo-500/30',
+            'VRGtR': 'bg-rose-900/30 text-rose-400 border-rose-500/30',
+            'EGtW': 'bg-teal-900/30 text-teal-400 border-teal-500/30',
+            'TP': 'bg-emerald-900/30 text-emerald-400 border-emerald-500/30',
+            'BAM': 'bg-violet-900/30 text-violet-400 border-violet-500/30', 
+            'GoS': 'bg-cyan-900/30 text-cyan-400 border-cyan-500/30', 
+            'WBtW': 'bg-fuchsia-900/30 text-fuchsia-400 border-fuchsia-500/30', 
+            'ToA': 'bg-lime-900/30 text-lime-400 border-lime-500/30', 
+            'DSotDQ': 'bg-sky-900/30 text-sky-400 border-sky-500/30', 
+            'MOT': 'bg-orange-900/30 text-orange-400 border-orange-500/30', 
+            'BitG': 'bg-gray-900/30 text-gray-400 border-gray-500/30', 
+            'BGG': 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30', 
+            'CoS': 'bg-zinc-900/30 text-zinc-400 border-zinc-500/30', 
+            'SCC': 'bg-amber-900/30 text-amber-400 border-amber-500/30', 
+            'GGR': 'bg-cyan-900/30 text-cyan-400 border-cyan-500/30', 
+            'AI': 'bg-emerald-900/30 text-emerald-400 border-emerald-500/30', 
+            'LR': 'bg-blue-900/30 text-blue-400 border-blue-500/30', 
+            'OGA': 'bg-green-900/30 text-green-400 border-green-500/30', 
+            'default': 'bg-slate-800 text-slate-400 border-slate-700'
+        };
+
+        const getSourceTag = (sourceString) => {
+            if (!sourceString) return null;
+            const sources = sourceString.split('/');
+            
+            return (
+                <div className="flex gap-1 flex-wrap">
+                    {sources.map((src, i) => {
+                        const s = src.trim();
+                        const style = SOURCE_STYLES[s] || SOURCE_STYLES['default'];
+                        return (
+                            <span key={i} className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${style} ml-1 whitespace-nowrap`}>
+                                {s}
+                            </span>
+                        );
+                    })}
+                </div>
+            );
+        };
+
+        // --- MAIN COMPONENT: COMPENDIUM VIEWER ---
+        function CompendiumViewer() {
+          const [searchTerm, setSearchTerm] = useState('');
+          const [selected, setSelected] = useState(null); 
+          const [expanded, setExpanded] = useState({});
+          const [subSelection, setSubSelection] = useState(null);
+
+          useEffect(() => {
+              setSubSelection(null);
+          }, [selected]);
+
+          // DEFINING CATEGORIES ORDER
+          const categories = [
+              'classes', 
+              'subclasses', 
+              'races', 
+              'backgrounds',
+              'feats', 
+              'fightingstyles', 
+              'invocations', 
+              'metamagic',   
+              'maneuvers',   
+              'infusions',   
+              'spells', 
+              'weapons', 
+              'armor', 
+              'gear',        
+              'magicitems', 
+              'boons', 
+              'deities',     
+              'conditions'
+          ];
+
+          const categoryIcons = {
+              classes: User,
+              subclasses: Gem,
+              races: Dices,
+              feats: Brain,
+              fightingstyles: Sword,
+              backgrounds: Scroll,
+              spells: Zap,
+              weapons: Crosshair,
+              armor: Shield,
+              conditions: Skull,
+              magicitems: Wand2,
+              boons: Crown,
+              invocations: Ghost,    
+              metamagic: Sparkles,   
+              maneuvers: Target,     
+              infusions: Hammer,     
+              gear: Package,         
+              deities: Sun           
+          };
+
+          return (
+             <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+                 <header className="text-center mb-6 sm:mb-8 pt-4">
+                    <h1 className="text-3xl sm:text-4xl font-extrabold text-indigo-400 tracking-tight">Expanded Player Compendium</h1>
+                    <p className="text-slate-500 mt-2 text-base sm:text-lg">Hardcoded Reference for Supplemental D&D 5e Options</p>
+                 </header>
+
+                 <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl flex flex-col md:flex-row h-[80vh] md:h-[75vh]">
+                    {/* Left Sidebar: Categories and Search */}
+                    <div className={`w-full md:w-80 bg-slate-950 border-r border-slate-800 flex flex-col flex-shrink-0 ${selected ? 'hidden md:flex' : 'flex h-full'}`}>
+                       <div className="p-4 border-b border-slate-800 sticky top-0 bg-slate-950 z-10">
+                          <div className="relative">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                              <input 
+                                  type="text" 
+                                  placeholder="Search..." 
+                                  value={searchTerm} 
+                                  onChange={(e) => setSearchTerm(e.target.value)} 
+                                  className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-3 py-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors" 
+                              />
+                          </div>
+                       </div>
+                       <div className="flex-1 overflow-y-auto custom-scrollbar">
+                          {categories.map(cat => {
+                             const Icon = categoryIcons[cat] || Layers;
+                             const categoryData = COMPENDIUM[cat] || [];
+                             const filteredItems = categoryData.filter(i => 
+                                 i.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                 (i.feature && i.feature.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                                 (i.benefit && i.benefit.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                                 (i.description && i.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                                 (i.damage && i.damage.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                                 (i.properties && i.properties.toLowerCase().includes(searchTerm.toLowerCase()))
+                             );
+                             
+                             if (searchTerm && filteredItems.length === 0) return null;
+
+                             return (
+                                <div key={cat} className="border-b border-slate-900">
+                                   <button 
+                                      onClick={() => setExpanded(p => ({...p, [cat]: !p[cat]}))} 
+                                      className="w-full flex items-center justify-between p-3 text-xs font-bold uppercase tracking-wider text-slate-400 hover:bg-slate-900 transition-colors active:bg-slate-800"
+                                   >
+                                      <span className="flex items-center gap-2">
+                                        <Icon size={16} className="text-indigo-400"/>
+                                        {cat.charAt(0).toUpperCase() + cat.slice(1).replace('s', 's')} ({filteredItems.length})
+                                      </span>
+                                      {expanded[cat] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                   </button>
+                                   {expanded[cat] && (
+                                      <div className="bg-slate-900/50 pb-2">
+                                         {filteredItems.map((item, idx) => (
+                                            <button 
+                                                key={idx} 
+                                                onClick={() => setSelected({ category: cat, item })} 
+                                                className={`w-full text-left px-4 py-3 md:py-2 text-sm border-l-2 transition-all active:bg-slate-800/80 flex justify-between items-center ${selected?.item === item ? 'border-indigo-500 bg-slate-800 text-white font-medium' : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}`}
+                                            >
+                                                <span>{item.name}</span>
+                                                {/* Add Source Badge to Sidebar */}
+                                                {item.source && getSourceTag(item.source)}
+                                            </button>
+                                         ))}
+                                      </div>
+                                   )}
+                                </div>
+                             );
+                          })}
+                       </div>
+                    </div>
+
+                    {/* Right Content Pane: Details */}
+                    <div className={`flex-1 bg-slate-900 overflow-y-auto p-4 md:p-8 relative ${!selected ? 'hidden md:block' : 'block h-full'}`}>
+                       {!selected ? (
+                          <div className="flex flex-col items-center justify-center h-full text-slate-500 opacity-50 px-6 text-center">
+                            <Book size={64} className="mb-4 stroke-1" />
+                            <p className="text-lg">Select an entry from the compendium on the left to view detailed information.</p>
+                          </div>
+                       ) : (
+                          <div className="max-w-3xl mx-auto animate-fadeIn pb-20">
+                             <button 
+                                onClick={() => setSelected(null)} 
+                                className="md:hidden flex items-center gap-2 text-slate-400 hover:text-white mb-6 text-sm font-bold bg-slate-800/50 px-3 py-2 rounded-lg w-fit"
+                             >
+                                <ArrowLeft size={16} /> Back to Categories
+                             </button>
+                             <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-6 border-b border-slate-800 pb-4 gap-2">
+                                <div>
+                                    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 leading-tight">{selected.item.name}</h2>
+                                    <span className="inline-block bg-indigo-900/50 text-indigo-300 text-xs font-bold px-2 py-1 rounded border border-indigo-500/30 uppercase tracking-wide">
+                                        {selected.category.slice(0, 1).toUpperCase() + selected.category.slice(1).replace('s', 's')}
+                                    </span>
+                                </div>
+                             </div>
+                             
+                             {/* MAIN INFO CONTAINER with Updated Styling */}
+                             <div className="animate-fadeIn bg-indigo-950/10 border border-indigo-500/20 rounded-xl p-4 sm:p-6 space-y-6 shadow-xl shadow-indigo-900/5">
+                                
+                                {/* BASE TRAITS SECTION */}
+                                {Object.entries(selected.item).map(([k, v]) => {
+                                   if(k === 'name' || k === 'category' || k === 'subraces' || k === 'options' || !v) return null;
+                                   
+                                   const displayKey = k.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                                   let displayValue;
+
+                                   if (Array.isArray(v)) {
+                                       displayValue = v.join(', ');
+                                   } else if (typeof v === 'object' && v !== null) {
+                                       displayValue = JSON.stringify(v, null, 2).replace(/^{|}$/g, '').replace(/"/g, '').replace(/,/g, '\n').replace(/:/g, ': ').trim();
+                                   } else {
+                                       displayValue = v;
+                                   }
+
+                                   return (
+                                      <div key={k} className="group">
+                                         <span className="text-indigo-400 font-bold uppercase text-xs block mb-1 tracking-wider opacity-80 group-hover:opacity-100 transition-opacity">{displayKey}</span>
+                                         {k === 'source' ? (
+                                             <div className="flex">{getSourceTag(v)}</div>
+                                         ) : (
+                                             <div className="text-slate-300 text-sm sm:text-base leading-relaxed whitespace-pre-wrap pl-1 border-l-2 border-indigo-500/20">
+                                                {displayValue}
+                                             </div>
+                                         )}
+                                      </div>
+                                   )
+                                })}
+
+                                {/* SUBRACE / OPTION DROPDOWN LOGIC */}
+                                {(selected.item.subraces || selected.item.options) && (
+                                    <div className="mt-8 pt-6 border-t border-indigo-500/20">
+                                        <label className="text-indigo-300 font-bold uppercase text-sm block mb-3">
+                                            {selected.item.options ? selected.item.options.label : "Select Subrace / Variant"}
+                                        </label>
+                                        <select 
+                                            className="w-full bg-slate-900 border border-indigo-500/30 text-slate-200 rounded-lg p-3 mb-4 focus:outline-none focus:border-indigo-500 transition-colors"
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (!val) {
+                                                    setSubSelection(null);
+                                                    return;
+                                                }
+                                                const list = selected.item.subraces || selected.item.options.choices;
+                                                setSubSelection(list.find(s => s.name === val));
+                                            }}
+                                            value={subSelection ? subSelection.name : ""}
+                                        >
+                                            <option value="">-- Select an option --</option>
+                                            {(selected.item.subraces || selected.item.options.choices).map((sub, idx) => (
+                                                <option key={idx} value={sub.name}>{sub.name}</option>
+                                            ))}
+                                        </select>
+
+                                        {/* DISPLAY SELECTED SUBRACE DETAILS */}
+                                        {subSelection && (
+                                            <div className="animate-fadeIn space-y-4 bg-slate-900/50 p-4 rounded-xl border border-indigo-500/30">
+                                                <div className="flex justify-between items-center border-b border-indigo-500/30 pb-2 mb-2">
+                                                    <h3 className="text-xl font-bold text-white">{subSelection.name}</h3>
+                                                    {subSelection.source && getSourceTag(subSelection.source)}
+                                                </div>
+                                                {Object.entries(subSelection).map(([k, v]) => {
+                                                    if(k === 'name' || k === 'source') return null;
+                                                    const displayKey = k.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                                                    return (
+                                                        <div key={k}>
+                                                            <span className="text-indigo-400 font-bold uppercase text-xs block mb-1">{displayKey}</span>
+                                                            <div className="text-slate-300 text-sm">{v}</div>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                             </div>
+
+                          </div>
+                       )}
+                    </div>
+                 </div>
+             </div>
+          );
+        }
+
+        function Crosshair(props) {
+            return (
+                <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+            )
+        }
+
+        function App() {
+          // This top-level App is minimal, just rendering the viewer
+          return (
+            <div className="bg-slate-950 text-slate-200 font-sans selection:bg-indigo-500/30">
+                <CompendiumViewer />
+            </div>
+          );
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
