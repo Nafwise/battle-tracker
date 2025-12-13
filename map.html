@@ -7,7 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { margin: 0; overflow: hidden; background-color: #020617; font-family: ui-sans-serif, system-ui, sans-serif; user-select: none; touch-action: none; -webkit-touch-callout: none; overscroll-behavior: none; }
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        /* UPDATED: Increased z-index to 50 so UI buttons sit ABOVE touch zones */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
         .interactive { pointer-events: auto; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
@@ -60,6 +61,27 @@
             .header-controls button { padding: 6px 10px; font-size: 10px; }
             #move-badge { bottom: 140px; }
         }
+        
+        /* ADDED: Landscape Mobile Optimization */
+        @media (max-height: 500px) and (orientation: landscape) {
+            #mobile-build-actions {
+                bottom: 10px !important;
+                right: 20px !important;
+                display: grid !important;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px !important;
+            }
+            .build-btn { width: 45px !important; height: 45px !important; }
+            #mobile-vertical-controls {
+                bottom: 10px !important;
+                left: 20px !important;
+            }
+            .vert-btn { width: 40px !important; height: 40px !important; }
+            #hotbar-wrapper { bottom: 0 !important; transform: scale(0.8); transform-origin: bottom center; }
+            #next-turn-btn { bottom: 80px !important; }
+            #move-badge { bottom: 80px !important; }
+        }
+
         #mobile-controls { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; }
         .touch-zone-left { position: absolute; top: 60px; bottom: 0; left: 0; width: 50%; pointer-events: auto; touch-action: none; }
         .touch-zone-right { position: absolute; top: 60px; bottom: 0; right: 0; width: 50%; pointer-events: auto; touch-action: none; }
@@ -292,6 +314,64 @@
                 for(let i=0; i<40; i++) { ctx.fillRect(Math.random()*w, Math.random()*h, 4, 1); }
                 const tex = new THREE.CanvasTexture(canvas); tex.magFilter = THREE.NearestFilter;
                 return tex;
+            },
+            effect(type, color) {
+                const w = 64, h = 64;
+                const canvas = this.createCanvas(w, h);
+                const ctx = canvas.getContext('2d');
+                
+                // Helper for converting hex integer to string
+                const hex = '#' + color.toString(16).padStart(6, '0');
+                
+                if (type === 'mushroom') {
+                    // Classic Toadstool
+                    ctx.fillStyle = '#eee'; // Stem
+                    ctx.fillRect(w/2 - 6, h/2, 12, h/2);
+                    ctx.fillStyle = hex; // Cap
+                    ctx.beginPath();
+                    ctx.arc(w/2, h/2, 20, Math.PI, 0);
+                    ctx.fill();
+                    // Spots
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath(); ctx.arc(w/2 - 10, h/2 - 10, 4, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(w/2 + 8, h/2 - 5, 3, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(w/2, h/2 - 15, 3, 0, Math.PI*2); ctx.fill();
+                } else if (type === 'mushroomFlat') {
+                    // Wide Flat Mushroom
+                    ctx.fillStyle = '#dcb'; // Stem
+                    ctx.fillRect(w/2 - 5, h/2 + 5, 10, h/2 - 5);
+                    ctx.fillStyle = hex; // Cap
+                    ctx.beginPath();
+                    ctx.ellipse(w/2, h/2 + 5, 25, 8, 0, Math.PI, 0);
+                    ctx.fill();
+                } else if (type === 'mushroomTall') {
+                    // Tall Thin Glowshroom
+                    ctx.fillStyle = '#eee'; // Stem
+                    ctx.fillRect(w/2 - 3, h/3, 6, h - h/3);
+                    ctx.fillStyle = hex; // Cap
+                    ctx.beginPath();
+                    ctx.moveTo(w/2 - 10, h/3 + 5);
+                    ctx.quadraticCurveTo(w/2, h/3 - 15, w/2 + 10, h/3 + 5);
+                    ctx.lineTo(w/2, h/3 + 2); // dimple underneath
+                    ctx.fill();
+                    // Glow particles
+                    ctx.fillStyle = hex;
+                    for(let i=0; i<5; i++) ctx.fillRect(w/2 + (Math.random()-0.5)*30, h/2 + (Math.random()-0.5)*30, 2, 2);
+                } else if (type === 'grass') {
+                    // Initial draw for icon
+                    ctx.strokeStyle = hex; ctx.lineWidth = 4;
+                    for(let i=0; i<12; i++) {
+                        ctx.beginPath(); ctx.moveTo(i*5 + 2, h);
+                        ctx.quadraticCurveTo(i*5 + 2 + (Math.random()-0.5)*10, h/2, i*5 + 2 + (Math.random()-0.5)*20, 5);
+                        ctx.stroke();
+                    }
+                } else if (type === 'fire' || type === 'bubbles' || type === 'swirls') {
+                    // Simple icon draw
+                    ctx.fillStyle = hex; ctx.fillRect(16, 16, 32, 32);
+                }
+
+                const tex = new THREE.CanvasTexture(canvas); tex.magFilter = THREE.NearestFilter;
+                return tex;
             }
         };
 
@@ -312,30 +392,132 @@
             { id: 12, name: "Wood Stairs", color: 0x8B4513, type: 'stair_wood', color2: 0x5c3c28 },
             { id: 13, name: "Dungeon Stairs", color: 0x475569, type: 'stair_brick', color2: 0x1e293b },
             { id: 14, name: "Red Brick Stairs", color: 0x8f3636, type: 'stair_brick', color2: 0x5c3c28 },
+            { id: 15, name: "Obsidian", color: 0x181018, type: 'solid' },
+            { id: 16, name: "Obsidian Bricks", color: 0x2d2038, type: 'textured_brick', color2: 0x0f0a14 },
+            { id: 17, name: "Obsidian Stairs", color: 0x2d2038, type: 'stair_brick', color2: 0x0f0a14 },
+            { id: 18, name: "Forcefield", color: 0xa855f7, type: 'liquid', opacity: 0.4 },
+            { id: 19, name: "Tall Grass", color: 0x4b6e32, type: 'topper_grass' },
+            { id: 20, name: "Fire", color: 0xff4500, type: 'topper_fire' },
+            { id: 21, name: "Bubbles", color: 0x84cc16, type: 'topper_bubbles' },
+            { id: 22, name: "Swirls", color: 0xd8b4fe, type: 'topper_swirls' },
+            { id: 23, name: "Toadstool", color: 0xef4444, type: 'topper_mushroom' },
+            { id: 24, name: "Brown Shroom", color: 0x8B4513, type: 'topper_mushroomFlat' },
+            { id: 25, name: "Glow Shroom", color: 0x22d3ee, type: 'topper_mushroomTall' },
         ];
         
         // --- CATEGORIES ---
         const CATEGORIES = [
-            { key: '1', label: 'Solid', type: 'block', items: [0, 1, 2, 4, 5] },
-            { key: '2', label: 'Textured', type: 'block', items: [3, 6, 7, 12, 13, 14] }, 
-            { key: '3', label: 'Liquids', type: 'block', items: [8, 9, 10, 11] },
+            { key: '1', label: 'Solid', type: 'block', items: [0, 1, 2, 4, 5, 15] },
+            { key: '2', label: 'Textured', type: 'block', items: [3, 6, 7, 12, 13, 14, 16, 17] }, 
+            { key: '3', label: 'Liquids', type: 'block', items: [8, 9, 10, 11, 18] },
             { key: '4', label: 'Players', type: 'token', subType: 'player', items: [] }, 
             { key: '5', label: 'Enemies', type: 'token', subType: 'monster', items: [] },
             { key: '6', label: 'Loot', type: 'loot', items: [] }, 
-            { key: '7', label: '-', type: 'none', items: [] }, 
+            { key: '7', label: 'Effects', type: 'block', items: [19, 20, 21, 22, 23, 24, 25] }, 
             { key: '8', label: '-', type: 'none', items: [] }, 
             { key: '9', label: '-', type: 'none', items: [] }, 
             { key: '0', label: '-', type: 'none', items: [] }
         ];
 
+        // --- ANIMATOR ---
+        const TextureAnimator = {
+            items: [],
+            add: (mat, type, color) => {
+                const canvas = mat.map.image;
+                const ctx = canvas.getContext('2d');
+                const data = { particles: [] }; 
+                const w=64, h=64;
+                
+                // Initialize stable random data for smooth animation
+                if(type==='grass') {
+                    for(let i=0; i<12; i++) data.particles.push({x: Math.random()*w, h: 5+Math.random()*15, lean: (Math.random()-0.5)*20});
+                } else if(type==='bubbles') {
+                    for(let i=0; i<10; i++) data.particles.push({x: Math.random()*w, y: Math.random()*h, r: Math.random()*4+2, s: Math.random()+0.5});
+                } else if (type==='swirls') {
+                    for(let i=0; i<5; i++) data.particles.push({x: Math.random()*w, y: Math.random()*h, r: Math.random()*10+5, a: Math.random()*Math.PI*2});
+                } else if (type==='fire') {
+                    for(let i=0; i<10; i++) data.particles.push({x: Math.random()*w, y: Math.random()*h, s: Math.random()*3+1});
+                }
+
+                TextureAnimator.items.push({ mat, type, color, ctx, w, h, data });
+            },
+            update: (time) => {
+                TextureAnimator.items.forEach(item => {
+                    const { mat, type, color, ctx, w, h, data } = item;
+                    const t = time * 0.002; 
+                    ctx.clearRect(0, 0, w, h);
+                    const hex = '#' + color.toString(16).padStart(6, '0');
+                    
+                    if (type === 'grass') {
+                        ctx.strokeStyle = hex; ctx.lineWidth = 4;
+                        ctx.beginPath();
+                        data.particles.forEach((p, i) => {
+                            const sway = Math.sin(t + i) * 10;
+                            ctx.moveTo(p.x, h);
+                            ctx.quadraticCurveTo(p.x + p.lean + sway, h/2, p.x + p.lean*2 + sway*1.5, p.h);
+                        });
+                        ctx.stroke();
+                    } else if (type === 'bubbles') {
+                        ctx.strokeStyle = hex; ctx.lineWidth = 2; ctx.fillStyle='rgba(255,255,255,0.3)';
+                        data.particles.forEach(p => {
+                            let currY = (p.y - t * 20 * p.s) % (h + 10);
+                            if (currY < -10) currY += h + 20;
+                            const wobble = Math.sin(t*3 + p.x) * 3;
+                            ctx.beginPath(); ctx.arc(p.x + wobble, currY, p.r, 0, Math.PI*2); 
+                            ctx.stroke(); ctx.fill();
+                        });
+                    } else if (type === 'swirls') {
+                        ctx.strokeStyle = hex; ctx.lineWidth = 3;
+                        data.particles.forEach(p => {
+                            const rot = t * 2 + p.a;
+                            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, rot, rot + Math.PI*1.5); ctx.stroke();
+                        });
+                    } else if (type === 'fire') {
+                        // Flame Base
+                        const g = ctx.createLinearGradient(0, h, 0, 0);
+                        g.addColorStop(0, '#ff4500'); g.addColorStop(0.5, '#ffd700'); g.addColorStop(1, 'rgba(255,255,0,0)');
+                        ctx.fillStyle = g;
+                        ctx.beginPath();
+                        const flicker = Math.sin(t*10)*2 + Math.cos(t*23)*2;
+                        ctx.moveTo(10, h); ctx.quadraticCurveTo(w/2 + flicker, -10, w-10, h); ctx.fill();
+                        // Sparks
+                        ctx.fillStyle = '#ffff00';
+                        data.particles.forEach(p => {
+                            let currY = (p.y - t * 40 * p.s) % h;
+                            if (currY < 0) currY += h;
+                            ctx.fillRect(p.x, currY, p.s, p.s);
+                        });
+                    }
+                    mat.map.needsUpdate = true;
+                });
+            }
+        };
+
         // --- UPDATED MATERIAL GENERATION ---
         const materials = MATERIALS.map(m => {
             const matConfig = { transparent: !!m.opacity, opacity: m.opacity || 1 };
-            if (m.type === 'liquid') { matConfig.color = m.color; matConfig.depthWrite = false; matConfig.side = THREE.FrontSide; } 
+            if (m.type === 'liquid') { matConfig.color = m.color; matConfig.depthWrite = false; matConfig.side = THREE.DoubleSide; }
             else if (m.type === 'textured_brick' || m.type === 'stair_brick') { matConfig.map = TextureGenerator.brick(m.color, m.color2 || 0x000000); }
             else if (m.type === 'textured_wood' || m.type === 'stair_wood') { matConfig.map = TextureGenerator.wood(m.color, m.color2 || 0x000000); }
+            else if (m.type.startsWith('topper_')) { 
+                matConfig.map = TextureGenerator.effect(m.type.split('_')[1], m.color); 
+                matConfig.transparent = true; 
+                matConfig.side = THREE.DoubleSide; 
+                matConfig.depthWrite = false; 
+            }
             else { matConfig.color = m.color; }
-            return new THREE.MeshLambertMaterial(matConfig);
+            
+            const newMat = new THREE.MeshLambertMaterial(matConfig);
+            
+            // Register for animation if applicable
+            if(m.type.startsWith('topper_')) {
+                const subType = m.type.split('_')[1];
+                if(['grass', 'fire', 'bubbles', 'swirls'].includes(subType)) {
+                    TextureAnimator.add(newMat, subType, m.color);
+                }
+            }
+            
+            return newMat;
         });
         
         const DIRS = [ {x:1,y:0,z:0}, {x:-1,y:0,z:0}, {x:0,y:1,z:0}, {x:0,y:-1,z:0}, {x:0,y:0,z:1}, {x:0,y:0,z:-1} ];
@@ -407,8 +589,35 @@
                     return g;
                 };
 
-                // Standard Full Block
-                GeometryManager.cache.set(0, createBox(1,1,1, 0,0,0));
+                // --- OCCLUSION MASK GENERATION (0-63) ---
+                // This generates geometries for solid/liquid blocks with specific faces removed based on neighbors.
+                // Reinstating this restores the "seamless" look for liquids.
+                const createFace = (idx) => {
+                    const g = new THREE.PlaneGeometry(1, 1);
+                    const matrix = new THREE.Matrix4();
+                    switch(idx) {
+                        case 0: matrix.makeRotationY(Math.PI/2); matrix.setPosition(0.5, 0, 0); break; // +x Right
+                        case 1: matrix.makeRotationY(-Math.PI/2); matrix.setPosition(-0.5, 0, 0); break; // -x Left
+                        case 2: matrix.makeRotationX(-Math.PI/2); matrix.setPosition(0, 0.5, 0); break; // +y Top
+                        case 3: matrix.makeRotationX(Math.PI/2); matrix.setPosition(0, -0.5, 0); break; // -y Bottom
+                        case 4: matrix.setPosition(0, 0, 0.5); break; // +z Front
+                        case 5: matrix.makeRotationY(Math.PI); matrix.setPosition(0, 0, -0.5); break; // -z Back
+                    }
+                    g.applyMatrix4(matrix);
+                    return g;
+                };
+                const faces = [0,1,2,3,4,5].map(i => createFace(i));
+
+                // Generate all 64 permutations
+                for(let m=0; m<64; m++) {
+                    const geoms = [];
+                    for(let i=0; i<6; i++) {
+                        // If bit i is NOT set, it means no neighbor there, so we DRAW the face.
+                        if (!(m & (1 << i))) geoms.push(faces[i].clone());
+                    }
+                    if(geoms.length > 0) GeometryManager.cache.set(m, BufferGeometryUtils.mergeGeometries(geoms));
+                    else GeometryManager.cache.set(m, new THREE.BufferGeometry()); // Fully internal block
+                }
 
                 // --- STAIR GEOMETRIES ---
                 // Re-create using Scaled UVs
@@ -435,6 +644,11 @@
 
                 // 5. Inner Right (Room Corner)
                 GeometryManager.cache.set('stair_inner_right', BufferGeometryUtils.mergeGeometries([slab.clone(), topBack.clone(), qFR.clone()]));
+
+                // --- CROSS GEOMETRY (For Grass, Fire, etc.) ---
+                const p1 = new THREE.PlaneGeometry(1, 1); p1.rotateY(Math.PI / 4);
+                const p2 = new THREE.PlaneGeometry(1, 1); p2.rotateY(-Math.PI / 4);
+                GeometryManager.cache.set('cross', BufferGeometryUtils.mergeGeometries([p1, p2]));
             },
             get: (m) => {
                 if (typeof m === 'string') return GeometryManager.cache.get(m) || GeometryManager.cache.get('stair');
@@ -502,7 +716,12 @@
                 const ind = document.getElementById('save-indicator'); ind.classList.add('visible'); setTimeout(() => ind.classList.remove('visible'), 1000);
             },
             createMap: (name) => { const id = Date.now().toString(36); const idx = MapStorageManager.getKeys(); idx[id] = name; MapStorageManager.saveIndex(idx); return id; },
-            deleteMap: (id) => { if (id === 'default') { alert("Cannot delete default map."); return; } if (!confirm("Delete this map forever?")) return; const idx = MapStorageManager.getKeys(); delete idx[id]; MapStorageManager.saveIndex(idx); localStorage.removeItem(`akashic_map_${id}_voxels`); localStorage.removeItem(`akashic_map_${id}_positions`); if (state.currentMapId === id) MapStorageManager.loadMap('default'); UIManager.renderSlots(); },
+            deleteMap: (id) => { 
+                if (id === 'default') { console.warn("Cannot delete default map."); return; } 
+                // Bypass confirm for preview stability
+                // if (!confirm("Delete this map forever?")) return; 
+                const idx = MapStorageManager.getKeys(); delete idx[id]; MapStorageManager.saveIndex(idx); localStorage.removeItem(`akashic_map_${id}_voxels`); localStorage.removeItem(`akashic_map_${id}_positions`); if (state.currentMapId === id) MapStorageManager.loadMap('default'); UIManager.renderSlots(); 
+            },
             triggerAutoSave: () => { if (state.autoSaveTimer) clearTimeout(state.autoSaveTimer); state.autoSaveTimer = setTimeout(MapStorageManager.saveMap, 2000); }
         };
 
@@ -583,6 +802,8 @@
                 
                 if (matDef.type.startsWith('stair')) {
                     geometry = GeometryManager.get('stair'); // Initial geometry, updated later
+                } else if (matDef.type.startsWith('topper_')) {
+                    geometry = GeometryManager.get('cross');
                 }
 
                 const m = new THREE.Mesh(geometry, materials[mat]); 
@@ -622,12 +843,39 @@
                     if(m.geometry !== newGeo) m.geometry = newGeo;
                     return;
                 }
+
+                // TOPPER LOGIC (Always cross geometry, no occlusion)
+                if (matDef.type.startsWith('topper_')) {
+                    if (m.geometry !== GeometryManager.get('cross')) m.geometry = GeometryManager.get('cross');
+                    return;
+                }
                 
-                // STANDARD OCCLUSION
+                // STANDARD OCCLUSION LOGIC (Updated for reliability)
+                // 1. Identify types
+                const isSolid = (idx) => {
+                    const t = MATERIALS[idx].type;
+                    return t === 'solid' || t === 'textured_brick' || t === 'textured_wood';
+                };
+                const isLiquid = (idx) => MATERIALS[idx].type === 'liquid';
+
                 let mask = 0; 
                 DIRS.forEach((d,i) => { 
                     const n = state.mapData.get(`${x+d.x},${y+d.y},${z+d.z}`); 
-                    if(n && n.userData.matIndex === m.userData.matIndex && !MATERIALS[n.userData.matIndex].type.startsWith('stair')) mask |= (1<<i); 
+                    
+                    if (n) {
+                        // If I am a Solid Block
+                        if (isSolid(m.userData.matIndex)) {
+                            // Only hide my face if neighbor is ALSO a Solid Block (Full Cube)
+                            // This ensures that if neighbor is a Stair (partial), Liquid, or Topper (transparent), my face is drawn.
+                            if (isSolid(n.userData.matIndex)) mask |= (1<<i);
+                        }
+                        // If I am a Liquid Block
+                        else if (isLiquid(m.userData.matIndex)) {
+                            // Hide face if neighbor is SAME Liquid (merge pools)
+                            // OR if neighbor is Solid (don't show water side "inside" dirt)
+                            if (n.userData.matIndex === m.userData.matIndex || isSolid(n.userData.matIndex)) mask |= (1<<i);
+                        }
+                    }
                 }); 
                 m.geometry = GeometryManager.get(mask); 
             },
@@ -1066,7 +1314,7 @@
                 const s = state.dragStart.pos, e = getVoxelPos(res.hit.point, res.hit.face.normal, state.dragStart.mode);
                 const minX=Math.min(s.x,e.x), maxX=Math.max(s.x,e.x), minY=Math.min(s.y,e.y), maxY=Math.max(s.y,e.y), minZ=Math.min(s.z,e.z), maxZ=Math.max(s.z,e.z);
                 const mat = CATEGORIES[state.activeCategoryIdx].items[state.subSelections[state.activeCategoryIdx]];
-                if((maxX-minX)*(maxY-minY)*(maxZ-minZ) > 5000) { alert("Too big"); state.dragStart=null; rollover.scale.set(1,1,1); return; }
+                if((maxX-minX)*(maxY-minY)*(maxZ-minZ) > 5000) { console.warn("Too big"); state.dragStart=null; rollover.scale.set(1,1,1); return; }
                 
                 const rot = state.placementRotation;
                 let chg=0;
@@ -1138,14 +1386,24 @@
             UIManager.renderHotbar();
         }
         document.getElementById('btn-sync').onclick = EntityManager.sync; 
-        document.getElementById('btn-clear').onclick = () => { if(confirm("Nuke this map?")) { WorldManager.clear(); MapStorageManager.saveMap(); } };
+        document.getElementById('btn-clear').onclick = () => { 
+            // Bypass confirm for preview stability
+            // if(confirm("Nuke this map?")) { 
+            if(true) {
+                WorldManager.clear(); MapStorageManager.saveMap(); 
+            } 
+        };
         document.getElementById('btn-export').onclick = () => { const data = { voxels: JSON.parse(localStorage.getItem(`akashic_map_${state.currentMapId}_voxels`)), positions: JSON.parse(localStorage.getItem(`akashic_map_${state.currentMapId}_positions`)) }; const b=new Blob([JSON.stringify(data)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`map_${state.currentMapId}.json`; a.click(); };
         document.getElementById('btn-import').onclick = () => document.getElementById('file-input').click();
-        document.getElementById('file-input').onchange = (e) => { const r=new FileReader(); r.onload=ev=>{ try { const d = JSON.parse(ev.target.result); localStorage.setItem(`akashic_map_${state.currentMapId}_voxels`, JSON.stringify(d.voxels)); localStorage.setItem(`akashic_map_${state.currentMapId}_positions`, JSON.stringify(d.positions)); MapStorageManager.loadMap(state.currentMapId); } catch(e) { alert("Invalid Map File"); } }; r.readAsText(e.target.files[0]); };
+        document.getElementById('file-input').onchange = (e) => { const r=new FileReader(); r.onload=ev=>{ try { const d = JSON.parse(ev.target.result); localStorage.setItem(`akashic_map_${state.currentMapId}_voxels`, JSON.stringify(d.voxels)); localStorage.setItem(`akashic_map_${state.currentMapId}_positions`, JSON.stringify(d.positions)); MapStorageManager.loadMap(state.currentMapId); } catch(e) { console.error("Invalid Map File"); } }; r.readAsText(e.target.files[0]); };
 
         function animate() {
             requestAnimationFrame(animate);
             const dt = (performance.now()-prevTime)/1000; prevTime=performance.now();
+            
+            // Update animations
+            TextureAnimator.update(performance.now());
+
             const physicsEnabled = (controls.isLocked || state.isTouch) && state.gameMode !== 'players' && state.gameMode !== 'enemies';
 
             if(physicsEnabled) {
