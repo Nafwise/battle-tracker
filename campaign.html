@@ -20,6 +20,7 @@
             --accent-cyan: #06b6d4;   /* Cyan (Map) */
             --accent-red: #ef4444;    /* Red (Combat) */
             --accent-indigo: #6366f1; /* Indigo (UI) */
+            --accent-purple: #a855f7; /* Purple (Magic/Psionic) */
             
             --border: #334155;        /* Slate 700 */
         }
@@ -30,7 +31,6 @@
             color: var(--text-main);
             padding: 0;
             margin: 0;
-            /* Subtle gradient background like the other apps */
             background-image: radial-gradient(circle at top right, #1e293b 0%, #020617 60%);
             background-attachment: fixed;
         }
@@ -53,7 +53,7 @@
         .page {
             max-width: 900px;
             margin: 40px auto 60px auto; 
-            background-color: rgba(30, 41, 59, 0.6); /* Translucent Slate 800 */
+            background-color: rgba(30, 41, 59, 0.6);
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 50px;
@@ -91,9 +91,9 @@
         ul, ol { line-height: 1.6; color: #cbd5e1; }
         strong { color: white; }
 
-        /* FLAVOR & MECHANICS BOXES - UPDATED PALETTE */
+        /* FLAVOR & MECHANICS BOXES */
         .feature-box, .mechanic-box {
-            background-color: rgba(15, 23, 42, 0.8); /* Darker slate */
+            background-color: rgba(15, 23, 42, 0.8);
             border: 1px solid var(--accent-gold);
             padding: 20px;
             margin: 20px 0;
@@ -104,7 +104,7 @@
         }
         
         .read-aloud {
-            background-color: rgba(6, 182, 212, 0.1); /* Cyan tint */
+            background-color: rgba(6, 182, 212, 0.1);
             border-left: 4px solid var(--accent-cyan);
             padding: 20px;
             font-style: italic;
@@ -114,7 +114,7 @@
         }
 
         .dialogue-box {
-            background-color: rgba(168, 85, 247, 0.1); /* Purple tint */
+            background-color: rgba(168, 85, 247, 0.1);
             border-left: 4px solid var(--accent-indigo);
             padding: 15px;
             margin: 15px 0;
@@ -123,7 +123,7 @@
         }
 
         .glitch-box, .glitch-text {
-            background-color: rgba(239, 68, 68, 0.1); /* Red tint */
+            background-color: rgba(239, 68, 68, 0.1);
             border-left: 4px solid var(--accent-red);
             padding: 15px;
             margin: 15px 0;
@@ -156,7 +156,7 @@
         tr:last-child td { border-bottom: none; }
         tr:nth-child(even) { background-color: rgba(255,255,255,0.02); }
 
-        /* VIEW BUTTON STYLE (Replacing Download Button) */
+        /* VIEW BUTTON STYLE */
         .view-link {
             display: inline-flex;
             align-items: center;
@@ -201,6 +201,65 @@
             transition: color 0.2s;
         }
         .toc-link:hover { color: var(--accent-cyan); border-bottom-color: var(--accent-cyan); }
+
+        /* --- NEW STYLES FOR BESTIARY & TREASURY --- */
+        
+        /* Stat Block (Dark Mode) */
+        .stat-block {
+            background-color: rgba(15, 23, 42, 0.95); /* Slate 900 */
+            border: 1px solid var(--border);
+            border-top: 4px solid var(--accent-red);
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            font-family: 'Noto Sans', sans-serif;
+            color: #cbd5e1;
+        }
+        .stat-block .creature-name { font-family: 'Cinzel', serif; font-size: 1.5em; color: var(--accent-red); font-weight: bold; line-height: 1.2; border-bottom: none; }
+        .stat-block .creature-type { font-style: italic; color: #94a3b8; font-size: 0.9em; margin-bottom: 10px; }
+        .stat-block .taper-line { height: 1px; background: linear-gradient(to right, var(--accent-red), transparent); margin: 8px 0; opacity: 0.8; }
+        .stat-block .stat-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(239, 68, 68, 0.2); padding: 4px 0; }
+        .stat-block .stat-line { color: var(--accent-red); font-weight: bold; }
+        .stat-block .stat-value { color: #e2e8f0; font-weight: normal; }
+        .stat-block .section-header { font-family: 'Cinzel', serif; font-size: 1.1em; color: #fca5a5; border-bottom: 1px solid var(--border); margin-top: 15px; margin-bottom: 8px; }
+        .stat-block .trait { margin-bottom: 8px; }
+        .stat-block .trait-name { color: var(--text-main); font-weight: bold; font-style: italic; }
+        .stat-block em { color: #cbd5e1; }
+        .stat-block .abilities { display: flex; justify-content: space-between; text-align: center; color: var(--accent-red); margin: 15px 0; font-size: 0.9em; }
+        .stat-block .abilities span { color: #e2e8f0; font-size: 1.1em; display: block; }
+
+        /* Item Cards (Treasury) */
+        .item-card {
+            background-color: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent-gold);
+            padding: 15px;
+            margin-bottom: 15px;
+            font-size: 0.95em;
+        }
+        .item-name { font-family: 'Cinzel', serif; font-weight: bold; color: var(--accent-gold); font-size: 1.1em; display: block; margin-bottom: 4px;}
+        .item-type { font-style: italic; color: var(--text-muted); font-size: 0.85em; display: block; margin-bottom: 8px; }
+        
+        /* Specialized Item Boxes */
+        .currency-box {
+            background-color: rgba(6, 182, 212, 0.1);
+            border: 1px solid var(--accent-cyan);
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+        }
+        .maw-box {
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--accent-red);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .tattoo-box {
+            background-color: rgba(168, 85, 247, 0.1);
+            border: 1px dashed var(--accent-purple);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
 
         /* Specific Addon Styles */
         .kak-seal {
@@ -256,34 +315,14 @@
                 padding: 20px;
                 border-radius: 8px;
             }
-            
             h1 { font-size: 1.8em; margin-bottom: 20px; }
             h2 { font-size: 1.5em; margin-top: 30px; }
             h3 { font-size: 1.1em; }
-            
             p, li { font-size: 1em; }
-
-            .app-bar {
-                padding: 0.5rem;
-            }
-            
-            /* Responsive Tables */
-            table {
-                display: block;
-                overflow-x: auto;
-                white-space: nowrap;
-                font-size: 0.85em;
-            }
-            
-            .kak-seal {
-                width: 90%;
-            }
-            
-            /* Adjust padding for specific boxes on mobile */
-            .read-aloud, .feature-box, .mechanic-box {
-                padding: 15px;
-                margin: 15px 0;
-            }
+            .app-bar { padding: 0.5rem; }
+            table { display: block; overflow-x: auto; white-space: nowrap; font-size: 0.85em; }
+            .kak-seal { width: 90%; }
+            .read-aloud, .feature-box, .mechanic-box { padding: 15px; margin: 15px 0; }
         }
     </style>
 </head>
@@ -312,7 +351,7 @@
 
     <div class="toc-container">
         <h1 style="border-bottom: none; margin-bottom: 10px;">The Hallowed Demesne</h1>
-        <h3 style="margin-top:0; color: #94a3b8; font-size: 0.9em;">Module Version 1.2</h3>
+        <h3 style="margin-top:0; color: #94a3b8; font-size: 0.9em;">Module Version 1.3</h3>
         <hr style="border-color: #334155; margin: 20px 0;">
         <a class="toc-link" href="#ch1-creation">Chapter 1: Character Creation</a>
         <a class="toc-link" href="#ch1-hooks">Chapter 1: Hooks & Identities</a>
@@ -326,6 +365,8 @@
         <a class="toc-link" href="#ch5-finale">Chapter 5: The Singularity (Finale)</a>
         <a class="toc-link" href="#app-gib">Appendix A: The Legend of Gib</a>
         <a class="toc-link" href="#app-subclasses">Appendix B: The Formless Archetypes</a>
+        <a class="toc-link" href="#app-bestiary">Appendix B-1: Master Bestiary</a>
+        <a class="toc-link" href="#app-treasury">Appendix B-2: The Treasury of Flesh</a>
         <a class="toc-link" href="#app-music">Appendix C: Gib's Musical Tales (Audio)</a>
     </div>
 
@@ -1348,6 +1389,476 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
                 View Details
             </a>
+        </div>
+
+    </div>
+
+    <!-- APPENDIX B-1: BESTIARY -->
+    <div id="app-bestiary" class="page">
+        <h1>Appendix B-1: Master Bestiary</h1>
+        <p>The following entities have been logged within the simulation. Danger levels vary based on adaptation protocols.</p>
+
+        <h2>Chapter I: The Awakening</h2>
+
+        <div class="stat-block">
+            <div class="creature-name">Animus Limb</div>
+            <div class="creature-type">Small construct (ooze), unaligned</div>
+            <div class="taper-line"></div>
+            <div class="stat-row"><span class="stat-line">Armor Class</span> <span class="stat-value">12 (Natural)</span></div>
+            <div class="stat-row"><span class="stat-line">Hit Points</span> <span class="stat-value">15 (6d6 - 6)</span></div>
+            <div class="stat-row"><span class="stat-line">Speed</span> <span class="stat-value">30 ft., Climb 30 ft.</span></div>
+            <div class="taper-line"></div>
+            <div class="abilities">
+                <div>STR<span>12 (+1)</span></div>
+                <div>DEX<span>14 (+2)</span></div>
+                <div>CON<span>8 (-1)</span></div>
+                <div>INT<span>1 (-5)</span></div>
+                <div>WIS<span>10 (+0)</span></div>
+                <div>CHA<span>1 (-5)</span></div>
+            </div>
+            <div class="taper-line"></div>
+            <div class="trait"><span class="trait-name">The Twitch.</span> The limb has Advantage on Initiative rolls.</div>
+            <div class="section-header">Actions</div>
+            <div class="trait"><span class="trait-name">Groping Claw.</span> <em>Melee Weapon Attack:</em> +4 to hit, reach 5 ft., one target. <em>Hit:</em> 5 (1d6 + 2) bludgeoning damage. If the target is Prone, deal an extra 1d6 damage.</div>
+        </div>
+
+        <div class="stat-block">
+            <div class="creature-name">The Tavern Animus (Brain)</div>
+            <div class="creature-type">Large aberration, chaotic neutral</div>
+            <div class="taper-line"></div>
+            <div class="stat-row"><span class="stat-line">Armor Class</span> <span class="stat-value">10</span></div>
+            <div class="stat-row"><span class="stat-line">Hit Points</span> <span class="stat-value">45 (6d10 + 12)</span></div>
+            <div class="stat-row"><span class="stat-line">Speed</span> <span class="stat-value">0 ft.</span></div>
+            <div class="taper-line"></div>
+            <div class="trait"><span class="trait-name">Hearth's Warmth.</span> Creatures ending their turn within 5ft take 3 (1d6) Fire damage.</div>
+            <div class="section-header">Lair Actions</div>
+            <div class="trait"><span class="trait-name">Floor Ripple.</span> On Initiative count 20 (losing ties), creatures on the ground must succeed on a DC 12 Dex save or fall Prone.</div>
+        </div>
+
+        <h2>Chapter II: The Testing Grounds</h2>
+
+        <div class="stat-block">
+            <div class="creature-name">Polymimic (The Flicker)</div>
+            <div class="creature-type">Small ooze (shapechanger), unaligned</div>
+            <div class="taper-line"></div>
+            <div class="stat-row"><span class="stat-line">Armor Class</span> <span class="stat-value">12</span></div>
+            <div class="stat-row"><span class="stat-line">Hit Points</span> <span class="stat-value">22 (5d6 + 5)</span></div>
+            <div class="taper-line"></div>
+            <div class="trait"><span class="trait-name">Unstable Flurry (Bonus Action).</span> The Polymimic glitches. Roll d4: (1-2) +2 AC; (3-4) Gain Fly speed 30ft until end of turn.</div>
+            <div class="section-header">Actions</div>
+            <div class="trait"><span class="trait-name">Pseudopod.</span> <em>Melee Weapon Attack:</em> +4 to hit. <em>Hit:</em> 4 (1d4 + 2) bludgeoning + 2 (1d4) acid damage.</div>
+        </div>
+
+        <div class="stat-block">
+            <div class="creature-name">The Trapper</div>
+            <div class="creature-type">Large ooze (mimic), unaligned</div>
+            <div class="taper-line"></div>
+            <div class="stat-row"><span class="stat-line">Armor Class</span> <span class="stat-value">13</span></div>
+            <div class="stat-row"><span class="stat-line">Hit Points</span> <span class="stat-value">85 (10d10 + 30)</span></div>
+            <div class="taper-line"></div>
+            <div class="trait"><span class="trait-name">False Appearance.</span> While motionless, it is indistinguishable from the floor/wall.</div>
+            <div class="section-header">Actions</div>
+            <div class="trait"><span class="trait-name">Smother.</span> <em>Melee Weapon Attack:</em> +5 to hit, reach 5 ft., one Large or smaller creature. <em>Hit:</em> The creature is Grappled (escape DC 14). Until this grapple ends, the target is Restrained and Blinded.</div>
+            <div class="trait"><span class="trait-name">Crush.</span> 2d8 + 4 bludgeoning damage to a grappled target.</div>
+        </div>
+
+        <div class="stat-block">
+            <div class="creature-name">The Gate Guardian</div>
+            <div class="creature-type">Large aberration, neutral evil</div>
+            <div class="taper-line"></div>
+            <div class="stat-row"><span class="stat-line">Armor Class</span> <span class="stat-value">14 (Natural)</span></div>
+            <div class="stat-row"><span class="stat-line">Hit Points</span> <span class="stat-value">114 (12d10 + 48)</span></div>
+            <div class="taper-line"></div>
+            <div class="trait"><span class="trait-name">The Stench.</span> Creatures starting their turn within 10ft must succeed on a DC 15 Con save or be Poisoned.</div>
+            <div class="section-header">Actions</div>
+            <div class="trait"><span class="trait-name">Multiattack.</span> The Guardian makes one Bite attack and two Tentacle attacks.</div>
+            <div class="trait"><span class="trait-name">Bite.</span> +6 to hit. <em>Hit:</em> 12 (2d8 + 3) piercing + 4 (1d8) poison damage. Target must save vs Disease.</div>
+            <div class="trait"><span class="trait-name">Tentacle.</span> +6 to hit, reach 10 ft. <em>Hit:</em> 7 (1d8 + 3) bludgeoning. Target is Grappled (DC 14).</div>
+        </div>
+        
+        <div class="stat-block">
+            <div class="creature-name">Magma Mimic</div>
+            <div class="creature-type">Large ooze (elemental), chaotic evil</div>
+            <div class="taper-line"></div>
+            <div class="stat-row"><span class="stat-line">Armor Class</span> <span class="stat-value">14 (Natural)</span></div>
+            <div class="stat-row"><span class="stat-line">Hit Points</span> <span class="stat-value">140 (14d10 + 60)</span></div>
+            <div class="taper-line"></div>
+            <div class="trait"><span class="trait-name">Volatile Form.</span> If reduced to 0 HP without the disable check, the Mimic explodes dealing 10d6 Fire damage in a 20ft radius.</div>
+            <div class="section-header">Actions</div>
+            <div class="trait"><span class="trait-name">Obsidian Pseudopod.</span> +7 to hit. <em>Hit:</em> 2d6+4 bludgeoning + 2d6 fire damage.</div>
+        </div>
+
+        <h2>The Core Antagonists</h2>
+
+        <div class="stat-block">
+            <div class="creature-name">The Whisper</div>
+            <div class="creature-type">Medium celestial (construct), lawful neutral</div>
+            <div class="taper-line"></div>
+            <div class="stat-row"><span class="stat-line">Armor Class</span> <span class="stat-value">15</span></div>
+            <div class="stat-row"><span class="stat-line">Hit Points</span> <span class="stat-value">65</span></div>
+            <div class="taper-line"></div>
+            <div class="trait"><span class="trait-name">Nest's Protection.</span> Reaction to grant Resistance to an ally within 30ft.</div>
+            <div class="section-header">Actions</div>
+            <div class="trait"><span class="trait-name">Whisper's Touch.</span> <em>Melee Spell Attack:</em> +5 to hit. <em>Hit:</em> 7 (2d6) psychic damage.</div>
+            <div class="trait"><span class="trait-name">Spellcasting.</span> Can cast <em>Sanctuary</em> at will. 3/Day: <em>Guiding Bolt, Healing Word</em>.</div>
+        </div>
+
+        <div class="stat-block">
+            <div class="creature-name">The Bulwark</div>
+            <div class="creature-type">Large fiend (construct), chaotic evil</div>
+            <div class="taper-line"></div>
+            <div class="stat-row"><span class="stat-line">Armor Class</span> <span class="stat-value">18 (Plate)</span></div>
+            <div class="stat-row"><span class="stat-line">Hit Points</span> <span class="stat-value">112</span></div>
+            <div class="taper-line"></div>
+            <div class="section-header">Actions</div>
+            <div class="trait"><span class="trait-name">Greatsword.</span> <em>Melee Weapon Attack:</em> +7 to hit. <em>Hit:</em> 2d6 + 4 slashing damage.</div>
+        </div>
+
+        <h2>The Creator (Boss Phases)</h2>
+
+        <div class="stat-block">
+            <div class="creature-name">Phase 1: Mort & Pestle</div>
+            <div class="creature-type">Medium humanoid (artificer)</div>
+            <div class="taper-line"></div>
+            <div class="stat-row"><span class="stat-line">Armor Class</span> <span class="stat-value">16</span></div>
+            <div class="stat-row"><span class="stat-line">Hit Points</span> <span class="stat-value">43</span></div>
+            <div class="taper-line"></div>
+            <div class="section-header">Actions</div>
+            <div class="trait"><span class="trait-name">Spine Launcher.</span> <em>Ranged Weapon Attack:</em> +5 to hit, range 80/320 ft. <em>Hit:</em> 1d8 + 3 piercing damage.</div>
+            <div class="trait"><span class="trait-name">Pestle Attack.</span> <em>Melee Weapon Attack:</em> +4 to hit. <em>Hit:</em> 1d6 + 2 bludgeoning damage and the target is Grappled (DC 13).</div>
+        </div>
+
+        <div class="stat-block">
+            <div class="creature-name">Phase 2: Ka'thrak (The Culler)</div>
+            <div class="creature-type">Medium fiend</div>
+            <div class="taper-line"></div>
+            <div class="stat-row"><span class="stat-line">Armor Class</span> <span class="stat-value">17</span></div>
+            <div class="stat-row"><span class="stat-line">Hit Points</span> <span class="stat-value">93</span></div>
+            <div class="taper-line"></div>
+            <div class="section-header">Actions</div>
+            <div class="trait"><span class="trait-name">Obsidian Claws.</span> <em>Melee Weapon Attack:</em> +9 to hit. <em>Hit:</em> 1d8 + 5 slashing damage.</div>
+        </div>
+
+        <div class="stat-block">
+            <div class="creature-name">Phase 3: The Unified Mind</div>
+            <div class="creature-type">Large aberration</div>
+            <div class="taper-line"></div>
+            <div class="stat-row"><span class="stat-line">Armor Class</span> <span class="stat-value">22</span></div>
+            <div class="stat-row"><span class="stat-line">Hit Points</span> <span class="stat-value">343</span></div>
+            <div class="taper-line"></div>
+            <div class="trait"><span class="trait-name">Adaptive Morphology.</span> At start of turn, choose one damage type (Acid, Cold, Fire, Lightning, Thunder). Immune to it until next turn.</div>
+            <div class="section-header">Actions</div>
+            <div class="trait"><span class="trait-name">Apex Engulf.</span> Target must make DC 20 Str save or be Grappled/Restrained and take 4d6 Acid damage at start of turn.</div>
+            <div class="trait"><span class="trait-name">De-Bug Protocol.</span> 60ft sphere. Dispel Magic on all targets. Targets take 1d6 psychic damage per spell level ended.</div>
+        </div>
+
+        <h2>The Gods of the Demesne</h2>
+
+        <div class="stat-block" style="border-left-color: #a855f7;">
+            <div class="creature-name" style="color: #d8b4fe;">Gellith (The Nest)</div>
+            <div class="creature-type">Gargantuan aberration (titan)</div>
+            <div class="taper-line"></div>
+            <div class="stat-row"><span class="stat-line">Armor Class</span> <span class="stat-value">25</span></div>
+            <div class="stat-row"><span class="stat-line">Hit Points</span> <span class="stat-value">1000</span></div>
+            <div class="taper-line"></div>
+            <div class="trait"><span class="trait-name">Living Fortress.</span> Attacks against Gellith are attacks against the castle structure itself.</div>
+            <div class="section-header">Actions</div>
+            <div class="trait"><span class="trait-name">Psychic Integration.</span> 300ft radius. Creatures must succeed on a DC 26 Wis save or be Charmed and Incapacitated (joined the collective).</div>
+            <div class="section-header">Legendary Actions</div>
+            <div class="trait"><span class="trait-name">Mimic Spawn.</span> Gellith creates 1d4 Polymimics in unoccupied spaces within 60ft.</div>
+        </div>
+
+        <div class="stat-block" style="border-left-color: #ef4444;">
+            <div class="creature-name" style="color: #fca5a5;">Xy'lorgmath (The Maw)</div>
+            <div class="creature-type">Gargantuan aberration (titan)</div>
+            <div class="taper-line"></div>
+            <div class="stat-row"><span class="stat-line">Armor Class</span> <span class="stat-value">27</span></div>
+            <div class="stat-row"><span class="stat-line">Hit Points</span> <span class="stat-value">950</span></div>
+            <div class="taper-line"></div>
+            <div class="trait"><span class="trait-name">Cosmic Shell.</span> The Maw's true body is the moon itself.</div>
+            <div class="section-header">Actions</div>
+            <div class="trait"><span class="trait-name">Lunar Grasp.</span> The Maw targets 3 creatures within 300ft. DC 26 Str save or be Grappled and Restrained.</div>
+            <div class="trait"><span class="trait-name">Gravity Crush.</span> 20ft radius sphere. Creatures take 10d10 Force damage and fall Prone.</div>
+        </div>
+
+    </div>
+
+    <!-- APPENDIX B-2: TREASURY -->
+    <div id="app-treasury" class="page">
+        <h1>Appendix B-2: The Treasury of Flesh</h1>
+
+        <h2>I. The Currency</h2>
+        <div class="currency-box">
+            <strong style="color: var(--accent-cyan); font-size: 1.1em;">Unstable Animus Core</strong><br>
+            <em style="color: var(--text-muted);">Harvested from: Animus Limbs, Mimics, and Constructs.</em>
+            <p>A glowing blue gland pulsating with bio-electricity.</p>
+            <ul>
+                <li><strong>Value:</strong> Approx. 50gp in Sanctuary.</li>
+                <li><strong>Effect:</strong> Crush to heal 2d4+2 HP (Constructs/Mimics only).</li>
+                <li><strong>Volatile:</strong> Explodes if exposed to fire (1d6 Force, 5ft radius).</li>
+            </ul>
+        </div>
+
+        <h2>II. Sanctuary Shop Inventories</h2>
+
+        <h3>Elara Meadowlight (The Apothecary)</h3>
+        <div class="item-card">
+            <span class="item-name">Stabilized Animus (Potion)</span>
+            <span class="item-type">Cost: 1 Core</span>
+            <p>Regain 2d4+2 HP. Safe to drink (no poison risk).</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Mother's Milk (Elixir)</span>
+            <span class="item-type">Cost: 3 Cores</span>
+            <p>Removes 1 level of Exhaustion or ends the Frightened condition. Tastes like warm ozone.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Stasis Salve</span>
+            <span class="item-type">Cost: 2 Cores</span>
+            <p>Applied to a dying creature. They automatically stabilize and gain 1d8 Temp HP.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Bottled Fog</span>
+            <span class="item-type">Cost: 2 Cores</span>
+            <p>Smash to create a 20ft radius of heavily obscured fog (Gellith's breath) for 1 minute.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Panacea Injection</span>
+            <span class="item-type">Cost: 4 Cores</span>
+            <p>Regain 4d4+4 HP. Cures one Disease.</p>
+        </div>
+
+        <h3>Borin Stonehand (The Blacksmith)</h3>
+        <div class="item-card">
+            <span class="item-name">Whetstone of the Cull</span>
+            <span class="item-type">Cost: 1 Core</span>
+            <p>Apply to a weapon. It deals +1 damage for the next hour. Turns the blade black.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Slag Caltrops (Bag of 20)</span>
+            <span class="item-type">Cost: 2 Cores</span>
+            <p>Cover 5ft square. DC 15 Dex save or 1 piercing + 1d4 Fire damage. Stop movement.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Living Chain (Mod)</span>
+            <span class="item-type">Cost: 3 Cores</span>
+            <p>Attach to a weapon. On a hit, you can pull a Medium/Small target 5ft closer.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Impact Gauntlets</span>
+            <span class="item-type">Cost: 5 Cores</span>
+            <p>Your Unarmed Strikes deal double damage to Objects/Structures.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Reforging Service</span>
+            <span class="item-type">Cost: 5 Cores</span>
+            <p>Transfer a +1 enchantment from a weapon you found to a weapon of your choice.</p>
+        </div>
+
+        <h3>Fizzwick Tanglefoot (General Store)</h3>
+        <div class="item-card">
+            <span class="item-name">Brass Orb (Quest Item)</span>
+            <span class="item-type">Cost: Free</span>
+            <p>Humming mechanical sphere. Delivers secret messages from Thorin.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Glitch Grease</span>
+            <span class="item-type">Cost: 1 Core</span>
+            <p>Covers 10ft square. Difficult terrain. Creatures prone in it teleport 5ft randomly.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Expander Foam</span>
+            <span class="item-type">Cost: 2 Cores</span>
+            <p>Crush to create an instant 5ft cube of spongy, pink cover (AC 10, HP 20).</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Memory Wire</span>
+            <span class="item-type">Cost: 2 Cores</span>
+            <p>Tripwire. If broken, it screams psychically in your mind, alerting you within 1 mile.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">The Mystery Box</span>
+            <span class="item-type">Cost: 4 Cores</span>
+            <p>Roll 1d6. 1-3: Useless junk. 4-5: A Potion of Climbing. 6: A Bag of Holding (that looks like a stomach).</p>
+        </div>
+
+        <h2>III. The Maw Armory (Symbiote Weapons)</h2>
+        <p>Living symbiote weapons gifted by The Bulwark. <strong>Curse:</strong> If you do not kill daily, your max HP reduces by 1d10.</p>
+
+        <div class="maw-box">
+            <strong style="color: #fca5a5;">The Gristle-Grinder (Heavy Weapon)</strong><br>
+            Serrated bone teeth chainsaw. +1 Bonus. On Crit/Kill, make one additional melee attack. Deal +1d6 to unarmored targets.
+        </div>
+        <div class="maw-box">
+            <strong style="color: #fca5a5;">The Arterial Needle (Finesse Weapon)</strong><br>
+            Hollow crystal rapier. +1 Bonus. Advantage vs injured targets. On Sneak Attack, heal for half damage dealt.
+        </div>
+        <div class="maw-box">
+            <strong style="color: #fca5a5;">The Rib-Cage Repeater (Ranged Weapon)</strong><br>
+            Bone bow. Drains 1 HP to fire "Blood Arrows" (Necrotic). On Crit, arrow burrows and explodes next turn (4d6 Necrotic).
+        </div>
+        <div class="maw-box">
+            <strong style="color: #fca5a5;">The Sanguine Rod (Caster Focus)</strong><br>
+            Spine staff. +1 Spell Atk/DC. Overclock: Take 1d8 Necrotic per spell level to Maximize damage dice.
+        </div>
+        <div class="maw-box">
+            <strong style="color: #fca5a5;">The Reactive Carapace (Shield)</strong><br>
+            Chitin shield. Reaction: Bash attackers who miss (1d6+Str damage). Adapts to elemental damage (Resistance).
+        </div>
+
+        <h2>IV. Milestone Rewards & Chapter Loot</h2>
+        <div class="item-card">
+            <span class="item-name">Gloop (The Living Tool)</span>
+            <span class="item-type">Legendary Wondrous Item (Attunement)</span>
+            <p>A sentient ooze. Transforms into Artisan/Thieves Tools. Bonus Action Help action. 1 HP (Fragile). Key to the Good Ending.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Maw's Judgment</span>
+            <span class="item-type">Rare Weapon (Paladin)</span>
+            <p>A living greatsword. +1 Bonus. Dealing Smite damage grants Temp HP.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Caustic Knuckles</span>
+            <span class="item-type">Rare Wondrous Item (Monk)</span>
+            <p>Acid-dripping wraps. Unarmed strikes deal +1d4 Acid damage.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Shifting Dagger</span>
+            <span class="item-type">Rare Weapon (Rogue)</span>
+            <p>A blade of liquid metal. Can change damage type (Piercing/Slashing) as a Bonus Action. +1 Bonus.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Pseudopod Greatsword</span>
+            <span class="item-type">Rare Weapon (Echo Knight)</span>
+            <p>Attacks from your Echo have Reach +5ft.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Bulwark's Carapace</span>
+            <span class="item-type">Rare Heavy Armor</span>
+            <p>Plate armor made of chitin. Critical Hits against you become Normal Hits.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Trapper's Hide</span>
+            <span class="item-type">Wondrous Item (Cloak)</span>
+            <p>Advantage on Stealth checks to hide in rocky terrain. Once per day, blend into stone.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Otyugh's Third Eye</span>
+            <span class="item-type">Wondrous Item (Attunement)</span>
+            <p>Grants Darkvision 60ft. You can cast <em>Detect Magic</em> at will.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">The Thermic Lance</span>
+            <span class="item-type">Rare Weapon (Lance/Spear)</span>
+            <p>Deals Fire damage instead of Piercing. Ignites flammable objects.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Whisper's Cassock</span>
+            <span class="item-type">Rare Robe</span>
+            <p>+1 AC. You can cast <em>Sanctuary</em> on yourself once per day.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Flickering Feathers</span>
+            <span class="item-type">Consumable</span>
+            <p>Consume to gain flight speed for 1 minute (Glitch effect).</p>
+        </div>
+         <div class="item-card">
+            <span class="item-name">Vial of Caustic Bile</span>
+            <span class="item-type">Explosive</span>
+            <p>Thrown explosive. Deals Acid damage in a radius.</p>
+        </div>
+
+        <h2>V. Biological Augmentations (Tattoos)</h2>
+        <p>Living microbial nets that bond to flesh.</p>
+
+        <div class="tattoo-box">
+            <strong style="color: #d8b4fe;">The Dissolution Mark (Uncommon)</strong><br>
+            Spiral on tongue or inner hip. Resistance to Acid. Action (1/Long Rest) to dissolve a non-magical metal/wood object (Medium or smaller) over 1 minute.
+        </div>
+        <div class="tattoo-box">
+            <strong style="color: #d8b4fe;">The Adaptive Shell (Rare)</strong><br>
+            Scales on shin. Reaction (PB/Long Rest) when taking B/P/S damage: Reduce damage by 1d10 + Con mod.
+        </div>
+        <div class="tattoo-box">
+            <strong style="color: #d8b4fe;">The Symbiotic Grip (Rare, Attunement)</strong><br>
+            Tendrils on fist. No Action (3/Long Rest) when you hit with an attack: Target must make DC 14 Str save or Speed reduced by 10 ft.
+        </div>
+        <div class="tattoo-box">
+            <strong style="color: #d8b4fe;">The False Appearance (Uncommon)</strong><br>
+            Shifting ink. Gain Proficiency in Stealth. Add 1d4 to Stealth checks while immobile.
+        </div>
+        <div class="tattoo-box">
+            <strong style="color: #d8b4fe;">The Creator's Insight (Very Rare)</strong><br>
+            Wire circuitry from neck to brainstem. <em>Mending</em> cantrip. Craft non-magical items (poisons/alchemicals) at double speed/quantity.
+        </div>
+        <div class="tattoo-box">
+            <strong style="color: #d8b4fe;">The Resonant Lure (Rare, Attunement)</strong><br>
+            Throat speaker. Mimic any sound perfectly. Cast <em>Minor Illusion</em> (1/Long Rest) that adheres to a target (Disadvantage on Perception/Insight).
+        </div>
+        <div class="tattoo-box">
+            <strong style="color: #d8b4fe;">The Maw's Vigor (Very Rare)</strong><br>
+            Plating on torso. +1 AC. Reaction (1/Long Rest) to swap a damage resistance to Acid, Cold, Fire, or Lightning.
+        </div>
+        <div class="tattoo-box">
+            <strong style="color: #d8b4fe;">The Hunter's Adhesion (Rare, Attunement)</strong><br>
+            Sticky fingers. Adhesive Ammunition: When you hit with a weapon attack (3 Charges/Day): Target Speed reduced by 15 ft.
+        </div>
+        <div class="tattoo-box">
+            <strong style="color: #d8b4fe;">The Unstable Matrix (Very Rare)</strong><br>
+            Spine glyphs. Viscous Casting: Reaction (2 Charges/Day) when casting a spell: Target has Disadvantage on the Saving Throw.
+        </div>
+        <div class="tattoo-box">
+            <strong style="color: #d8b4fe;">The Nest's Embrace (Rare, Attunement)</strong><br>
+            Roots over heart. Advantage vs Charmed/Frightened. Force enemy to re-roll save vs your Charm spells (1/Long Rest).
+        </div>
+        <div class="tattoo-box">
+            <strong style="color: #d8b4fe;">The Flowing Form (Uncommon)</strong><br>
+            Amorphous Step: Disengage prevents all Opportunity Attacks for the turn. Squeeze through 1-inch gaps.
+        </div>
+        <div class="tattoo-box">
+            <strong style="color: #d8b4fe;">The Predator's Scrutiny (Rare)</strong><br>
+            Ring iris in eye. Devour Illusion: +5 to Insight vs Illusions/Shapechangers. 1/Day gain Truesight (30 ft) for 1 min.
+        </div>
+        <div class="tattoo-box">
+            <strong style="color: #d8b4fe;">The Gutter's Claw (Rare, Attunement)</strong><br>
+            Crystalline growths. Caustic Clutch: Proficiency in Athletics. Grappled creatures take 1d6 Acid damage at start of their turn.
+        </div>
+
+        <h2>VI. Gib's Smuggled Goods (Secret Shop)</h2>
+        <div class="item-card">
+            <span class="item-name">K.A.K. "Goblin-B-Gone"</span>
+            <span class="item-type">Consumable (Caltrops)</span>
+            <p>Golden caltrops that scream insults in Draconic. Creatures moving through must succeed on DC 13 Dex save or stop moving. Goblins take double damage.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Concentrated Sunshine</span>
+            <span class="item-type">Consumable (Grenade)</span>
+            <p>A glass orb containing real sunlight. Thrown (30ft). 4d6 Radiant damage (20ft radius). Undead take double damage and are Frightened.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">"Outside" Map</span>
+            <span class="item-type">Quest Item</span>
+            <p>A crumpled map of the real world. Grants Advantage on History checks about reality.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Real Healing Potion</span>
+            <span class="item-type">Consumable</span>
+            <p>Heals 2d4+2 HP. Works inside Anti-Magic fields/Glitch zones.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Flashbang (Debug Grenade)</span>
+            <span class="item-type">Consumable</span>
+            <p>Radius 10ft. DC 14 Con save or Blind/Deafened. Constructs take Disadvantage.</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Skeleton Key</span>
+            <span class="item-type">Consumable</span>
+            <p>Opens any non-magical lock. Breaks after 1 use. (It's actually a master_admin_key.exe).</p>
+        </div>
+        <div class="item-card">
+            <span class="item-name">Music Box</span>
+            <span class="item-type">Quest Item</span>
+            <p>Plays a song from outside. Giving this to an NPC forces a Wisdom Save to break their programming.</p>
         </div>
 
     </div>
