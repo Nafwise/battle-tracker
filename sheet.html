@@ -1349,7 +1349,7 @@ ${attacks || "- Unarmed"}`;
                                         <Shield className="mx-auto mb-1 text-cyan-400"/>
                                         <div className="text-xs uppercase text-slate-500 font-bold">AC</div>
                                         <input type="number" className="w-full text-center text-xl font-bold bg-transparent border-none" value={char.ac} onChange={e=>updateChar('ac', parseInt(e.target.value))}/>
-                                        <button onClick={() => setArmorModalOpen(true)} className="absolute top-1 right-1 p-1 bg-slate-800 rounded-full text-slate-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"><Settings size={12}/></button>
+                                        <button onClick={() => setArmorModalOpen(true)} className="absolute top-1 right-1 p-1 bg-slate-800 rounded-full text-slate-400 hover:text-white opacity-100 transition-opacity"><Settings size={12}/></button>
                                     </div>
                                     <div className="glass-panel p-2 rounded text-center cursor-pointer hover:bg-slate-800 transition-colors" onClick={() => triggerRoll('Initiative', '1d20', char.initiative)}><D20 className="mx-auto mb-1 text-yellow-400"/><div className="text-xs uppercase text-slate-500 font-bold">Init</div><input type="number" className="w-full text-center text-xl font-bold bg-transparent border-none" value={char.initiative} onChange={e=>updateChar('initiative', parseInt(e.target.value))}/></div>
                                     <div className="glass-panel p-2 rounded text-center"><Zap className="mx-auto mb-1 text-fuchsia-400"/><div className="text-xs uppercase text-slate-500 font-bold">Speed</div><input type="number" className="w-full text-center text-xl font-bold bg-transparent border-none" value={char.speed} onChange={e=>updateChar('speed', parseInt(e.target.value))}/></div>
@@ -1400,7 +1400,7 @@ ${attacks || "- Unarmed"}`;
                                 </div>
 
                                 <div className="glass-panel p-4 rounded-xl">
-                                    <div className="flex justify-between items-center mb-3"><h3 className="font-bold text-slate-300 flex items-center gap-2"><Sword size={16}/> Attacks</h3><button onClick={addAttack} className="p-1 bg-slate-700 rounded hover:bg-slate-600 text-white"><Plus size={16}/></button></div>
+                                    <div className="flex justify-between items-center mb-3"><h3 className="font-bold text-slate-300 flex items-center gap-2"><Sword size={16}/> Attacks</h3><button onClick={() => setWeaponModalOpen(true)} className="p-1 bg-slate-700 rounded hover:bg-slate-600 text-white"><Plus size={16}/></button></div>
                                     <div className="space-y-2">
                                         {(char.attacks||[]).map(att => (
                                             <div key={att.id} className="bg-slate-900/50 p-2 rounded border border-slate-700 grid grid-cols-12 gap-2 items-center">
@@ -1494,7 +1494,14 @@ ${attacks || "- Unarmed"}`;
                         {activeTab === 'bio' && (
                             <div className="animate-fade-in grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="glass-panel p-4 rounded-xl min-h-[300px] flex flex-col">
-                                    <div className="flex justify-between items-center mb-3"><h3 className="font-bold text-slate-300 flex items-center gap-2"><Backpack size={16} className="text-amber-500"/> Inventory</h3><button onClick={addItem} className="p-1 bg-slate-700 rounded hover:bg-slate-600 text-white"><Plus size={16}/></button></div>
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="font-bold text-slate-300 flex items-center gap-2"><Backpack size={16} className="text-amber-500"/> Inventory</h3>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => lootImportRef.current.click()} className="p-1 bg-slate-700 rounded hover:bg-slate-600 text-white" title="Import Loot JSON"><Upload size={16}/></button>
+                                            <input type="file" ref={lootImportRef} onChange={handleLootImport} accept=".json" className="hidden" />
+                                            <button onClick={addItem} className="p-1 bg-slate-700 rounded hover:bg-slate-600 text-white"><Plus size={16}/></button>
+                                        </div>
+                                    </div>
                                     
                                     {/* --- ATTUNEMENT SECTION --- */}
                                     <div className="mb-4 bg-slate-900/50 p-3 rounded border border-indigo-500/30 relative overflow-hidden">
