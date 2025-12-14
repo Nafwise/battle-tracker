@@ -10,9 +10,14 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- React & Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 3D & Physics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
 
     <style>
         :root {
@@ -31,6 +36,7 @@
             font-family: ui-sans-serif, system-ui, sans-serif;
             background-image: radial-gradient(circle at 50% 0%, #2e1065 0%, #020617 60%);
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         /* Utility & scrollbar */
@@ -68,13 +74,16 @@
         
         .tab-btn.active { background-color: var(--accent); color: white; }
         .tab-btn { background-color: transparent; color: var(--text-muted); }
+
+        /* Dice Tray Canvas */
+        #dice-canvas { width: 100%; height: 100%; display: block; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
 
         // --- ICONS ---
         const Icon = ({ children, className, ...props }) => (
@@ -94,10 +103,26 @@
         const Sparkles = (props) => <Icon {...props}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.276 1.276L3 12l5.813 1.912a2 2 0 0 1 1.276 1.276L12 21l1.912-5.813a2 2 0 0 1 1.276-1.276L21 12l-5.813-1.912a2 2 0 0 1-1.276-1.276Z"/></Icon>;
         const Zap = (props) => <Icon {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Icon>;
         const Wand = (props) => <Icon {...props}><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M10.6 6.4 9.4 5.2"/><path d="m19 5-1.2 1.2"/><path d="m9.4 12.8 1.2-1.2"/><path d="M2 21l9-9"/><path d="M22 3l-6 6"/></Icon>;
-        const Skull = (props) => <Icon {...props}><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></Icon>;
-        const Circle = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /></Icon>;
-        const CheckCircle = (props) => <Icon {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>;
         const Battery = (props) => <Icon {...props}><rect width="16" height="10" x="2" y="7" rx="2" ry="2"/><line x1="22" x2="22" y1="11" y2="13"/></Icon>;
+        const XIcon = (props) => <Icon {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>;
+        const RefreshCw = (props) => <Icon {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></Icon>;
+        const Flame = (props) => <Icon {...props}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></Icon>;
+        const Moon = (props) => <Icon {...props}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></Icon>;
+        const Sun = (props) => <Icon {...props}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41-1.41"/><path d="m19.07 4.93-1.41 1.41"/></Icon>;
+        const Download = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></Icon>;
+        const Upload = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></Icon>;
+        const AlertTriangle = (props) => <Icon {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></Icon>;
+        const LinkIcon = (props) => <Icon {...props}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Icon>;
+        const Settings = (props) => <Icon {...props}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></Icon>;
+        const Copy = (props) => <Icon {...props}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></Icon>;
+        const Info = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></Icon>;
+        const ChevronDown = (props) => <Icon {...props}><path d="m6 9 6 6 6-6"/></Icon>;
+        const Crosshair = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></Icon>;
+        const MapIcon = (props) => <Icon {...props}><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" /><line x1="8" y1="2" x2="8" y2="18" /><line x1="16" y1="6" x2="16" y2="22" /></Icon>;
+        const Gem = (props) => <Icon {...props}><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></Icon>;
+        const Hammer = (props) => <Icon {...props}><path d="M6 5h12v4h-12z" /><path d="M12 9v12" /><path d="M10 21h4" /></Icon>;
+        const Flag = (props) => <Icon {...props}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></Icon>;
+        const BookOpen = (props) => <Icon {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>;
 
         // --- CONSTANTS ---
         const DEFAULT_CHAR = {
@@ -111,7 +136,7 @@
             inspiration: false,
             alignment: 'True Neutral',
             stats: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
-            hp: { current: 10, max: 10, temp: 0, hitDiceCurrent: 1, hitDiceMax: 1 },
+            hp: { current: 10, max: 10, temp: 0, hitDiceCurrent: 1, hitDiceMax: 1, hitDieSize: 8 },
             deathSaves: { successes: 0, failures: 0 },
             ac: 10,
             speed: 30,
@@ -119,16 +144,77 @@
             proficiencies: [], 
             otherProficiencies: "", 
             inventory: [],
+            attunedItems: ['', '', ''],
             spells: [], 
             spellSlots: { 1:{total:0, used:0}, 2:{total:0, used:0}, 3:{total:0, used:0}, 4:{total:0, used:0}, 5:{total:0, used:0}, 6:{total:0, used:0}, 7:{total:0, used:0}, 8:{total:0, used:0}, 9:{total:0, used:0} },
             spellAbility: "int", 
             features: [], 
             attacks: [], 
             savingThrows: [], 
-            resources: [], // { id, name, current, max }
+            resources: [], 
             notes: "",
-            coins: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }
+            coins: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
+            exhaustion: 0,
+            conditions: [],
+            traits: "",
+            ideals: "",
+            bonds: "",
+            flaws: ""
         };
+
+        const WEAPONS = [
+            { name: "Club", damage: "1d4", type: "Bludgeoning" },
+            { name: "Dagger", damage: "1d4", type: "Piercing", finesse: true },
+            { name: "Greatclub", damage: "1d8", type: "Bludgeoning" },
+            { name: "Handaxe", damage: "1d6", type: "Slashing" },
+            { name: "Javelin", damage: "1d6", type: "Piercing" },
+            { name: "Light Hammer", damage: "1d4", type: "Bludgeoning" },
+            { name: "Mace", damage: "1d6", type: "Bludgeoning" },
+            { name: "Quarterstaff", damage: "1d6", type: "Bludgeoning" },
+            { name: "Sickle", damage: "1d4", type: "Slashing" },
+            { name: "Spear", damage: "1d6", type: "Piercing" },
+            { name: "Light Crossbow", damage: "1d8", type: "Piercing", range: true },
+            { name: "Dart", damage: "1d4", type: "Piercing", finesse: true },
+            { name: "Shortbow", damage: "1d6", type: "Piercing", range: true },
+            { name: "Sling", damage: "1d4", type: "Bludgeoning", range: true },
+            { name: "Battleaxe", damage: "1d8", type: "Slashing" },
+            { name: "Flail", damage: "1d8", type: "Bludgeoning" },
+            { name: "Glaive", damage: "1d10", type: "Slashing" },
+            { name: "Greataxe", damage: "1d12", type: "Slashing" },
+            { name: "Greatsword", damage: "2d6", type: "Slashing" },
+            { name: "Halberd", damage: "1d10", type: "Slashing" },
+            { name: "Lance", damage: "1d12", type: "Piercing" },
+            { name: "Longsword", damage: "1d8", type: "Slashing" },
+            { name: "Maul", damage: "2d6", type: "Bludgeoning" },
+            { name: "Morningstar", damage: "1d8", type: "Piercing" },
+            { name: "Pike", damage: "1d10", type: "Piercing" },
+            { name: "Rapier", damage: "1d8", type: "Piercing", finesse: true },
+            { name: "Scimitar", damage: "1d6", type: "Slashing", finesse: true },
+            { name: "Shortsword", damage: "1d6", type: "Piercing", finesse: true },
+            { name: "Trident", damage: "1d6", type: "Piercing" },
+            { name: "War Pick", damage: "1d8", type: "Piercing" },
+            { name: "Warhammer", damage: "1d8", type: "Bludgeoning" },
+            { name: "Whip", damage: "1d4", type: "Slashing", finesse: true },
+            { name: "Blowgun", damage: "1", type: "Piercing", range: true },
+            { name: "Hand Crossbow", damage: "1d6", type: "Piercing", range: true },
+            { name: "Heavy Crossbow", damage: "1d10", type: "Piercing", range: true },
+            { name: "Longbow", damage: "1d8", type: "Piercing", range: true }
+        ];
+
+        const ARMOR = [
+            { name: "Padded", ac: 11, type: "Light" },
+            { name: "Leather", ac: 11, type: "Light" },
+            { name: "Studded Leather", ac: 12, type: "Light" },
+            { name: "Hide", ac: 12, type: "Medium" },
+            { name: "Chain Shirt", ac: 13, type: "Medium" },
+            { name: "Scale Mail", ac: 14, type: "Medium" },
+            { name: "Breastplate", ac: 14, type: "Medium" },
+            { name: "Half Plate", ac: 15, type: "Medium" },
+            { name: "Ring Mail", ac: 14, type: "Heavy" },
+            { name: "Chain Mail", ac: 16, type: "Heavy" },
+            { name: "Splint", ac: 17, type: "Heavy" },
+            { name: "Plate", ac: 18, type: "Heavy" }
+        ];
 
         const SKILLS = [
             { name: "Acrobatics", stat: "dex" }, { name: "Animal Handling", stat: "wis" }, { name: "Arcana", stat: "int" },
@@ -139,46 +225,674 @@
             { name: "Sleight of Hand", stat: "dex" }, { name: "Stealth", stat: "dex" }, { name: "Survival", stat: "wis" }
         ];
 
+        const CONDITIONS = [
+            "Blinded", "Charmed", "Deafened", "Frightened", "Grappled", "Incapacitated",
+            "Invisible", "Paralyzed", "Petrified", "Poisoned", "Prone", "Restrained",
+            "Stunned", "Unconscious"
+        ];
+
+        const EXHAUSTION_EFFECTS = [
+            "No effect",
+            "Disadvantage on Ability Checks",
+            "Speed halved",
+            "Disadv. on Attack/Saves",
+            "Hit Point Max halved",
+            "Speed reduced to 0",
+            "Death"
+        ];
+
         // --- HELPERS ---
         const getMod = (score) => Math.floor((score - 10) / 2);
         const formatMod = (score) => { const m = getMod(score); return m >= 0 ? `+${m}` : `${m}`; };
         const getProficiency = (level) => Math.ceil(level / 4) + 1;
 
-        // --- COMPONENTS ---
+        // --- 3D DICE TRAY COMPONENT ---
+        const DiceTray = ({ isOpen, onClose, rollRequest, onRollComplete }) => {
+            const containerRef = useRef(null);
+            const isRollingRef = useRef(false); 
+            const [lastResult, setLastResult] = useState(null);
 
-        const StatBox = ({ label, value, onChange, size = "md" }) => {
+            useEffect(() => {
+                if (!isOpen || !containerRef.current) return;
+
+                // --- INIT THREE JS & CANNON JS ---
+                const world = new CANNON.World();
+                world.gravity.set(0, -9.82 * 2, 0); 
+                world.broadphase = new CANNON.NaiveBroadphase();
+                world.solver.iterations = 10;
+                
+                const diceBodyMat = new CANNON.Material();
+                const floorBodyMat = new CANNON.Material();
+                const diceContactMat = new CANNON.ContactMaterial(floorBodyMat, diceBodyMat, { 
+                    friction: 0.5,    
+                    restitution: 0.3 
+                });
+                world.addContactMaterial(diceContactMat);
+                world.allowSleep = true; 
+
+                const scene = new THREE.Scene();
+                
+                const camera = new THREE.PerspectiveCamera(45, containerRef.current.clientWidth / containerRef.current.clientHeight, 0.1, 100);
+                camera.position.set(0, 15, 10);
+                camera.lookAt(0, 0, 0);
+
+                const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+                renderer.shadowMap.enabled = true;
+                containerRef.current.innerHTML = '';
+                containerRef.current.appendChild(renderer.domElement);
+
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                scene.add(ambientLight);
+                const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                dirLight.position.set(5, 10, 5);
+                dirLight.castShadow = true;
+                scene.add(dirLight);
+
+                const floorShape = new CANNON.Plane();
+                const floorBody = new CANNON.Body({ mass: 0, material: floorBodyMat });
+                floorBody.addShape(floorShape);
+                floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+                world.addBody(floorBody);
+
+                const createWall = (x, z, w, h, d) => {
+                    const wallBody = new CANNON.Body({ mass: 0, material: floorBodyMat });
+                    wallBody.addShape(new CANNON.Box(new CANNON.Vec3(w, h, d)));
+                    wallBody.position.set(x, 2, z);
+                    world.addBody(wallBody);
+                };
+                createWall(0, -6, 10, 5, 1);
+                createWall(0, 6, 10, 5, 1);
+                createWall(-8, 0, 1, 5, 10);
+                createWall(8, 0, 1, 5, 10);
+
+                const createSwirlTexture = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 512;
+                    canvas.height = 512;
+                    const ctx = canvas.getContext('2d');
+                    const grd = ctx.createLinearGradient(0,0,0,512);
+                    grd.addColorStop(0, '#020617');
+                    grd.addColorStop(1, '#1e1b4b');
+                    ctx.fillStyle = grd;
+                    ctx.fillRect(0,0,512,512);
+                    ctx.lineCap = 'round';
+                    ctx.filter = 'blur(2px)';
+                    for(let i=0; i<12; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(Math.random()*512, Math.random()*512);
+                        ctx.bezierCurveTo(Math.random()*512, Math.random()*512, Math.random()*512, Math.random()*512, Math.random()*512, Math.random()*512);
+                        const hue = 280 + Math.random() * 40;
+                        const opacity = 0.3 + Math.random() * 0.4;
+                        ctx.strokeStyle = `hsla(${hue}, 80%, 60%, ${opacity})`;
+                        ctx.lineWidth = 20 + Math.random() * 40;
+                        ctx.stroke();
+                    }
+                    ctx.filter = 'none';
+                    ctx.fillStyle = 'white';
+                    for(let j=0; j<50; j++) {
+                         ctx.beginPath();
+                         ctx.arc(Math.random()*512, Math.random()*512, Math.random()*1.5, 0, Math.PI*2);
+                         ctx.fill();
+                    }
+                    return new THREE.CanvasTexture(canvas);
+                };
+
+                const swirlTex = createSwirlTexture();
+                const diceMat = new THREE.MeshStandardMaterial({ map: swirlTex, color: 0xffffff, roughness: 0.15, metalness: 0.3 });
+                const meshes = [];
+                const bodies = [];
+
+                const createLabel = (text, pos) => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 128; canvas.height = 128;
+                    ctx.fillStyle = "rgba(0,0,0,0)";
+                    ctx.font = "bold 80px Arial";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.shadowColor = "#d946ef"; 
+                    ctx.shadowBlur = 15;
+                    ctx.fillStyle = "white";
+                    ctx.fillText(text, 64, 64);
+                    
+                    const tex = new THREE.CanvasTexture(canvas);
+                    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0 });
+                    const sprite = new THREE.Sprite(mat);
+                    sprite.position.copy(pos);
+                    sprite.position.y += 2.5;
+                    sprite.scale.set(3,3,3);
+                    scene.add(sprite);
+                    
+                    let op = 0;
+                    const anim = setInterval(() => {
+                        op += 0.1;
+                        if(op >= 1) clearInterval(anim);
+                        sprite.material.opacity = op;
+                    }, 16);
+                };
+
+                const addDie = (sides) => {
+                    let geo, shape;
+                    if (sides === 6) { geo = new THREE.BoxGeometry(1.5, 1.5, 1.5); shape = new CANNON.Box(new CANNON.Vec3(0.75, 0.75, 0.75)); }
+                    else if (sides === 20) { geo = new THREE.IcosahedronGeometry(1); shape = new CANNON.Sphere(1); }
+                    else if (sides === 12) { geo = new THREE.DodecahedronGeometry(1); shape = new CANNON.Sphere(1); }
+                    else if (sides === 8) { geo = new THREE.OctahedronGeometry(1); shape = new CANNON.Sphere(0.8); }
+                    else if (sides === 4) { geo = new THREE.TetrahedronGeometry(1.2); shape = new CANNON.Sphere(0.8); }
+                    else { geo = new THREE.IcosahedronGeometry(1); shape = new CANNON.Sphere(1); }
+
+                    const mesh = new THREE.Mesh(geo, diceMat);
+                    mesh.castShadow = true;
+                    scene.add(mesh);
+                    meshes.push(mesh);
+
+                    const body = new CANNON.Body({ 
+                        mass: 1, 
+                        material: diceBodyMat, 
+                        shape: shape,
+                        linearDamping: 0.5, 
+                        angularDamping: 0.5, 
+                        allowSleep: true,
+                        sleepSpeedLimit: 0.5,
+                        sleepTimeLimit: 0.1
+                    });
+                    
+                    body.position.set((Math.random()-0.5)*5, 10, (Math.random()-0.5)*5);
+                    body.angularVelocity.set((Math.random()-0.5) * 50, (Math.random()-0.5) * 50, (Math.random()-0.5) * 50);
+                    body.velocity.set((Math.random()-0.5) * 8, -20, (Math.random()-0.5) * 8);
+
+                    world.addBody(body);
+                    bodies.push({ body, mesh, sides });
+                };
+
+                if (rollRequest) {
+                    isRollingRef.current = true;
+                    setLastResult(null);
+                    const parts = rollRequest.dice.split('d');
+                    const count = parseInt(parts[0]) || 1;
+                    const sides = parseInt(parts[1]) || 20;
+                    for(let i=0; i<count; i++) addDie(sides);
+                }
+
+                let frameId;
+                let stoppedFrames = 0;
+                
+                const animate = () => {
+                    world.step(1/60);
+
+                    let allStopped = true;
+                    for (let i = 0; i < meshes.length; i++) {
+                        meshes[i].position.copy(bodies[i].body.position);
+                        meshes[i].quaternion.copy(bodies[i].body.quaternion);
+
+                        if (bodies[i].body.sleepState !== CANNON.Body.SLEEPING && 
+                            (bodies[i].body.velocity.length() > 0.1 || bodies[i].body.angularVelocity.length() > 0.5)) {
+                            allStopped = false;
+                        }
+                    }
+
+                    if (meshes.length > 0 && allStopped) {
+                        stoppedFrames++;
+                        if (stoppedFrames > 20 && isRollingRef.current) { 
+                            isRollingRef.current = false; 
+                            const rolls = bodies.map(b => Math.floor(Math.random() * b.sides) + 1);
+                            bodies.forEach(b => b.body.sleep());
+                            bodies.forEach((b, idx) => createLabel(rolls[idx].toString(), b.body.position));
+                            const total = rolls.reduce((a,b)=>a+b,0);
+                            const res = { rolls, total, mod: rollRequest.mod, label: rollRequest.label };
+                            setLastResult(res);
+                            onRollComplete && onRollComplete(res);
+                        }
+                    } else {
+                        stoppedFrames = 0;
+                    }
+
+                    renderer.render(scene, camera);
+                    frameId = requestAnimationFrame(animate);
+                };
+
+                animate();
+
+                const handleResize = () => {
+                    if (!containerRef.current) return;
+                    camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+                };
+                window.addEventListener('resize', handleResize);
+
+                return () => {
+                    cancelAnimationFrame(frameId);
+                    window.removeEventListener('resize', handleResize);
+                    containerRef.current && (containerRef.current.innerHTML = '');
+                };
+            }, [isOpen, rollRequest]);
+
+            if (!isOpen) return null;
+
+            return (
+                <div className="fixed inset-0 z-[100] flex items-end justify-center pointer-events-none">
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm pointer-events-auto" onClick={onClose}></div>
+                    <div className="relative w-full max-w-3xl h-[60vh] bg-slate-900 border-t-2 border-fuchsia-500 rounded-t-3xl shadow-2xl overflow-hidden pointer-events-auto flex flex-col animate-fade-in">
+                        
+                        {/* Header */}
+                        <div className="absolute top-4 left-4 right-4 flex justify-between items-start z-10">
+                            <div className="bg-slate-900/80 backdrop-blur p-2 rounded-lg border border-slate-700">
+                                <h2 className="text-fuchsia-400 font-bold text-lg uppercase tracking-wider">{rollRequest?.label || "Dice Tray"}</h2>
+                                <div className="text-xs text-slate-400">{rollRequest?.dice} {rollRequest?.mod >= 0 ? `+${rollRequest.mod}` : rollRequest.mod}</div>
+                            </div>
+                            <button onClick={onClose} className="p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white hover:bg-red-900/50 transition-colors"><XIcon size={24}/></button>
+                        </div>
+
+                        {/* 3D Canvas Container */}
+                        <div ref={containerRef} className="flex-1 w-full bg-gradient-to-b from-slate-900 to-indigo-950"></div>
+
+                        {/* Result Overlay */}
+                        {!isRollingRef.current && lastResult && (
+                            <div className="absolute inset-x-0 bottom-20 flex justify-center pointer-events-none z-20">
+                                <div className="bg-slate-900/80 backdrop-blur border border-fuchsia-500/50 px-8 py-4 rounded-2xl shadow-2xl flex flex-col items-center animate-fade-in pointer-events-auto transform hover:scale-105 transition-transform">
+                                    <div className="text-xs text-slate-300 uppercase tracking-widest mb-1">Total</div>
+                                    <div className="text-5xl font-black text-white filter drop-shadow-[0_0_15px_rgba(217,70,239,0.8)]">
+                                        {lastResult.total + lastResult.mod}
+                                    </div>
+                                    <div className="text-fuchsia-300 font-mono text-sm mt-1">
+                                        [{lastResult.rolls.join(', ')}] {lastResult.mod >= 0 ? `+ ${lastResult.mod}` : `- ${Math.abs(lastResult.mod)}`}
+                                    </div>
+                                    <button onClick={onClose} className="mt-3 px-6 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-full text-sm font-bold transition-colors shadow-lg shadow-fuchsia-900/50">Accept Result</button>
+                                </div>
+                            </div>
+                        )}
+                         <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4 z-10 pointer-events-none">
+                            <button onClick={onClose} className="pointer-events-auto p-3 bg-slate-800/80 rounded-full text-slate-300 hover:text-white border border-slate-600 backdrop-blur hover:bg-slate-700 transition-all"><RefreshCw size={20}/></button>
+                         </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- SUITE DROPDOWN COMPONENT ---
+        const SuiteDropdown = () => {
+            const [isOpen, setIsOpen] = useState(false);
+            const dropdownRef = useRef(null);
+
+            useEffect(() => {
+                const handleClickOutside = (event) => {
+                    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                        setIsOpen(false);
+                    }
+                };
+                document.addEventListener("mousedown", handleClickOutside);
+                return () => {
+                    document.removeEventListener("mousedown", handleClickOutside);
+                };
+            }, []);
+
+            return (
+                <div className="relative" ref={dropdownRef}>
+                    <button 
+                        onClick={() => setIsOpen(!isOpen)}
+                        className={`flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-800 transition-colors text-slate-400 hover:text-white border border-transparent hover:border-slate-700 ${isOpen ? 'bg-slate-800 text-white' : ''}`}
+                    >
+                        <span className="text-xs font-bold hidden sm:inline">Apps</span>
+                        <ChevronDown size={14} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}/>
+                    </button>
+                    
+                    <div className={`absolute top-full right-0 mt-2 w-56 bg-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-700 overflow-hidden py-2 flex flex-col gap-1 z-[100] transition-all duration-200 origin-top-right ${isOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'}`}>
+                        <div className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Navigation</div>
+
+                        {/* Tracker (Purple) */}
+                        <a href="./tome.html" className="flex items-center gap-3 px-4 py-2 text-slate-300 hover:bg-slate-800/50 hover:text-purple-300 hover:border-l-2 hover:border-purple-500 transition-all">
+                            <Crosshair size={16} />
+                            <div className="flex flex-col">
+                                <span className="text-xs font-bold">Tracker</span>
+                                <span className="text-[10px] opacity-60">Combat & Init</span>
+                            </div>
+                        </a>
+
+                        {/* Atlas (Cyan) */}
+                        <a href="./map.html" className="flex items-center gap-3 px-4 py-2 text-slate-300 hover:bg-slate-800/50 hover:text-cyan-300 hover:border-l-2 hover:border-cyan-500 transition-all">
+                            <MapIcon size={16} />
+                            <div className="flex flex-col">
+                                <span className="text-xs font-bold">Atlas</span>
+                                <span className="text-[10px] opacity-60">Tactical Maps</span>
+                            </div>
+                        </a>
+
+                        {/* Loot (Gold) */}
+                        <a href="./loot.html" className="flex items-center gap-3 px-4 py-2 text-slate-300 hover:bg-slate-800/50 hover:text-yellow-300 hover:border-l-2 hover:border-yellow-500 transition-all">
+                            <Gem size={16} />
+                            <div className="flex flex-col">
+                                <span className="text-xs font-bold">Loot</span>
+                                <span className="text-[10px] opacity-60">Treasury</span>
+                            </div>
+                        </a>
+
+                        {/* Workshop (Green) */}
+                        <a href="./homebrew.html" className="flex items-center gap-3 px-4 py-2 text-slate-300 hover:bg-slate-800/50 hover:text-green-300 hover:border-l-2 hover:border-green-500 transition-all">
+                            <Hammer size={16} />
+                            <div className="flex flex-col">
+                                <span className="text-xs font-bold">Workshop</span>
+                                <span className="text-[10px] opacity-60">Creator</span>
+                            </div>
+                        </a>
+                        
+                        {/* Campaign (Grey) */}
+                        <a href="./campaign.html" className="flex items-center gap-3 px-4 py-2 text-slate-300 hover:bg-slate-800/50 hover:text-slate-200 hover:border-l-2 hover:border-slate-400 transition-all">
+                            <Flag size={16} />
+                            <div className="flex flex-col">
+                                <span className="text-xs font-bold">Campaign</span>
+                                <span className="text-[10px] opacity-60">Adventure</span>
+                            </div>
+                        </a>
+
+                        {/* Compendium (Indigo) */}
+                        <a href="./compendium.html" className="flex items-center gap-3 px-4 py-2 text-slate-300 hover:bg-slate-800/50 hover:text-indigo-300 hover:border-l-2 hover:border-indigo-500 transition-all border-t border-slate-700 mt-1">
+                            <BookOpen size={16} />
+                            <div className="flex flex-col">
+                                <span className="text-xs font-bold">Compendium</span>
+                                <span className="text-[10px] opacity-60">Rules</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- STAT BOX WRAPPER ---
+        const StatBox = ({ label, value, onChange, onRoll, size = "md" }) => {
             const mod = formatMod(value);
             return (
                 <div className="flex flex-col items-center">
                     <div className="text-xs uppercase font-bold text-slate-400 mb-1">{label}</div>
-                    <div className="relative flex items-center justify-center">
-                        <div className={`stat-hex bg-slate-800 border-2 border-fuchsia-900/50 ${size === "lg" ? "w-20 h-24" : "w-16 h-20"} flex flex-col items-center justify-center shadow-inner`}>
-                            <span className="text-xl font-bold text-white z-10">{mod}</span>
-                            <input 
-                                type="number" 
-                                value={value} 
-                                onChange={(e) => onChange(parseInt(e.target.value) || 10)}
-                                className="w-8 text-center bg-transparent border-0 text-[10px] text-slate-400 focus:ring-0 p-0 mt-1 z-10"
-                            />
+                    <div className="relative flex items-center justify-center group">
+                        <div onClick={() => onRoll(label, `1d20`, getMod(value))} className={`stat-hex bg-slate-800 border-2 border-fuchsia-900/50 ${size === "lg" ? "w-20 h-24" : "w-16 h-20"} flex flex-col items-center justify-center shadow-inner cursor-pointer hover:border-fuchsia-500 transition-colors`}>
+                            <span className="text-xl font-bold text-white z-10 group-hover:scale-110 transition-transform">{mod}</span>
+                            <div className="z-10 mt-1" onClick={(e)=>e.stopPropagation()}>
+                                <input 
+                                    type="number" 
+                                    value={value} 
+                                    onChange={(e) => onChange(parseInt(e.target.value) || 10)}
+                                    className="w-8 text-center bg-transparent border-0 text-[10px] text-slate-400 focus:ring-0 p-0"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        const SkillRow = ({ skill, char, onToggle }) => {
+        const SkillRow = ({ skill, char, onToggle, onRoll }) => {
             const modVal = getMod(char.stats[skill.stat]);
             const isProf = char.proficiencies.includes(skill.name);
             const pb = getProficiency(char.level);
             const total = modVal + (isProf ? pb : 0);
             
             return (
-                <div className="flex items-center justify-between text-sm py-1 border-b border-slate-800 hover:bg-slate-800/50 rounded px-1 group cursor-pointer" onClick={() => onToggle(skill.name)}>
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between text-sm py-1 border-b border-slate-800 hover:bg-slate-800/50 rounded px-1 group cursor-pointer">
+                    <div className="flex items-center gap-2" onClick={() => onToggle(skill.name)}>
                         <div className={`w-3 h-3 rounded-full border ${isProf ? 'bg-fuchsia-500 border-fuchsia-500' : 'border-slate-600 group-hover:border-slate-400'}`} />
                         <span className="text-slate-300">{skill.name} <span className="text-[10px] text-slate-500 uppercase">({skill.stat})</span></span>
                     </div>
-                    <span className={`font-mono font-bold ${total >= 0 ? 'text-fuchsia-300' : 'text-slate-400'}`}>{total >= 0 ? `+${total}` : total}</span>
+                    <button 
+                        onClick={() => onRoll(skill.name, '1d20', total)}
+                        className={`font-mono font-bold hover:text-white px-2 rounded hover:bg-slate-700 ${total >= 0 ? 'text-fuchsia-300' : 'text-slate-400'}`}
+                    >
+                        {total >= 0 ? `+${total}` : total}
+                    </button>
+                </div>
+            );
+        };
+
+        // --- REST MODAL COMPONENT ---
+        const RestModal = ({ char, onClose, onShortRest, onLongRest, setDieSize }) => {
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+                    <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-md p-6 shadow-2xl relative animate-fade-in">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white"><XIcon size={20}/></button>
+                        <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2"><Flame className="text-orange-500" /> Rest</h2>
+                        <p className="text-slate-400 text-sm mb-6">Recover your strength and magical energy.</p>
+                        
+                        <div className="space-y-4">
+                            {/* Short Rest */}
+                            <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="flex items-center gap-2"><Sun className="text-yellow-400" size={18} /> <span className="font-bold text-slate-200">Short Rest</span></div>
+                                    <span className="text-xs text-slate-500">1 Hour</span>
+                                </div>
+                                <p className="text-xs text-slate-400 mb-4">Spend Hit Dice to regain Hit Points.</p>
+                                <div className="flex items-center justify-between gap-3 mb-3">
+                                    <div className="text-sm text-slate-300">Available Dice: <span className="font-bold text-white">{char.hp.hitDiceCurrent}/{char.hp.hitDiceMax}</span></div>
+                                    <select className="bg-slate-900 border-slate-600 text-xs rounded p-1" value={char.hp.hitDieSize || 8} onChange={(e) => setDieSize(parseInt(e.target.value))}>
+                                        <option value="6">d6</option><option value="8">d8</option><option value="10">d10</option><option value="12">d12</option>
+                                    </select>
+                                </div>
+                                <button onClick={onShortRest} disabled={char.hp.hitDiceCurrent <= 0} className="w-full py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded font-bold transition-colors">
+                                    {char.hp.hitDiceCurrent > 0 ? "Roll Hit Die" : "No Hit Dice Left"}
+                                </button>
+                            </div>
+
+                            {/* Long Rest */}
+                            <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="flex items-center gap-2"><Moon className="text-indigo-400" size={18} /> <span className="font-bold text-slate-200">Long Rest</span></div>
+                                    <span className="text-xs text-slate-500">8 Hours</span>
+                                </div>
+                                <p className="text-xs text-slate-400 mb-4">Regain all HP, half Hit Dice, and reset spell slots.</p>
+                                <button onClick={onLongRest} className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-bold transition-colors">
+                                    Take Long Rest
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- WEAPON PICKER MODAL ---
+        const WeaponPickerModal = ({ char, onClose, onAddAttack }) => {
+            const [selectedWeapon, setSelectedWeapon] = useState(WEAPONS[0]);
+            const [magicBonus, setMagicBonus] = useState(0);
+            const [isProficient, setIsProficient] = useState(true);
+            const importRef = useRef(null);
+
+            const handleAdd = () => {
+                const pb = getProficiency(char.level);
+                let stat = "str";
+                if (selectedWeapon.range && !selectedWeapon.type.includes("Thrown")) stat = "dex";
+                if (selectedWeapon.finesse && char.stats.dex > char.stats.str) stat = "dex";
+                
+                const mod = getMod(char.stats[stat]);
+                const totalBonus = mod + (isProficient ? pb : 0) + parseInt(magicBonus || 0);
+                const damageBonus = mod + parseInt(magicBonus || 0);
+                
+                const damageString = `${selectedWeapon.damage}${damageBonus >= 0 ? '+'+damageBonus : damageBonus}`;
+                const nameString = `${selectedWeapon.name}${parseInt(magicBonus) > 0 ? ` +${magicBonus}` : ''}`;
+
+                onAddAttack({
+                    id: `atk-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    name: nameString,
+                    bonus: `+${totalBonus}`,
+                    damage: damageString,
+                    type: selectedWeapon.type
+                });
+                onClose();
+            };
+
+            const handleImportWeapon = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const json = JSON.parse(ev.target.result);
+                        // Flatten potential array of battles -> items
+                        const allItems = Array.isArray(json) ? json.flatMap(j => j.items || [j]) : (json.items || [json]);
+                        const weapons = allItems.filter(i => i.type === 'weapon');
+                        
+                        if (weapons.length > 0) {
+                            const w = weapons[0]; // Take first found weapon
+                            
+                            // Try basic parsing from description if structured data isn't perfectly aligned with our needs
+                            let dmg = "1d8";
+                            let type = "Slashing";
+                            
+                            // Heuristic parsing for damage dice
+                            if (w.description) {
+                                const dmgMatch = w.description.match(/Damage:\s*(\d+d\d+(?:\s*\+\s*\d+)?)/i);
+                                if (dmgMatch) dmg = dmgMatch[1];
+                                
+                                if (w.description.toLowerCase().includes("piercing")) type = "Piercing";
+                                else if (w.description.toLowerCase().includes("bludgeoning")) type = "Bludgeoning";
+                            }
+
+                            // Calculate bonus based on user stats + magic bonus from item description?
+                            // For simplicity, we import the raw weapon and let the user tweak the final calculated bonus in the main list if needed,
+                            // or we attempt to calculate it here.
+                            // Let's assume proficient for imported items.
+                            
+                            const pb = getProficiency(char.level);
+                            // Guess stat based on type
+                            let stat = "str";
+                            if (type === "Piercing" && (w.name.toLowerCase().includes("bow") || w.name.toLowerCase().includes("crossbow"))) stat = "dex";
+                            
+                            const mod = getMod(char.stats[stat]);
+                            // Check description for "+X bonus"
+                            let magicBonus = 0;
+                            const bonusMatch = w.description && w.description.match(/\+(\d+) bonus to attack/);
+                            if (bonusMatch) magicBonus = parseInt(bonusMatch[1]);
+
+                            const totalBonus = mod + pb + magicBonus;
+
+                            onAddAttack({
+                                id: `atk-imp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                                name: w.name,
+                                bonus: `+${totalBonus}`, 
+                                damage: dmg, 
+                                type: type
+                            });
+                            alert(`Imported ${w.name}!`);
+                            onClose();
+                        } else {
+                            alert("No weapons found in file.");
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert("Invalid JSON file.");
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = null;
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+                    <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-sm p-6 shadow-2xl relative animate-fade-in">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white"><XIcon size={20}/></button>
+                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Sword className="text-fuchsia-500" /> Add Weapon</h2>
+                        
+                        <div className="space-y-3">
+                            <div className="flex justify-end border-b border-slate-700 pb-3 mb-3">
+                                <button onClick={() => importRef.current.click()} className="text-xs bg-indigo-900/50 hover:bg-indigo-800 text-indigo-200 px-3 py-1.5 rounded flex items-center gap-2 border border-indigo-700/50 transition-colors w-full justify-center font-bold"><Upload size={14}/> Import from Loot JSON</button>
+                                <input type="file" ref={importRef} onChange={handleImportWeapon} accept=".json" className="hidden" />
+                            </div>
+
+                            <div>
+                                <label className="text-xs uppercase font-bold text-slate-500 block mb-1">Standard Weapons</label>
+                                <select className="w-full bg-slate-800 border-slate-600 rounded p-2 text-sm text-white" value={selectedWeapon.name} onChange={(e) => setSelectedWeapon(WEAPONS.find(w => w.name === e.target.value))}>
+                                    {WEAPONS.map(w => <option key={w.name} value={w.name}>{w.name}</option>)}
+                                </select>
+                            </div>
+                            
+                            <div className="flex gap-3">
+                                <div className="flex-1">
+                                    <label className="text-xs uppercase font-bold text-slate-500 block mb-1">Magic Bonus</label>
+                                    <input type="number" className="w-full bg-slate-800 border-slate-600 rounded p-2 text-sm text-white" placeholder="+0" value={magicBonus} onChange={e => setMagicBonus(e.target.value)} />
+                                </div>
+                                <div className="flex-1 flex items-center pt-5">
+                                    <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                                        <input type="checkbox" checked={isProficient} onChange={e => setIsProficient(e.target.checked)} className="rounded border-slate-600 bg-slate-800 text-fuchsia-500 focus:ring-0" />
+                                        Proficient
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button onClick={handleAdd} className="w-full py-2 mt-4 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded font-bold transition-colors">Add Standard Weapon</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- ARMOR PICKER MODAL ---
+        const ArmorPickerModal = ({ char, onClose, onEquip }) => {
+            const [selectedArmor, setSelectedArmor] = useState(ARMOR[1]); // Leather
+            const [hasShield, setHasShield] = useState(false);
+            const [magicBonus, setMagicBonus] = useState(0);
+
+            const handleEquip = () => {
+                const dexMod = getMod(char.stats.dex);
+                let baseAC = selectedArmor.ac;
+                
+                // Dex logic
+                if (selectedArmor.type === "Light") baseAC += dexMod;
+                else if (selectedArmor.type === "Medium") baseAC += Math.min(dexMod, 2);
+                
+                // Add Shield & Magic
+                let totalAC = baseAC + (hasShield ? 2 : 0) + parseInt(magicBonus || 0);
+                
+                onEquip(totalAC);
+                onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+                    <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-sm p-6 shadow-2xl relative animate-fade-in">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white"><XIcon size={20}/></button>
+                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Shield className="text-cyan-500" /> Equip Armor</h2>
+                        
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-xs uppercase font-bold text-slate-500 block mb-1">Armor Base</label>
+                                <select className="w-full bg-slate-800 border-slate-600 rounded p-2 text-sm text-white" value={selectedArmor.name} onChange={(e) => setSelectedArmor(ARMOR.find(a => a.name === e.target.value))}>
+                                    {ARMOR.filter(a => a.type !== 'Shield').map(a => <option key={a.name} value={a.name}>{a.name} ({a.type}, AC {a.ac})</option>)}
+                                </select>
+                            </div>
+                            
+                            <div className="flex gap-3">
+                                <div className="flex-1">
+                                    <label className="text-xs uppercase font-bold text-slate-500 block mb-1">Magic Bonus</label>
+                                    <input type="number" className="w-full bg-slate-800 border-slate-600 rounded p-2 text-sm text-white" placeholder="+0" value={magicBonus} onChange={e => setMagicBonus(e.target.value)} />
+                                </div>
+                                <div className="flex-1 flex items-center pt-5">
+                                    <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                                        <input type="checkbox" checked={hasShield} onChange={e => setHasShield(e.target.checked)} className="rounded border-slate-600 bg-slate-800 text-cyan-500 focus:ring-0" />
+                                        +2 Shield
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button onClick={handleEquip} className="w-full py-2 mt-4 bg-cyan-600 hover:bg-cyan-500 text-white rounded font-bold transition-colors">Calculate & Set AC</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- ITEM DETAIL MODAL ---
+        const ItemDetailModal = ({ item, onClose }) => {
+            return (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
+                    <div className="bg-slate-900 border border-slate-600 rounded-xl w-full max-w-lg p-6 shadow-2xl relative animate-fade-in max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white"><XIcon size={20}/></button>
+                        <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2 pr-8">{item.name}</h2>
+                        {item.qty > 1 && <span className="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded inline-block mb-3">Quantity: {item.qty}</span>}
+                        <div className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed font-serif bg-slate-800/30 p-4 rounded-lg border border-slate-700/50">
+                            {item.notes || "No description provided."}
+                        </div>
+                        <div className="mt-4 flex justify-end">
+                            <button onClick={onClose} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-bold transition-colors">Close</button>
+                        </div>
+                    </div>
                 </div>
             );
         };
@@ -186,13 +900,48 @@
         function App() {
             const [characters, setCharacters] = useState(() => {
                 const saved = localStorage.getItem('akashic_characters');
-                return saved ? JSON.parse(saved) : [DEFAULT_CHAR];
+                let chars = saved ? JSON.parse(saved) : [DEFAULT_CHAR];
+                
+                // Sanitize IDs on load to fix any broken data from previous sessions
+                chars = chars.map(c => {
+                    // Check Inventory IDs
+                    if (c.inventory && Array.isArray(c.inventory)) {
+                        const seenIds = new Set();
+                        c.inventory = c.inventory.map(item => {
+                            let newId = item.id;
+                            // Regenerate if missing or duplicate or weird object
+                            if (!newId || typeof newId !== 'string' || seenIds.has(newId)) {
+                                newId = `sanitized-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                            }
+                            seenIds.add(newId);
+                            return { ...item, id: newId };
+                        });
+                    }
+                    return c;
+                });
+                return chars;
             });
+
             const [activeId, setActiveId] = useState(() => characters[0]?.id || 'default');
             const [view, setView] = useState('sheet'); 
             const [activeTab, setActiveTab] = useState('main'); 
             
+            // Dice State
+            const [trayOpen, setTrayOpen] = useState(false);
+            const [rollReq, setRollReq] = useState(null); 
+            // Modal States
+            const [restModalOpen, setRestModalOpen] = useState(false);
+            const [weaponModalOpen, setWeaponModalOpen] = useState(false);
+            const [armorModalOpen, setArmorModalOpen] = useState(false);
+            const [viewItem, setViewItem] = useState(null); // Item to show in modal
+            
+            const fileInputRef = useRef(null);
+            const lootImportRef = useRef(null);
+
             const char = useMemo(() => characters.find(c => c.id === activeId) || DEFAULT_CHAR, [characters, activeId]);
+
+            // Ensure Attuned Items exist for old data
+            if (!char.attunedItems) { char.attunedItems = ['', '', '']; }
 
             useEffect(() => {
                 localStorage.setItem('akashic_characters', JSON.stringify(characters));
@@ -215,20 +964,42 @@
                 updateChar('deathSaves', { ...saves, [type]: val });
             };
             
-            const addItem = () => updateChar('inventory', [...char.inventory, { id: Date.now(), name: "New Item", qty: 1, notes: "" }]);
-            const addSpell = () => updateChar('spells', [...char.spells, { id: Date.now(), name: "New Spell", level: 1, prepared: false, notes: "" }]);
-            const addFeature = () => updateChar('features', [...char.features, { id: Date.now(), name: "New Feature", source: "Class", desc: "" }]);
-            const addAttack = () => updateChar('attacks', [...char.attacks, { id: Date.now(), name: "Weapon", bonus: "+0", damage: "1d8", type: "Slashing" }]);
-            const addResource = () => updateChar('resources', [...(char.resources||[]), { id: Date.now(), name: "Resource", current: 1, max: 1 }]);
+            const addItem = () => updateChar('inventory', [...char.inventory, { id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, name: "New Item", qty: 1, notes: "" }]);
+            const addSpell = () => updateChar('spells', [...char.spells, { id: `spell-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, name: "New Spell", level: 1, prepared: false, notes: "" }]);
+            const addFeature = () => updateChar('features', [...char.features, { id: `feat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, name: "New Feature", source: "Class", desc: "" }]);
+            const addAttack = () => updateChar('attacks', [...char.attacks, { id: `atk-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, name: "Weapon", bonus: "+0", damage: "1d8", type: "Slashing" }]);
+            
+            // New Add Attack Handler from Modal
+            const handleAddAttackFromModal = (newAttack) => {
+                updateChar('attacks', [...char.attacks, newAttack]);
+            };
+
+            const addResource = () => updateChar('resources', [...(char.resources||[]), { id: `res-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, name: "Resource", current: 1, max: 1 }]);
+
+            const toggleCondition = (cond) => {
+                const current = char.conditions || [];
+                if (current.includes(cond)) {
+                    updateChar('conditions', current.filter(c => c !== cond));
+                } else {
+                    updateChar('conditions', [...current, cond]);
+                }
+            };
+
+            const updateExhaustion = (val) => {
+                updateChar('exhaustion', Math.max(0, Math.min(6, val)));
+            };
 
             const updateItemInArray = (arrName, id, field, val) => {
                 const newArr = (char[arrName] || []).map(i => i.id === id ? { ...i, [field]: val } : i);
                 updateChar(arrName, newArr);
             };
             const deleteItemFromArray = (arrName, id) => updateChar(arrName, (char[arrName] || []).filter(i => i.id !== id));
+            
+            const updateInventory = (id, field, val) => updateItemInArray('inventory', id, field, val);
+            const deleteItem = (id) => deleteItemFromArray('inventory', id);
 
             const createNewCharacter = () => {
-                const newChar = { ...DEFAULT_CHAR, id: Date.now().toString(), name: "New Hero" };
+                const newChar = { ...DEFAULT_CHAR, id: `char-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, name: "New Hero" };
                 setCharacters([...characters, newChar]);
                 setActiveId(newChar.id);
                 setView('sheet');
@@ -238,17 +1009,195 @@
                 if(!confirm("Delete this character?")) return;
                 let newChars = characters.filter(c => c.id !== id);
                 if (newChars.length === 0) {
-                    const fresh = { ...DEFAULT_CHAR, id: Date.now().toString(), name: "New Hero" };
+                    const fresh = { ...DEFAULT_CHAR, id: `char-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, name: "New Hero" };
                     newChars = [fresh];
                 }
                 setCharacters(newChars);
                 if (id === activeId || newChars.length === 1) { setActiveId(newChars[0].id); }
             };
 
+            const copyStatblock = () => {
+                const pb = getProficiency(char.level);
+                const statsTxt = Object.entries(char.stats).map(([k, v]) => `${k.toUpperCase()} ${v} (${formatMod(v)})`).join(' | ');
+                const saves = (char.savingThrows || []).map(s => {
+                    const mod = getMod(char.stats[s]);
+                    const total = mod + pb;
+                    return `${s.toUpperCase()} ${total >= 0 ? '+' : ''}${total}`;
+                }).join(', ');
+                
+                const attacks = (char.attacks || []).map(a => `- ${a.name}: ${a.bonus} to hit, ${a.damage} ${a.type}`).join('\n');
+
+                const text = `**${char.name}**
+Level ${char.level} ${char.race} ${char.class}
+AC: ${char.ac} | HP: ${char.hp.current}/${char.hp.max} | Speed: ${char.speed}ft
+${statsTxt}
+Saves: ${saves || "None"}
+Attacks:
+${attacks || "- Unarmed"}`;
+
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    alert("Statblock copied to clipboard!");
+                } catch (err) {
+                    console.error('Fallback: Oops, unable to copy', err);
+                    alert("Failed to copy statblock.");
+                }
+                document.body.removeChild(textArea);
+            };
+
+            const triggerRoll = (label, dice, mod) => {
+                setRollReq({ label, dice, mod });
+                setTrayOpen(true);
+            };
+
+            // --- REST HANDLERS ---
+            const handleShortRestRoll = () => {
+                if (char.hp.hitDiceCurrent > 0) {
+                    // Start the roll
+                    const dieSize = char.hp.hitDieSize || 8;
+                    const conMod = getMod(char.stats.con);
+                    triggerRoll("Short Rest (Hit Die)", `1d${dieSize}`, conMod);
+                    setRestModalOpen(false); // Close modal to show dice
+                }
+            };
+
+            const handleLongRest = () => {
+                if(!confirm("Take a Long Rest? This will reset HP, Slots, and recover 1/2 Hit Dice.")) return;
+                
+                const newHp = { ...char.hp };
+                newHp.current = newHp.max;
+                newHp.temp = 0;
+                // Regain half max hit dice, min 1
+                const regain = Math.max(1, Math.floor(newHp.hitDiceMax / 2));
+                newHp.hitDiceCurrent = Math.min(newHp.hitDiceMax, newHp.hitDiceCurrent + regain);
+                
+                // Reset spell slots
+                const newSlots = { ...char.spellSlots };
+                Object.keys(newSlots).forEach(k => newSlots[k].used = 0);
+
+                // Reset death saves
+                const newDS = { successes: 0, failures: 0 };
+
+                // Reset Exhaustion by 1 (optional, but standard 5e rule)
+                const newExhaustion = Math.max(0, (char.exhaustion || 0) - 1);
+
+                setCharacters(prev => prev.map(c => c.id === activeId ? { ...c, hp: newHp, spellSlots: newSlots, deathSaves: newDS, exhaustion: newExhaustion } : c));
+                setRestModalOpen(false);
+                alert("Long Rest Complete! HP and Spell Slots restored. Exhaustion reduced by 1.");
+            };
+
+            const setHitDieSize = (size) => updateHP('hitDieSize', size);
+
+            const handleRollComplete = (result) => {
+                if (result.label === "Short Rest (Hit Die)") {
+                    // Apply Healing
+                    const healed = result.total + result.mod;
+                    const newHpCurrent = Math.min(char.hp.max, char.hp.current + healed);
+                    const newHdCurrent = Math.max(0, char.hp.hitDiceCurrent - 1);
+                    
+                    updateChar('hp', { ...char.hp, current: newHpCurrent, hitDiceCurrent: newHdCurrent });
+                    // Optional: Show toast or rely on visual update
+                }
+            };
+
+            // --- IMPORT/EXPORT HANDLERS ---
+            const exportData = (characterToExport = null) => {
+                // If characterToExport is passed, export single object. Otherwise export full roster.
+                const data = characterToExport || characters;
+                const fileName = characterToExport 
+                    ? `${characterToExport.name.replace(/\s+/g, '_')}_sheet.json` 
+                    : `akashic_roster_backup_${new Date().toISOString().slice(0,10)}.json`;
+
+                const dataStr = JSON.stringify(data, null, 2);
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            const triggerImport = () => fileInputRef.current.click();
+
+            const importData = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const json = JSON.parse(event.target.result);
+                        const imported = Array.isArray(json) ? json : [json];
+                        
+                        // Basic validation
+                        const valid = imported.filter(c => c.name && c.stats);
+                        if (valid.length === 0) { alert("Invalid file: No valid character data found."); return; }
+                        
+                        // Assign new IDs to avoid conflicts and Merge
+                        const newChars = valid.map(c => ({ 
+                            ...c, 
+                            id: `char-imp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                            name: c.name + " (Imported)" 
+                        }));
+                        
+                        setCharacters(prev => [...prev, ...newChars]);
+                        alert(`Successfully imported ${newChars.length} character(s).`);
+                    } catch (err) {
+                        alert("Error parsing JSON file. Please ensure it is a valid backup.");
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = null; // Reset input
+            };
+
+            const handleLootImport = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const json = JSON.parse(ev.target.result);
+                        // Flatten data: handle both single entries and arrays of entries with 'items'
+                        const rawItems = Array.isArray(json) ? json : [json];
+                        const flattenedItems = rawItems.flatMap(entry => entry.items ? entry.items : [entry]);
+                        
+                        const newInventory = flattenedItems.map((item, index) => ({
+                            id: `import-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+                            name: item.name,
+                            qty: parseInt(item.qty) || 1,
+                            notes: `${item.rarity ? `[${item.rarity.toUpperCase()}] ` : ''}${item.description || ''} ${item.val ? `(${item.val})` : ''}`
+                        }));
+
+                        updateChar('inventory', [...char.inventory, ...newInventory]);
+                        alert(`Imported ${newInventory.length} items to inventory.`);
+                    } catch(err) {
+                        console.error(err);
+                        alert("Failed to parse Loot JSON.");
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = null;
+            };
+
             const pb = getProficiency(char.level);
             const spellMod = getMod(char.stats[char.spellAbility || 'int']);
             const spellAttack = spellMod + pb;
             const spellDC = 8 + spellMod + pb;
+
+            // Derived States for Status
+            const activeConditions = char.conditions || [];
+            const exLevel = char.exhaustion || 0;
+            const isImpaired = activeConditions.length > 0 || exLevel > 0;
+            
+            // Speed logic
+            const speedZeroConditions = ["Grappled", "Incapacitated", "Paralyzed", "Petrified", "Restrained", "Stunned", "Unconscious"];
+            const isSpeedZero = speedZeroConditions.some(c => activeConditions.includes(c)) || exLevel >= 5;
+            const isSpeedHalved = !isSpeedZero && exLevel >= 2;
 
             // --- RENDER ---
             if (view === 'list') {
@@ -258,14 +1207,34 @@
                             <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-purple-400 flex items-center gap-2"><FileText className="text-fuchsia-500" /> Character Roster</h1>
                             <a href="./index.html" className="p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white border border-slate-700 transition-colors"><Home size={20}/></a>
                         </header>
-                        <div className="grid gap-3">
+                        
+                        <div className="grid gap-3 mb-8">
                             {characters.map(c => (
-                                <div key={c.id} onClick={() => { setActiveId(c.id); setView('sheet'); }} className="glass-panel p-4 rounded-xl cursor-pointer hover:border-fuchsia-500 transition-colors flex justify-between items-center group">
+                                <div key={c.id} onClick={() => { setActiveId(c.id); setView('sheet'); }} className="glass-panel p-4 rounded-xl cursor-pointer hover:border-fuchsia-500 transition-colors flex justify-between items-center group relative">
                                     <div><div className="font-bold text-white text-lg">{c.name}</div><div className="text-sm text-slate-400">Lvl {c.level} {c.race} {c.class}</div></div>
-                                    <div className="flex items-center gap-3"><span className="text-xs text-slate-500 bg-slate-900 px-2 py-1 rounded">HP: {c.hp?.current}/{c.hp?.max}</span><button onClick={(e) => { e.stopPropagation(); deleteCharacter(c.id); }} className="p-2 text-slate-600 hover:text-red-500"><Trash2 size={16}/></button></div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs text-slate-500 bg-slate-900 px-2 py-1 rounded">HP: {c.hp?.current}/{c.hp?.max}</span>
+                                        <button onClick={(e) => { e.stopPropagation(); exportData(c); }} className="p-2 text-slate-600 hover:text-cyan-400" title="Export this Character"><Download size={16}/></button>
+                                        <button onClick={(e) => { e.stopPropagation(); deleteCharacter(c.id); }} className="p-2 text-slate-600 hover:text-red-500" title="Delete"><Trash2 size={16}/></button>
+                                    </div>
                                 </div>
                             ))}
                             <button onClick={createNewCharacter} className="p-4 rounded-xl border-2 border-dashed border-slate-700 text-slate-500 hover:border-fuchsia-500 hover:text-fuchsia-400 font-bold flex items-center justify-center gap-2 transition-all"><Plus size={20}/> Create New Character</button>
+                        </div>
+
+                        {/* Data Management Section */}
+                        <div className="glass-panel p-4 rounded-xl border-t-2 border-slate-700">
+                            <h3 className="text-slate-400 text-sm uppercase font-bold mb-3 flex items-center gap-2"><Scroll size={14}/> Data Management</h3>
+                            <div className="flex gap-2">
+                                <button onClick={() => exportData(null)} className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-600 flex items-center justify-center gap-2 text-sm font-bold transition-colors">
+                                    <Download size={16} /> Backup Roster
+                                </button>
+                                <button onClick={triggerImport} className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-600 flex items-center justify-center gap-2 text-sm font-bold transition-colors">
+                                    <Upload size={16} /> Import JSON
+                                </button>
+                                <input type="file" ref={fileInputRef} onChange={importData} accept=".json" className="hidden" />
+                            </div>
+                            <p className="text-[10px] text-slate-600 mt-2 text-center">Data is stored in your browser's local storage. Use Backup to save your data externally.</p>
                         </div>
                     </div>
                 );
@@ -273,13 +1242,55 @@
 
             return (
                 <div className="min-h-screen pb-20">
-                    <div className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur border-b border-slate-800 p-2 shadow-lg">
+                    <DiceTray isOpen={trayOpen} onClose={() => setTrayOpen(false)} rollRequest={rollReq} onRollComplete={handleRollComplete} />
+                    
+                    {restModalOpen && (
+                        <RestModal 
+                            char={char} 
+                            onClose={() => setRestModalOpen(false)} 
+                            onShortRest={handleShortRestRoll} 
+                            onLongRest={handleLongRest}
+                            setDieSize={setHitDieSize}
+                        />
+                    )}
+
+                    {weaponModalOpen && (
+                        <WeaponPickerModal
+                            char={char}
+                            onClose={() => setWeaponModalOpen(false)}
+                            onAddAttack={handleAddAttackFromModal}
+                        />
+                    )}
+
+                    {armorModalOpen && (
+                        <ArmorPickerModal
+                            char={char}
+                            onClose={() => setArmorModalOpen(false)}
+                            onEquip={(newAC) => updateChar('ac', newAC)}
+                        />
+                    )}
+
+                    {viewItem && (
+                        <ItemDetailModal 
+                            item={viewItem} 
+                            onClose={() => setViewItem(null)} 
+                        />
+                    )}
+
+                    <div className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur border-b border-slate-800 p-2 shadow-lg">
                         <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 flex-1">
                                 <button onClick={() => setView('list')} className="p-2 bg-slate-800 rounded text-slate-300 hover:text-white border border-slate-700"><User size={18}/></button>
                                 <input className="bg-transparent border-none text-lg font-bold text-white focus:ring-0 p-0 w-full truncate" value={char.name} onChange={(e) => updateChar('name', e.target.value)} />
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
+                                {/* Suite Dropdown Added Here */}
+                                <SuiteDropdown />
+                                
+                                {isImpaired && <div className="text-red-500 animate-pulse" title="Status Condition Active"><AlertTriangle size={20}/></div>}
+                                <button onClick={() => setRestModalOpen(true)} className="flex items-center gap-1 text-[10px] text-orange-400 bg-orange-950/30 px-2 py-2 rounded border border-orange-900/50 hover:bg-orange-900/50 transition-colors" title="Rest">
+                                    <Flame size={14} /> <span className="hidden sm:inline">Rest</span>
+                                </button>
                                 <div className="flex items-center gap-1 text-[10px] text-fuchsia-400 bg-fuchsia-950/30 px-2 py-1 rounded border border-fuchsia-900/50" title="Experience Points">
                                     <span>XP</span>
                                     <input type="number" className="w-12 bg-transparent border-0 text-center p-0 text-white font-bold focus:ring-0" value={char.xp} onChange={(e) => updateChar('xp', parseInt(e.target.value))} />
@@ -312,6 +1323,9 @@
 
                         {activeTab === 'main' && (
                             <div className="animate-fade-in space-y-4">
+                                <div className="flex justify-end">
+                                    <button onClick={copyStatblock} className="text-xs flex items-center gap-1 text-slate-400 hover:text-white bg-slate-800 px-2 py-1 rounded border border-slate-600 transition-colors"><Copy size={12}/> Copy Statblock</button>
+                                </div>
                                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-4 justify-items-center">
                                     {Object.keys(char.stats).map(stat => ( <StatBox key={stat} label={stat} value={char.stats[stat]} onChange={(v) => updateStat(stat, v)} /> ))}
                                 </div>
@@ -331,8 +1345,13 @@
                         {activeTab === 'combat' && (
                             <div className="animate-fade-in space-y-4">
                                 <div className="grid grid-cols-3 gap-4">
-                                    <div className="glass-panel p-2 rounded text-center"><Shield className="mx-auto mb-1 text-cyan-400"/><div className="text-xs uppercase text-slate-500 font-bold">AC</div><input type="number" className="w-full text-center text-xl font-bold bg-transparent border-none" value={char.ac} onChange={e=>updateChar('ac', parseInt(e.target.value))}/></div>
-                                    <div className="glass-panel p-2 rounded text-center"><D20 className="mx-auto mb-1 text-yellow-400"/><div className="text-xs uppercase text-slate-500 font-bold">Init</div><input type="number" className="w-full text-center text-xl font-bold bg-transparent border-none" value={char.initiative} onChange={e=>updateChar('initiative', parseInt(e.target.value))}/></div>
+                                    <div className="glass-panel p-2 rounded text-center relative group">
+                                        <Shield className="mx-auto mb-1 text-cyan-400"/>
+                                        <div className="text-xs uppercase text-slate-500 font-bold">AC</div>
+                                        <input type="number" className="w-full text-center text-xl font-bold bg-transparent border-none" value={char.ac} onChange={e=>updateChar('ac', parseInt(e.target.value))}/>
+                                        <button onClick={() => setArmorModalOpen(true)} className="absolute top-1 right-1 p-1 bg-slate-800 rounded-full text-slate-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"><Settings size={12}/></button>
+                                    </div>
+                                    <div className="glass-panel p-2 rounded text-center cursor-pointer hover:bg-slate-800 transition-colors" onClick={() => triggerRoll('Initiative', '1d20', char.initiative)}><D20 className="mx-auto mb-1 text-yellow-400"/><div className="text-xs uppercase text-slate-500 font-bold">Init</div><input type="number" className="w-full text-center text-xl font-bold bg-transparent border-none" value={char.initiative} onChange={e=>updateChar('initiative', parseInt(e.target.value))}/></div>
                                     <div className="glass-panel p-2 rounded text-center"><Zap className="mx-auto mb-1 text-fuchsia-400"/><div className="text-xs uppercase text-slate-500 font-bold">Speed</div><input type="number" className="w-full text-center text-xl font-bold bg-transparent border-none" value={char.speed} onChange={e=>updateChar('speed', parseInt(e.target.value))}/></div>
                                 </div>
 
@@ -476,12 +1495,42 @@
                             <div className="animate-fade-in grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="glass-panel p-4 rounded-xl min-h-[300px] flex flex-col">
                                     <div className="flex justify-between items-center mb-3"><h3 className="font-bold text-slate-300 flex items-center gap-2"><Backpack size={16} className="text-amber-500"/> Inventory</h3><button onClick={addItem} className="p-1 bg-slate-700 rounded hover:bg-slate-600 text-white"><Plus size={16}/></button></div>
+                                    
+                                    {/* --- ATTUNEMENT SECTION --- */}
+                                    <div className="mb-4 bg-slate-900/50 p-3 rounded border border-indigo-500/30 relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                                        <h4 className="text-xs font-bold text-indigo-300 uppercase mb-2 flex justify-between">
+                                            <span className="flex items-center gap-1"><LinkIcon size={12}/> Attunement Slots</span>
+                                            <span>{char.attunedItems.filter(i=>i).length} / 3</span>
+                                        </h4>
+                                        <div className="space-y-2">
+                                            {[0,1,2].map(idx => (
+                                                <div key={idx} className="flex items-center gap-2">
+                                                    <div className={`w-2 h-2 rounded-full transition-all duration-500 ${char.attunedItems[idx] ? 'bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.8)]' : 'bg-slate-700'}`}></div>
+                                                    <input 
+                                                        className="flex-1 bg-transparent border-b border-slate-700 text-sm py-1 focus:border-indigo-500 placeholder-slate-600 transition-colors text-slate-300 focus:text-white"
+                                                        placeholder="Unattuned..."
+                                                        value={char.attunedItems[idx]}
+                                                        onChange={(e) => {
+                                                            const newAttuned = [...char.attunedItems];
+                                                            newAttuned[idx] = e.target.value;
+                                                            updateChar('attunedItems', newAttuned);
+                                                        }}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
                                     <div className="flex-1 space-y-2 overflow-y-auto max-h-96 pr-1">
                                         {char.inventory.map(item => (
                                             <div key={item.id} className="flex gap-2 items-start bg-slate-900/50 p-2 rounded group">
                                                 <input className="w-8 text-center bg-transparent border-b border-slate-700 text-xs focus:bg-slate-800" value={item.qty} onChange={(e) => updateInventory(item.id, 'qty', e.target.value)} />
                                                 <div className="flex-1">
-                                                    <input className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-200 focus:ring-0 placeholder-slate-600" value={item.name} onChange={(e) => updateInventory(item.id, 'name', e.target.value)} placeholder="Item Name" />
+                                                    <div className="flex items-center justify-between">
+                                                        <input className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-200 focus:ring-0 placeholder-slate-600" value={item.name} onChange={(e) => updateInventory(item.id, 'name', e.target.value)} placeholder="Item Name" />
+                                                        <button onClick={() => setViewItem(item)} className="text-slate-500 hover:text-indigo-400 px-2"><Info size={14}/></button>
+                                                    </div>
                                                     <textarea className="w-full bg-transparent border-none p-0 text-[10px] text-slate-400 focus:ring-0 resize-none h-auto" rows="1" value={item.notes} onChange={(e) => updateInventory(item.id, 'notes', e.target.value)} placeholder="Notes..." />
                                                 </div>
                                                 <button onClick={() => deleteItem(item.id)} className="text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14}/></button>
