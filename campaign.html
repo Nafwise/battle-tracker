@@ -21,6 +21,7 @@
             --accent-red: #ef4444;    /* Red (Combat) */
             --accent-indigo: #6366f1; /* Indigo (UI) */
             --accent-purple: #a855f7; /* Purple (Magic/Psionic) */
+            --accent-genesis: #10b981; /* Emerald (New World) */
             
             --border: #334155;        /* Slate 700 */
         }
@@ -113,6 +114,12 @@
             color: #bae6fd;
         }
 
+        .read-aloud.genesis {
+            background-color: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid var(--accent-genesis);
+            color: #d1fae5;
+        }
+
         .dialogue-box {
             background-color: rgba(168, 85, 247, 0.1);
             border-left: 4px solid var(--accent-indigo);
@@ -137,6 +144,37 @@
             border-left: 3px solid var(--border);
             padding-left: 15px;
             margin: 15px 0;
+        }
+        
+        .myth-box {
+            background-color: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--accent-genesis);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: inset 0 0 15px rgba(16, 185, 129, 0.1);
+        }
+
+        .role-tag {
+            font-family: 'Cinzel', serif;
+            font-weight: bold;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            font-size: 0.9em;
+            display: block;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
+        }
+
+        .avatar-box {
+            background-color: rgba(168, 85, 247, 0.05);
+            border-left: 4px solid var(--accent-purple);
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 0.9em;
+            font-style: italic;
+            color: #e9d5ff;
         }
 
         /* TABLES */
@@ -351,7 +389,7 @@
 
     <div class="toc-container">
         <h1 style="border-bottom: none; margin-bottom: 10px;">The Hallowed Demesne</h1>
-        <h3 style="margin-top:0; color: #94a3b8; font-size: 0.9em;">Module Version 1.4</h3>
+        <h3 style="margin-top:0; color: #94a3b8; font-size: 0.9em;">Module Version 1.5</h3>
         <hr style="border-color: #334155; margin: 20px 0;">
         <a class="toc-link" href="#ch1-creation">Chapter 1: Character Creation</a>
         <a class="toc-link" href="#ch1-hooks">Chapter 1: Hooks & Identities</a>
@@ -363,6 +401,7 @@
         <a class="toc-link" href="#ch3-wasteland">Chapter 3: The Wasteland Trials</a>
         <a class="toc-link" href="#ch4-castle">Chapter 4: The Architecture of Lies</a>
         <a class="toc-link" href="#ch5-finale">Chapter 5: The Singularity (Finale)</a>
+        <a class="toc-link" href="#ch6-genesis">Chapter 6: The Genesis World (Epilogue)</a>
         <a class="toc-link" href="#app-gib">Appendix A: The Legend of Gib</a>
         <a class="toc-link" href="#app-subclasses">Appendix B: The Formless Archetypes</a>
         <a class="toc-link" href="#app-bestiary">Appendix B-1: Master Bestiary</a>
@@ -725,7 +764,7 @@
         <h2>The Core Cast</h2>
     
         <div class="mechanic-box">
-            <span style="font-family: 'Cinzel', serif; font-weight: bold; font-size: 1.2em; color: var(--accent-cyan); border-bottom: 1px solid var(--accent-cyan); margin-bottom: 10px; display: block;">1. The Anchor (The Cage)</span>
+            <span class="role-tag">1. The Anchor (The Cage)</span>
             <span style="font-family: 'Noto Sans', sans-serif; font-size: 0.8em; color: #94a3b8; font-style: italic;">Role: Spouse, Parent, or Mentor | Faction: The Nest</span>
             <p><strong>Purpose:</strong> This NPC is assigned to the player with the "Anchor" background. They represent safety, stagnation, and guilt. Their dialogue is always about "staying inside" or "fear of the outside."</p>
             <p><strong>Personality:</strong> Overbearingly nurturing. If the player tries to leave, their sweetness turns into cold, hard commands.</p>
@@ -735,7 +774,7 @@
         </div>
     
         <div class="mechanic-box">
-            <span style="font-family: 'Cinzel', serif; font-weight: bold; font-size: 1.2em; color: var(--accent-cyan); border-bottom: 1px solid var(--accent-cyan); margin-bottom: 10px; display: block;">2. The Armorer (The Enabler)</span>
+            <span class="role-tag">2. The Armorer (The Enabler)</span>
             <span style="font-family: 'Noto Sans', sans-serif; font-size: 0.8em; color: #94a3b8; font-style: italic;">Role: Blacksmith or Merchant | Faction: The Maw</span>
             <p><strong>Purpose:</strong> They supply weapons and encourage violence. They speak in loops about "strength," "steel," and "hunger." They represent the temptation of the Cull.</p>
             <p><strong>Personality:</strong> Stoic, rhythmic, and intense. They treat weapons like living things that need to be fed.</p>
@@ -745,7 +784,7 @@
         </div>
     
         <div class="mechanic-box">
-            <span style="font-family: 'Cinzel', serif; font-weight: bold; font-size: 1.2em; color: var(--accent-cyan); border-bottom: 1px solid var(--accent-cyan); margin-bottom: 10px; display: block;">3. The Tinkerer (The Spy)</span>
+            <span class="role-tag">3. The Tinkerer (The Spy)</span>
             <span style="font-family: 'Noto Sans', sans-serif; font-size: 0.8em; color: #94a3b8; font-style: italic;">Role: General Goods or Quest Giver | Faction: Thorin</span>
             <p><strong>Purpose:</strong> A nervous, twitchy shopkeeper who sells the <strong>Brass Orbs</strong> (Mutation Points). They are unknowingly spying on the party for the Creator.</p>
             <p><strong>Personality:</strong> Anxious and fast-talking. They constantly rearrange items on the counter.</p>
@@ -755,7 +794,7 @@
         </div>
     
         <div class="mechanic-box">
-            <span style="font-family: 'Cinzel', serif; font-weight: bold; font-size: 1.2em; color: var(--accent-cyan); border-bottom: 1px solid var(--accent-cyan); margin-bottom: 10px; display: block;">4. Gib (The Audio Log)</span>
+            <span class="role-tag">4. Gib (The Audio Log)</span>
             <span style="font-family: 'Noto Sans', sans-serif; font-size: 0.8em; color: #94a3b8; font-style: italic;">Role: Bard/Lorekeeper | Faction: None (Rogue Code)</span>
             <p><strong>Description:</strong> A scruffy, slightly translucent Kobold with a lute that seems to be made of bone and wire. He sits in the corner of the tavern, ignored by the other NPCs.</p>
             <p><strong>Purpose:</strong> Gib is a "Legacy File"—a leftover from a previous version of the simulation. He knows the truth but can only speak it through song.</p>
@@ -1116,6 +1155,72 @@
                 The Demesne tears free from reality. It stops being a building and becomes a Bio-Ship, propelled by the Maw, accelerating into the stars to find new worlds to eat. Target: **Everything**."
             </div>
         </div>
+    </div>
+
+    <div id="ch6-genesis" class="page">
+        <h1>Chapter 6: The Genesis World</h1>
+        <p>When the <strong>Astral Genesis</strong> ending is chosen, the Hallowed Demesne does not die. It blooms. The "Red Code" of Thorin is overwritten by the "Pink Code" of Gloop. The simulation stabilizes into a real, breathing pocket dimension in the Astral Sea.</p>
+        <p>The horrors you fought are gone. In their place, Thorin's previous creations—the "Good Prototypes"—awaken to steward the new world. These are the <strong>Aspects of Nature</strong>.</p>
+
+        <h2>The New Pantheon (The Aspects)</h2>
+
+        <div class="myth-box">
+            <span class="role-tag">The Cycle of Time: Fenrir & Fenris</span>
+            <p><strong>Visual:</strong> Two massive Okami-like wolves. <strong>Fenrir (Verdant Guardian)</strong> is white with green runic halos. <strong>Fenris (Abyssal Guardian)</strong> is black with volcanic red halos.</p>
+            <p><strong>The Myth:</strong> They do not fight. They play. The sun rises when Fenrir chases Fenris over the horizon. The moon rises when Fenris turns to chase Fenrir back. The day/night cycle is just an eternal game of tag between brothers.</p>
+            <div class="avatar-box">
+                <strong>Avatar Encounter:</strong> Two stray dogs—one white, one black—approach your fire. They are impossibly heavy if you try to pick them up, but they love belly rubs.
+            </div>
+        </div>
+
+        <div class="myth-box">
+            <span class="role-tag">The Breath of the World: Icarus</span>
+            <p><strong>Visual:</strong> A majestic hybrid of a Unicorn and a Pegasus. Its coat is iridescent white, and its mane shimmers with the colors of the nebula.</p>
+            <p><strong>The Function:</strong> Icarus <em>is</em> the Wind. When he gallops across the sky, he pulls the atmosphere with him. When he sleeps, the air is still. He carries the clouds on his wings.</p>
+            <div class="avatar-box">
+                <strong>Avatar Encounter:</strong> On windy days, a stubborn white pony wanders into the town square. It steals apples from vendors. If you feed it, you gain the benefits of the <em>Feather Fall</em> spell for the day.
+            </div>
+        </div>
+
+        <div class="myth-box">
+            <span class="role-tag">The Keeper of Laws: Drifter</span>
+            <p><strong>Visual:</strong> A Beholder hybrid, but organic and kind. He is textured like a seed pod or polished wood. His central eye is golden, and he floats through the forest.</p>
+            <p><strong>The Function:</strong> Drifter is the Logic. He is the "Dungeon Master" of the reality. He ensures gravity works and that magic spells function correctly. He fixes "glitches" in the fabric of reality.</p>
+            <div class="avatar-box">
+                <strong>Avatar Encounter:</strong> The town has a new Librarian—a small, floating wooden sphere with a monocle. He organizes books with telekinesis and loves hearing stories from "The Outside."
+            </div>
+        </div>
+
+        <div class="myth-box">
+            <span class="role-tag">The Source of Life: The Glimmer-Cow</span>
+            <p><strong>Visual:</strong> A bovine creature made of translucent, bioluminescent blue jelly. Its skeleton is visible inside its body. Magical mushrooms and crystals grow from its back.</p>
+            <p><strong>The Function:</strong> The Glimmer-Cow represents <strong>Nutrients and Healing</strong>. It wanders the forests, and wherever its hooves touch, the soil is instantly fertilized. It drips a magical nectar that heals all sickness.</p>
+            <div class="avatar-box">
+                <strong>Avatar Encounter:</strong> Farmers sometimes find a glowing blue calf in their herds. It never eats, but the herd around it becomes immune to disease.
+            </div>
+        </div>
+
+        <div class="myth-box">
+            <span class="role-tag">The Watcher: Xy'lorgmath (The Smiling Moon)</span>
+            <p><strong>Visual:</strong> The moon of this world is huge, pale, and bears the distinct craters of a wide, benevolent smile. It is always full.</p>
+            <p><strong>The Myth:</strong> The Maw's hunger has been satiated. He no longer wants to consume; he wants to <strong>Observe</strong>. He watches the wolves play tag in the sky, his smile brightening whenever they run past him. He is the guardian of Tides and Ambition.</p>
+            <div class="avatar-box">
+                <strong>Avatar Encounter:</strong> On clear nights, if you look into a still pond, the reflection of the moon sometimes winks at you. Interacting with the water allows you to cast <em>Scrying</em> once per night.
+            </div>
+        </div>
+
+        <h2>The World State: Neo-Sanctuary</h2>
+        <div class="read-aloud genesis">
+            "The walls of the castle have softened. The cold steel has turned into warm, white marble and living wood. The sky is no longer a screen; it is the endless, colorful expanse of the Astral Sea. Above you, the wolves chase each other in a loop of light and shadow, and the Moon smiles down, finally at peace."
+        </div>
+
+        <h3>New Mechanics</h3>
+        <ul>
+            <li><strong>Soft Magic:</strong> Because Drifter is kind, Magic is safer here. There are no Wild Magic Surges. All healing spells roll maximum dice while within the city limits.</li>
+            <li><strong>The Astral Port:</strong> The Sanctuary is no longer a prison; it is a port. Friendly travelers from the Astral Plane (Githzerai, Travelers, Celestials) now dock here to trade with the "Founders" (The Players).</li>
+            <li><strong>Gloop's Role:</strong> Gloop is now the <strong>"Spirit of the Land."</strong> He doesn't have a single body anymore; he is the moss on the stones, the water in the fountain, and the feeling of comfort in the inn.</li>
+        </ul>
+
     </div>
 
     <div id="app-gib" class="page">
@@ -1870,6 +1975,29 @@
         
         <p><strong>DM Note:</strong> Use these tracks to set the mood for specific scenes.</p>
         
+        <h2>K.A.K. Signature Tracks</h2>
+        <p>The personal anthems of the corporation's most elite agents.</p>
+
+        <div class="song-card">
+            <div class="song-title">17. Holy Fire</div>
+            <div class="song-meta">Tuck's Song | Play during Divine Intervention</div>
+            <div class="song-meta">"A roaring anthem of sunlight and ash. The song that plays when the Friar stops healing and starts purging."</div>
+            <audio controls>
+                <source src="songs/Holy Fire.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+
+        <div class="song-card">
+            <div class="song-title">18. Morning Lord</div>
+            <div class="song-meta">Thorne's Song | Play during Thorne's Rage</div>
+            <div class="song-meta">"The heavy, rhythmic beat of the Morninglord's chosen muscle. It's the sound of a 4ft kobold becoming an immovable object."</div>
+            <audio controls>
+                <source src="songs/Morning Lord.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+
         <h2>The Tavern Selection</h2>
         <p>Play these when the players are safe... or think they are safe.</p>
 
@@ -2065,6 +2193,15 @@
             <div class="stat-row"><span class="stat-line">Divine Scar</span> <span class="stat-value">Permanent Half-HP (The cost of the Nothic's Barrier)</span></div>
             <div class="taper-line"></div>
             <div class="trait"><span class="trait-name">Physical Traits.</span> Wears a pristine priestly robe over Gauntlets of Ogre Power. Carries a sun-blessed Flail.</div>
+        </div>
+        
+        <div class="mechanic-box" style="border-left: 4px solid var(--accent-gold);">
+            <h3 style="margin-top:0; color: var(--accent-gold);">K.A.K. Audio Logs</h3>
+            <p><strong>Signature Themes:</strong></p>
+            <ul>
+                <li><strong>"Holy Fire" (Tuck's Theme):</strong> Plays when the Light Domain's wrath is unleashed.</li>
+                <li><strong>"Morning Lord" (Thorne's Theme):</strong> Plays when the Barbarian protector stands between the light and the dark.</li>
+            </ul>
         </div>
 
         <h2>Part I: The Mud and The Blood (Origins)</h2>
