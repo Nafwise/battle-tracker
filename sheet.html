@@ -77,6 +77,18 @@
 
         /* Dice Tray Canvas */
         #dice-canvas { width: 100%; height: 100%; display: block; }
+
+        /* --- DROPDOWN MENU STYLES --- */
+        .suite-item { transition: all 0.2s ease; border-left: 3px solid transparent; }
+        .tracker-hover:hover { border-left-color: #A855F7; background: linear-gradient(90deg, rgba(168, 85, 247, 0.1), transparent); color: #d8b4fe; } .tracker-hover:hover svg { stroke: #A855F7; }
+        .map-hover:hover { border-left-color: #22D3EE; background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), transparent); color: #67e8f9; } .map-hover:hover svg { stroke: #22D3EE; }
+        .sheet-hover:hover { border-left-color: #EF4444; background: linear-gradient(90deg, rgba(239, 68, 68, 0.1), transparent); color: #fca5a5; } .sheet-hover:hover svg { stroke: #EF4444; }
+        .workshop-hover:hover { border-left-color: #22C55E; background: linear-gradient(90deg, rgba(34, 197, 94, 0.1), transparent); color: #86efac; } .workshop-hover:hover svg { stroke: #22C55E; }
+        .genesis-hover:hover { border-left-color: #2DD4BF; background: linear-gradient(90deg, rgba(45, 212, 191, 0.1), transparent); color: #5eead4; } .genesis-hover:hover svg { stroke: #2DD4BF; }
+        .forge-hover:hover { border-left-color: #F97316; background: linear-gradient(90deg, rgba(249, 115, 22, 0.1), transparent); color: #fdba74; } .forge-hover:hover svg { stroke: #F97316; }
+        .loot-hover:hover { border-left-color: #F59E0B; background: linear-gradient(90deg, rgba(245, 158, 11, 0.1), transparent); color: #fcd34d; } .loot-hover:hover svg { stroke: #F59E0B; }
+        .campaign-hover:hover { border-left-color: #94A3B8; background: linear-gradient(90deg, rgba(148, 163, 184, 0.1), transparent); color: #e2e8f0; } .campaign-hover:hover svg { stroke: #94A3B8; }
+        .compendium-hover:hover { border-left-color: #6366F1; background: linear-gradient(90deg, rgba(99, 102, 241, 0.1), transparent); color: #a5b4fc; } .compendium-hover:hover svg { stroke: #6366F1; }
     </style>
 </head>
 <body>
@@ -100,7 +112,7 @@
         const Trash2 = (props) => <Icon {...props}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></Icon>;
         const D20 = (props) => <Icon {...props}><path d="m12 2 10 5-10 5-10-5Z"/><path d="m2 7 10 10 10-10"/><path d="m2 17 10 5 10-5"/><path d="M12 22V12"/></Icon>;
         const FileText = (props) => <Icon {...props}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></Icon>;
-        const Sparkles = (props) => <Icon {...props}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.276 1.276L3 12l5.813 1.912a2 2 0 0 1 1.276 1.276L12 21l1.912-5.813a2 2 0 0 1 1.276-1.276L21 12l-5.813-1.912a2 2 0 0 1-1.276-1.276Z"/></Icon>;
+        const Sparkles = (props) => <Icon {...props}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.276 1.276L3 12l5.813 1.912a2 2 0 0 1 1.276 1.276L12 21l1.912-5.813a2 2 0 0 1 1.276-1.276L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></Icon>;
         const Zap = (props) => <Icon {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Icon>;
         const Wand = (props) => <Icon {...props}><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M10.6 6.4 9.4 5.2"/><path d="m19 5-1.2 1.2"/><path d="m9.4 12.8 1.2-1.2"/><path d="M2 21l9-9"/><path d="M22 3l-6 6"/></Icon>;
         const Battery = (props) => <Icon {...props}><rect width="16" height="10" x="2" y="7" rx="2" ry="2"/><line x1="22" x2="22" y1="11" y2="13"/></Icon>;
@@ -111,11 +123,12 @@
         const Sun = (props) => <Icon {...props}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41-1.41"/><path d="m19.07 4.93-1.41 1.41"/></Icon>;
         const Download = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></Icon>;
         const Upload = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></Icon>;
-        const AlertTriangle = (props) => <Icon {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></Icon>;
         const LinkIcon = (props) => <Icon {...props}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Icon>;
         const Settings = (props) => <Icon {...props}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></Icon>;
         const Copy = (props) => <Icon {...props}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></Icon>;
         const Info = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></Icon>;
+        
+        // Navigation Icons
         const ChevronDown = (props) => <Icon {...props}><path d="m6 9 6 6 6-6"/></Icon>;
         const Crosshair = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></Icon>;
         const MapIcon = (props) => <Icon {...props}><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" /><line x1="8" y1="2" x2="8" y2="18" /><line x1="16" y1="6" x2="16" y2="22" /></Icon>;
@@ -123,6 +136,9 @@
         const Hammer = (props) => <Icon {...props}><path d="M6 5h12v4h-12z" /><path d="M12 9v12" /><path d="M10 21h4" /></Icon>;
         const Flag = (props) => <Icon {...props}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></Icon>;
         const BookOpen = (props) => <Icon {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>;
+        const Coins = (props) => <Icon {...props}><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7 .71-2.82 2.82"/></Icon>;
+        const FlaskConical = (props) => <Icon {...props}><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" /><path d="M8.5 2h7" /><path d="M7 16h10" /></Icon>;
+        const Dna = (props) => <Icon {...props}><path d="M2 15c6.667-6 13.333 0 20-6"/><path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"/><path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"/><path d="m17 6-2.5-2.5"/><path d="m14 8-1-1"/><path d="m7 18 2.5 2.5"/><path d="m3.5 14.5.5.5"/><path d="m20 9 .5.5"/><path d="m6.5 12.5 1 1"/><path d="m16.5 10.5 1 1"/><path d="m10 16 1.5 1.5"/></Icon>;
 
         // --- CONSTANTS ---
         const DEFAULT_CHAR = {
@@ -531,66 +547,93 @@
                 <div className="relative" ref={dropdownRef}>
                     <button 
                         onClick={() => setIsOpen(!isOpen)}
-                        className={`flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-800 transition-colors text-slate-400 hover:text-white border border-transparent hover:border-slate-700 ${isOpen ? 'bg-slate-800 text-white' : ''}`}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-slate-300 hover:text-white border border-transparent hover:border-white/10 ${isOpen ? 'bg-white/10 text-white' : ''}`}
                     >
-                        <span className="text-xs font-bold hidden sm:inline">Apps</span>
+                        <span className="text-xs font-medium hidden sm:inline">Suite Apps</span>
                         <ChevronDown size={14} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}/>
                     </button>
                     
-                    <div className={`absolute top-full right-0 mt-2 w-56 bg-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-700 overflow-hidden py-2 flex flex-col gap-1 z-[100] transition-all duration-200 origin-top-right ${isOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'}`}>
+                    <div className={`absolute top-full right-0 mt-2 w-64 bg-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-700 overflow-hidden py-2 flex flex-col gap-1 z-[100] transition-all duration-200 origin-top-right ${isOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'}`}>
                         <div className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Navigation</div>
 
                         {/* Tracker (Purple) */}
-                        <a href="./tome.html" className="flex items-center gap-3 px-4 py-2 text-slate-300 hover:bg-slate-800/50 hover:text-purple-300 hover:border-l-2 hover:border-purple-500 transition-all">
-                            <Crosshair size={16} />
+                        <a href="./tome.html" className="suite-item tracker-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50">
+                            <Crosshair size={18} className="text-slate-400" />
                             <div className="flex flex-col">
-                                <span className="text-xs font-bold">Tracker</span>
-                                <span className="text-[10px] opacity-60">Combat & Init</span>
+                                <span className="text-sm font-bold">Tracker</span>
+                                <span className="text-[10px] opacity-60">Initiative & Combat</span>
                             </div>
                         </a>
 
                         {/* Atlas (Cyan) */}
-                        <a href="./map.html" className="flex items-center gap-3 px-4 py-2 text-slate-300 hover:bg-slate-800/50 hover:text-cyan-300 hover:border-l-2 hover:border-cyan-500 transition-all">
-                            <MapIcon size={16} />
+                        <a href="./map.html" className="suite-item map-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50">
+                            <MapIcon size={18} className="text-slate-400" />
                             <div className="flex flex-col">
-                                <span className="text-xs font-bold">Atlas</span>
+                                <span className="text-sm font-bold">Atlas</span>
                                 <span className="text-[10px] opacity-60">Tactical Maps</span>
                             </div>
                         </a>
 
-                        {/* Loot (Gold) */}
-                        <a href="./loot.html" className="flex items-center gap-3 px-4 py-2 text-slate-300 hover:bg-slate-800/50 hover:text-yellow-300 hover:border-l-2 hover:border-yellow-500 transition-all">
-                            <Gem size={16} />
+                        {/* Records (Red) - Active */}
+                        <div className="suite-item border-l-4 border-red-500 bg-slate-800/50 flex items-center gap-3 px-4 py-3 text-white">
+                            <User size={18} className="text-red-400" />
                             <div className="flex flex-col">
-                                <span className="text-xs font-bold">Loot</span>
+                                <span className="text-sm font-bold">Records</span>
+                                <span className="text-[10px] opacity-60">Character Sheets</span>
+                            </div>
+                        </div>
+
+                        {/* Workshop (Green) */}
+                        <a href="./homebrew.html" className="suite-item workshop-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50">
+                            <FlaskConical size={18} className="text-slate-400" />
+                            <div className="flex flex-col">
+                                <span className="text-sm font-bold">Workshop</span>
+                                <span className="text-[10px] opacity-60">Monster Creator</span>
+                            </div>
+                        </a>
+
+                        {/* Genesis (Teal) */}
+                        <a href="./origins.html" className="suite-item genesis-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50">
+                            <Dna size={18} className="text-slate-400" />
+                            <div className="flex flex-col">
+                                <span className="text-sm font-bold">Genesis</span>
+                                <span className="text-[10px] opacity-60">Class & Race Creator</span>
+                            </div>
+                        </a>
+
+                        {/* Astral Forge (Orange) */}
+                        <a href="./token.html" className="suite-item forge-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50">
+                            <Hammer size={18} className="text-slate-400" />
+                            <div className="flex flex-col">
+                                <span className="text-sm font-bold">Astral Forge</span>
+                                <span className="text-[10px] opacity-60">3D Token Maker</span>
+                            </div>
+                        </a>
+
+                        {/* Loot (Gold) */}
+                        <a href="./loot.html" className="suite-item loot-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50">
+                            <Coins size={18} className="text-slate-400" />
+                            <div className="flex flex-col">
+                                <span className="text-sm font-bold">Loot</span>
                                 <span className="text-[10px] opacity-60">Treasury</span>
                             </div>
                         </a>
 
-                        {/* Workshop (Green) */}
-                        <a href="./homebrew.html" className="flex items-center gap-3 px-4 py-2 text-slate-300 hover:bg-slate-800/50 hover:text-green-300 hover:border-l-2 hover:border-green-500 transition-all">
-                            <Hammer size={16} />
-                            <div className="flex flex-col">
-                                <span className="text-xs font-bold">Workshop</span>
-                                <span className="text-[10px] opacity-60">Creator</span>
-                            </div>
-                        </a>
-                        
                         {/* Campaign (Grey) */}
-                        <a href="./campaign.html" className="flex items-center gap-3 px-4 py-2 text-slate-300 hover:bg-slate-800/50 hover:text-slate-200 hover:border-l-2 hover:border-slate-400 transition-all">
-                            <Flag size={16} />
+                        <a href="./campaign.html" className="suite-item campaign-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50">
+                            <Flag size={18} className="text-slate-400" />
                             <div className="flex flex-col">
-                                <span className="text-xs font-bold">Campaign</span>
-                                <span className="text-[10px] opacity-60">Adventure</span>
+                                <span className="text-sm font-bold">Campaign</span>
+                                <span className="text-[10px] opacity-60">Adventure Module</span>
                             </div>
                         </a>
 
                         {/* Compendium (Indigo) */}
-                        <a href="./compendium.html" className="flex items-center gap-3 px-4 py-2 text-slate-300 hover:bg-slate-800/50 hover:text-indigo-300 hover:border-l-2 hover:border-indigo-500 transition-all border-t border-slate-700 mt-1">
-                            <BookOpen size={16} />
+                        <a href="./compendium.html" className="suite-item compendium-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50 border-t border-slate-700">
+                            <BookOpen size={18} className="text-slate-400" />
                             <div className="flex flex-col">
-                                <span className="text-xs font-bold">Compendium</span>
-                                <span className="text-[10px] opacity-60">Rules</span>
+                                <span className="text-sm font-bold">Compendium</span>
+                                <span className="text-[10px] opacity-60">Rules & Spells</span>
                             </div>
                         </a>
                     </div>
@@ -1545,8 +1588,7 @@ ${attacks || "- Unarmed"}`;
                                         ))}
                                     </div>
                                     <div className="grid grid-cols-5 gap-2 mt-4 pt-3 border-t border-slate-700">
-                                        {['cp','sp','ep','gp','pp'].map(curr => ( <div key={curr} className="flex flex-col items-center"><span className="text-[10px] uppercase text-slate-500 font-bold">{curr}</span><input type="number" className="w-full text-center text-xs bg-slate-900 border-slate-700 p-1" value={char.coins[curr]} onChange={(e) => updateChar('coins', {...char.coins, [curr]: parseInt(e.target.value)})} /></div> ))}
-                                    </div>
+                                        {['cp','sp','ep','gp','pp'].map(curr => ( <div key={curr} className="flex flex-col items-center"><span className="text-[10px] uppercase text-slate-500 font-bold">{curr}</span><input type="number" className="w-full text-center text-xs bg-slate-900 border-slate-700 p-1" value={char.coins[curr]} onChange={(e) => updateChar('coins', {...char.coins, [curr]: parseInt(e.target.value)})} /></div> ))}\r\n                                    </div>
                                 </div>
                                 <div className="glass-panel p-4 rounded-xl flex flex-col">
                                     <h3 className="font-bold text-slate-300 flex items-center gap-2 mb-3"><Scroll size={16} className="text-indigo-400"/> Notes & Bio</h3>

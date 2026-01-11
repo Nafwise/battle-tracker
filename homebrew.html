@@ -145,7 +145,8 @@
         const Coins = (props) => <Icon {...props}><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7 .71-2.82 2.82"/></Icon>;
         const User = (props) => <Icon {...props}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>;
         const Flag = (props) => <Icon {...props}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></Icon>;
-        const Sparkles = (props) => <Icon {...props}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 3v4"/><path d="M3 5h4"/><path d="M3 9h4"/></Icon>;
+        const Sparkles = (props) => <Icon {...props}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.276-1.276L12 21l1.912-5.813a2 2 0 0 1 1.276-1.276L21 12l-5.813-1.912a2 2 0 0 1-1.276-1.276Z" /></Icon>;
+        const Dna = (props) => <Icon {...props}><path d="M2 15c6.667-6 13.333 0 20-6"/><path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"/><path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"/><path d="m17 6-2.5-2.5"/><path d="m14 8-1-1"/><path d="m7 18 2.5 2.5"/><path d="m3.5 14.5.5.5"/><path d="m20 9 .5.5"/><path d="m6.5 12.5 1 1"/><path d="m16.5 10.5 1 1"/><path d="m10 16 1.5 1.5"/></Icon>;
 
 
         // --- CONSTANTS & UTILITIES (SHARED) ---
@@ -223,8 +224,26 @@
                             </div>
                         </a>
 
+                        {/* Workshop (Current App) */}
+                        <div className="suite-item border-l-4 border-emerald-500 bg-slate-800/50 flex items-center gap-3 px-4 py-3 text-white">
+                            <FlaskConical size={18} className="text-emerald-400" />
+                            <div className="flex flex-col">
+                                <span className="text-sm font-bold">Workshop</span>
+                                <span className="text-[10px] opacity-60">Monster Creator</span>
+                            </div>
+                        </div>
+
+                        {/* Genesis (Teal) */}
+                        <a href="./origins.html" className="suite-item workshop-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50">
+                            <Dna size={18} className="text-slate-400" />
+                            <div className="flex flex-col">
+                                <span className="text-sm font-bold">Genesis</span>
+                                <span className="text-[10px] opacity-60">Class & Race Creator</span>
+                            </div>
+                        </a>
+
                         {/* Astral Forge (Orange) - NEW */}
-                        <a href="./astral_forge.html" className="suite-item forge-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50">
+                        <a href="./token.html" className="suite-item forge-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50">
                             <Hammer size={18} className="text-slate-400" />
                             <div className="flex flex-col">
                                 <span className="text-sm font-bold">Astral Forge</span>
@@ -910,5 +929,4 @@
         root.render(<ErrorBoundary><App /></ErrorBoundary>);
     </script>
 </body>
-
 </html>

@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Genesis Archives - Class & Race Creator</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0F172A">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/core-js-bundle@3.37.1/minified.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        :root {
+            --astral-bg: #0F172A;
+            --astral-card: #1E293B;
+            --astral-input: #020617;
+            --text-primary: #F8FAFC;
+            --accent-cyan: #2DD4BF; /* Teal-400 */
+            --accent-glow: rgba(45, 212, 191, 0.2);
+            --border-color: #334155;
+        }
+
+        body {
+             background-color: #020617; 
+             font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+             color: var(--text-primary);
+             overscroll-behavior-y: none;
+             -webkit-tap-highlight-color: transparent;
+        }
+
+        .genesis-container {
+            background-color: var(--astral-bg);
+            background-image: radial-gradient(circle at top left, #134e4a 0%, #0f172a 60%);
+            box-shadow: 0 0 40px var(--accent-glow), 0 0 0 1px #334155;
+            border-radius: 12px;
+            margin: 20px auto;
+            max-width: 1400px; /* Widened for 3 columns */
+            min-height: 95vh;
+        }
+        
+        @media (max-width: 640px) {
+             .genesis-container {
+                 margin: 0;
+                 border-radius: 0;
+                 box-shadow: none;
+                 min-height: 100vh;
+                 border: none;
+             }
+        }
+        
+        /* Custom scrollbar for text areas */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .floating-button { z-index: 90; position: fixed; bottom: 20px; right: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        .input-dark { background-color: var(--astral-input); border: 1px solid var(--border-color); color: white; }
+        .input-dark:focus { outline: none; border-color: var(--accent-cyan); box-shadow: 0 0 0 1px var(--accent-glow); }
+
+        /* Navigation Hover Effects */
+        .suite-item { transition: all 0.2s ease; border-left: 3px solid transparent; }
+        .tracker-hover:hover { border-left-color: #A855F7; background: linear-gradient(90deg, rgba(168, 85, 247, 0.1), transparent); }
+        .map-hover:hover { border-left-color: #22D3EE; background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), transparent); }
+        .workshop-hover:hover { border-left-color: #22C55E; background: linear-gradient(90deg, rgba(34, 197, 94, 0.1), transparent); }
+        .loot-hover:hover { border-left-color: #F59E0B; background: linear-gradient(90deg, rgba(245, 158, 11, 0.1), transparent); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- ICONS ---
+        const Icon = ({ children, className, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>
+        );
+        const Dna = (props) => <Icon {...props}><path d="M2 15c6.667-6 13.333 0 20-6"/><path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"/><path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"/><path d="m17 6-2.5-2.5"/><path d="m14 8-1-1"/><path d="m7 18 2.5 2.5"/><path d="m3.5 14.5.5.5"/><path d="m20 9 .5.5"/><path d="m6.5 12.5 1 1"/><path d="m16.5 10.5 1 1"/><path d="m10 16 1.5 1.5"/></Icon>;
+        const BookUser = (props) => <Icon {...props}><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><circle cx="12" cy="8" r="2"/><path d="M15 13a3 3 0 1 0-6 0"/></Icon>;
+        const Sparkles = (props) => <Icon {...props}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275-1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 3v4"/><path d="M3 5h4"/><path d="M3 9h4"/></Icon>;
+        const ChevronDown = (props) => <Icon {...props}><path d="m6 9 6 6 6-6"/></Icon>;
+        const Settings = (props) => <Icon {...props}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></Icon>;
+        const Trash2 = (props) => <Icon {...props}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></Icon>;
+        const Upload = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></Icon>;
+        const Download = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></Icon>;
+        const Search = (props) => <Icon {...props}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></Icon>;
+        const X = (props) => <Icon {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>;
+        const Key = (props) => <Icon {...props}><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></Icon>;
+        const Info = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></Icon>;
+        const Home = (props) => <Icon {...props}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
+        const Crosshair = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></Icon>;
+        const MapIcon = (props) => <Icon {...props}><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></Icon>;
+        const User = (props) => <Icon {...props}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>;
+        const Hammer = (props) => <Icon {...props}><path d="m15 12-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L12 9"/><path d="M17.64 15 22 10.64"/><path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.4-.93-2.25V7.86c0-.55-.45-1-1-1H14.14c-.83 0-1.64.34-2.25.92L3.8 15.9"/></Icon>;
+        const Coins = (props) => <Icon {...props}><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7 .71-2.82 2.82"/></Icon>;
+        const Flag = (props) => <Icon {...props}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></Icon>;
+        const BookOpen = (props) => <Icon {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>;
+        const Copy = (props) => <Icon {...props}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></Icon>;
+        const Split = (props) => <Icon {...props}><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.87l-4.243-4.242a2 2 0 0 1-.585-1.414V3"/><path d="m20 21-9-9"/><path d="M9 3v2.17a2 2 0 0 1-.586 1.414l-4.242 4.242a2 2 0 0 0-1.172 2.871V22"/></Icon>;
+        const BookType = (props) => <Icon {...props}><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M9 10h6"/><path d="M9 6h6"/><path d="M9 14h6"/></Icon>;
+
+        // --- SHARED COMPONENTS ---
+        const SuiteDropdown = () => {
+            const [isOpen, setIsOpen] = useState(false);
+            const dropdownRef = useRef(null);
+
+            useEffect(() => {
+                const handleClickOutside = (event) => {
+                    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                        setIsOpen(false);
+                    }
+                };
+                document.addEventListener("mousedown", handleClickOutside);
+                return () => document.removeEventListener("mousedown", handleClickOutside);
+            }, []);
+
+            return (
+                <div className="relative" ref={dropdownRef}>
+                    <button onClick={() => setIsOpen(!isOpen)} className={`flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/5 transition-colors text-slate-300 hover:text-white border border-transparent hover:border-white/10 ${isOpen ? 'bg-white/10 text-white' : ''}`}>
+                        <span className="text-sm font-medium">Suite Apps</span>
+                        <ChevronDown size={14} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}/>
+                    </button>
+                    <div className={`absolute top-full right-0 mt-2 w-64 bg-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-700 overflow-hidden py-2 flex flex-col gap-1 z-[100] transition-all duration-200 origin-top-right ${isOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'}`}>
+                        <a href="./tome.html" className="suite-item tracker-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50"><Crosshair size={18} className="text-slate-400"/><div className="flex flex-col"><span className="text-sm font-bold">Tracker</span><span className="text-[10px] opacity-60">Initiative & Combat</span></div></a>
+                        <a href="./map.html" className="suite-item map-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50"><MapIcon size={18} className="text-slate-400"/><div className="flex flex-col"><span className="text-sm font-bold">Atlas</span><span className="text-[10px] opacity-60">Tactical Maps</span></div></a>
+                        <a href="./sheet.html" className="suite-item workshop-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50"><User size={18} className="text-slate-400"/><div className="flex flex-col"><span className="text-sm font-bold">Records</span><span className="text-[10px] opacity-60">Character Sheets</span></div></a>
+                        <a href="./homebrew.html" className="suite-item workshop-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50"><Hammer size={18} className="text-slate-400"/><div className="flex flex-col"><span className="text-sm font-bold">Workshop</span><span className="text-[10px] opacity-60">Monster Creator</span></div></a>
+                        {/* Current App */}
+                        <div className="suite-item border-l-4 border-teal-500 bg-slate-800/50 flex items-center gap-3 px-4 py-3 text-white"><Dna size={18} className="text-teal-400"/><div className="flex flex-col"><span className="text-sm font-bold">Genesis</span><span className="text-[10px] opacity-60">Class & Race Creator</span></div></div>
+                        <a href="./loot.html" className="suite-item loot-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50"><Coins size={18} className="text-slate-400"/><div className="flex flex-col"><span className="text-sm font-bold">Loot</span><span className="text-[10px] opacity-60">Treasury</span></div></a>
+                        <a href="./campaign.html" className="suite-item loot-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50"><Flag size={18} className="text-slate-400"/><div className="flex flex-col"><span className="text-sm font-bold">Campaign</span><span className="text-[10px] opacity-60">Adventure Module</span></div></a>
+                        <a href="./compendium.html" className="suite-item loot-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50 border-t border-slate-700"><BookOpen size={18} className="text-slate-400"/><div className="flex flex-col"><span className="text-sm font-bold">Compendium</span><span className="text-[10px] opacity-60">Rules & Spells</span></div></a>
+                    </div>
+                </div>
+            );
+        };
+
+        const FloatingSettingsButton = ({ apiKey, setModalVisible }) => {
+            const isKeyNeeded = !apiKey;
+            if (isKeyNeeded) { return (<button onClick={() => setModalVisible(true)} className="floating-button px-4 py-2 flex items-center gap-2 bg-red-700 text-white rounded-full font-bold uppercase text-sm border-2 border-red-500 hover:bg-red-600 transition-colors duration-300 animate-pulse" title="Gemini API Key Needed for AI Features"><Settings size={16} /> API Key Needed</button>); }
+            return (<button onClick={() => setModalVisible(true)} className="floating-button w-10 h-10 flex items-center justify-center bg-slate-700 text-slate-400 hover:text-white rounded-full border border-slate-600 hover:bg-slate-600 transition-colors duration-300" title="Settings"><Settings size={20} /></button>);
+        };
+
+        const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                    <div className="bg-slate-900 w-full max-w-sm rounded-xl border border-teal-800 p-6 shadow-2xl">
+                        <h2 className="text-xl font-bold text-teal-400 mb-4">{title}</h2>
+                        <p className="text-slate-300 mb-6 text-sm">{message}</p>
+                        <div className="flex justify-end gap-3">
+                            <button onClick={onCancel} className="px-4 py-2 text-slate-400 hover:text-white rounded text-sm font-medium border border-slate-700">Cancel</button>
+                            <button onClick={onConfirm} className="px-4 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded text-sm font-bold">Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const DetailModal = ({ item, type, onClose }) => {
+            if (!item) return null;
+            
+            // Helper to render complex features
+            const renderFeatures = (features) => {
+                if (!Array.isArray(features)) return <p className="text-slate-500 italic">No features listed.</p>;
+                // Sort by level if available
+                const sortedFeatures = [...features].sort((a, b) => {
+                    if (a.level && b.level) return a.level - b.level;
+                    return 0;
+                });
+                
+                return sortedFeatures.map((f, i) => (
+                    <div key={i} className="mb-4 pb-2 border-b border-slate-800 last:border-0">
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-teal-300">{f.name}</span>
+                            {f.level && <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">Lvl {f.level}</span>}
+                        </div>
+                        <p className="text-sm text-slate-300 whitespace-pre-wrap">{f.description || f.desc}</p>
+                    </div>
+                ));
+            };
+
+            return (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="bg-slate-900 w-full max-w-3xl rounded-xl border border-slate-700 flex flex-col max-h-[90vh] shadow-2xl">
+                        <div className="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-950/50 rounded-t-xl">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                {type === 'race' ? <Dna className="text-teal-500"/> : type === 'subclass' ? <Split className="text-teal-500"/> : <BookUser className="text-teal-500"/>}
+                                {item.name}
+                                {item.baseClass && <span className="text-sm text-slate-400 font-normal ml-2">({item.baseClass} Subclass)</span>}
+                            </h2>
+                            <button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button>
+                        </div>
+                        <div className="p-6 overflow-y-auto custom-scrollbar">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-sm">
+                                {type === 'race' ? (
+                                    <>
+                                        <div className="bg-slate-800 p-3 rounded">
+                                            <span className="block text-xs text-slate-500 uppercase font-bold">Speed</span>
+                                            <span className="text-white">{item.speed}</span>
+                                        </div>
+                                        <div className="bg-slate-800 p-3 rounded">
+                                            <span className="block text-xs text-slate-500 uppercase font-bold">Size</span>
+                                            <span className="text-white">{item.size}</span>
+                                        </div>
+                                        <div className="bg-slate-800 p-3 rounded md:col-span-2">
+                                            <span className="block text-xs text-slate-500 uppercase font-bold">Ability Score Increase</span>
+                                            <span className="text-teal-300 font-bold">{item.asi}</span>
+                                        </div>
+                                    </>
+                                ) : type === 'class' ? (
+                                    <>
+                                        <div className="bg-slate-800 p-3 rounded">
+                                            <span className="block text-xs text-slate-500 uppercase font-bold">Hit Die</span>
+                                            <span className="text-white">{item.hitDie}</span>
+                                        </div>
+                                        <div className="bg-slate-800 p-3 rounded">
+                                            <span className="block text-xs text-slate-500 uppercase font-bold">Primary Ability</span>
+                                            <span className="text-white">{item.primaryAbility}</span>
+                                        </div>
+                                        <div className="bg-slate-800 p-3 rounded md:col-span-2">
+                                            <span className="block text-xs text-slate-500 uppercase font-bold">Saving Throws</span>
+                                            <span className="text-teal-300 font-bold">{item.saves}</span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    // SUBCLASS HEADER
+                                    <div className="bg-slate-800 p-3 rounded md:col-span-2">
+                                        <span className="block text-xs text-slate-500 uppercase font-bold">Base Class</span>
+                                        <span className="text-white font-bold">{item.baseClass}</span>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {item.description && (
+                                <div className="mb-6">
+                                    <h3 className="text-sm font-bold text-slate-400 uppercase mb-2">Description</h3>
+                                    <p className="text-slate-300 text-sm italic">{item.description}</p>
+                                </div>
+                            )}
+
+                            <div>
+                                <h3 className="text-sm font-bold text-slate-400 uppercase mb-3 border-b border-slate-700 pb-1">Traits & Features</h3>
+                                {renderFeatures(type === 'race' ? item.traits : item.features)}
+                            </div>
+                        </div>
+                        <div className="p-4 border-t border-slate-700 bg-slate-950/50 rounded-b-xl flex justify-end gap-2">
+                            <button onClick={() => {
+                                const text = JSON.stringify(item, null, 2);
+                                const textArea = document.createElement("textarea");
+                                textArea.value = text;
+                                document.body.appendChild(textArea);
+                                textArea.select();
+                                try {
+                                    document.execCommand('copy');
+                                    alert("Copied JSON to clipboard!");
+                                } catch (err) {
+                                    console.error('Copy failed', err);
+                                    alert("Manual copy required. Permissions blocked.");
+                                }
+                                document.body.removeChild(textArea);
+                            }} className="px-3 py-1.5 bg-slate-800 text-slate-300 hover:text-white rounded text-sm flex items-center gap-2"><Copy size={14}/> Copy JSON</button>
+                            <button onClick={onClose} className="px-4 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded text-sm font-bold">Close</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APP COMPONENT ---
+        function App() {
+            const [view, setView] = useState('library'); // 'library', 'create-race', 'create-class', 'create-subclass'
+            const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('dm-tracker-api-key') || "");
+            const [showSettingsModal, setShowSettingsModal] = useState(false);
+            const [searchQuery, setSearchQuery] = useState('');
+            const [deleteTarget, setDeleteTarget] = useState(null);
+            const [detailItem, setDetailItem] = useState(null);
+            const fileInputRef = useRef(null);
+
+            // Subclass Creation Mode State
+            const [subclassMode, setSubclassMode] = useState('context'); // 'context' (from library) or 'free' (text prompt)
+            const [selectedBaseClassId, setSelectedBaseClassId] = useState('');
+
+            // Data State
+            const [races, setRaces] = useState(() => {
+                try { return JSON.parse(localStorage.getItem('dm-tracker-origins-races')) || []; } catch { return []; }
+            });
+            const [classes, setClasses] = useState(() => {
+                try { return JSON.parse(localStorage.getItem('dm-tracker-origins-classes')) || []; } catch { return []; }
+            });
+            const [subclasses, setSubclasses] = useState(() => {
+                try { return JSON.parse(localStorage.getItem('dm-tracker-origins-subclasses')) || []; } catch { return []; }
+            });
+
+            // Form/Generation State
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [promptInput, setPromptInput] = useState('');
+            const [baseClassInput, setBaseClassInput] = useState(''); // For freeform subclass creation
+            const [generatedItem, setGeneratedItem] = useState(null); 
+
+            // Persistence Effects
+            useEffect(() => { localStorage.setItem('dm-tracker-origins-races', JSON.stringify(races)); }, [races]);
+            useEffect(() => { localStorage.setItem('dm-tracker-origins-classes', JSON.stringify(classes)); }, [classes]);
+            useEffect(() => { localStorage.setItem('dm-tracker-origins-subclasses', JSON.stringify(subclasses)); }, [subclasses]);
+            useEffect(() => { 
+                if (userApiKey && userApiKey !== localStorage.getItem('dm-tracker-api-key')) {
+                    localStorage.setItem('dm-tracker-api-key', userApiKey);
+                }
+            }, [userApiKey]);
+
+            // --- AI GENERATION ---
+            const callGemini = async (prompt) => {
+                if (!userApiKey) { setShowSettingsModal(true); return null; }
+                setIsGenerating(true);
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ 
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: { responseMimeType: "application/json" }
+                        }) 
+                    });
+                    if (!res.ok) throw new Error("API Error");
+                    const data = await res.json();
+                    setIsGenerating(false);
+                    return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+                } catch (e) {
+                    setIsGenerating(false);
+                    alert("Creation failed. The weave is disrupted.");
+                    console.error(e);
+                    return null;
+                }
+            };
+
+            const handleGenerate = async (type) => {
+                // Modified validation to allow empty prompt for 'context' subclass mode
+                if (type === 'subclass' && subclassMode === 'context') {
+                    // Allowed to be empty
+                } else {
+                    if (!promptInput.trim()) { alert("Please describe your concept first."); return; }
+                }
+                
+                let sysPrompt = "";
+
+                if (type === 'race') {
+                    sysPrompt = `Create a D&D 5e Race based on: "${promptInput}". Return JSON: { "name":str, "speed":str (e.g. 30ft), "size":str (Medium/Small), "asi":str (e.g. +2 Dex, +1 Int), "description":str (flavor), "traits": [{ "name":str, "description":str }] }`;
+                } else if (type === 'class') {
+                    sysPrompt = `Create a D&D 5e Class based on: "${promptInput}". Return JSON: { "name":str, "hitDie":str (e.g. 1d8), "primaryAbility":str, "saves":str (e.g. Dex & Int), "description":str (flavor), "features": [{ "level":int, "name":str, "description":str }] }. 
+                    
+                    CRITICAL REQUIREMENTS:
+                    1. FULL 1-20 PROGRESSION: You MUST include features for every single level from 1 to 20.
+                    2. SUBCLASS DEFINITION: Decide when the subclass starts (Level 1, 2, or 3). Create a feature at that level named "[Class Name] Archetype" (or Path/College/etc). 
+                    3. SUBCLASS SCHEDULE: In the description of that first Subclass feature, you MUST explicitly list the future levels where subclass features are gained (e.g., "Your archetype grants you features at 3rd level, and again at 6th, 10th, and 14th level.").
+                    4. PLACEHOLDERS: Generate specific features entries for those future subclass levels named "Subclass Feature" with the description "Feature derived from your chosen archetype."
+                    5. STANDARD ASIS: Include "Ability Score Improvement" at levels 4, 8, 12, 16, 19.`;
+                } else if (type === 'subclass') {
+                    // SUBCLASS GENERATION LOGIC
+                    if (subclassMode === 'context') {
+                        // Find the base class using strict equality after converting to string
+                        const baseClass = classes.find(c => String(c.id) === String(selectedBaseClassId));
+                        
+                        if (!baseClass) { 
+                            console.error("Base class not found. Selected ID:", selectedBaseClassId, "Available Classes:", classes);
+                            alert("Please select a valid base class from the library first."); 
+                            return; 
+                        }
+                        
+                        // Construct context based on input presence
+                        const userConcept = promptInput.trim() 
+                            ? `based on the concept: "${promptInput}"` 
+                            : `based on the named subclasses or themes found within the base class description`;
+
+                        // Get existing names to prevent duplication
+                        const existingNames = subclasses
+                            .filter(s => s.baseClass === baseClass.name)
+                            .map(s => s.name)
+                            .join(", ");
+
+                        sysPrompt = `Create a D&D 5e Subclass ${userConcept}.
+                        
+                        CONTEXT: This subclass is for the custom class "${baseClass.name}". 
+                        Here is the base class JSON: ${JSON.stringify(baseClass)}.
+
+                        EXISTING SUBCLASSES (DO NOT DUPLICATE): ${existingNames || "None"}.
+                        
+                        INSTRUCTIONS:
+                        1. Analyze the base class features to identify the levels where subclass features are granted (look for "Archetype", "Path", "Tradition", "College", or "Subclass" features).
+                        2. If the user provided a concept, use it. 
+                        3. If NO concept was provided:
+                           - Scan the Base Class Description for mentioned subclasses.
+                           - Compare found names against the "EXISTING SUBCLASSES" list.
+                           - Generate ONE subclass that is NOT in the existing list.
+                           - If all mentioned subclasses already exist, invent a new, thematically appropriate subclass.
+                        4. Create a balanced subclass that fits the theme and mechanics of the base class.
+                        5. Return JSON: { "name":str, "baseClass": "${baseClass.name}", "description":str (flavor), "features": [{ "level":int, "name":str, "description":str }] }.
+                        6. Ensure you only provide features for the levels specified in the base class. Keep it balanced.`;
+                    } else {
+                        // Freeform
+                        if (!baseClassInput) { alert("Please enter a Base Class name (e.g. Cleric)."); return; }
+                        sysPrompt = `Create a D&D 5e Subclass for the standard "${baseClassInput}" class based on the concept: "${promptInput}".
+                        
+                        INSTRUCTIONS:
+                        1. Use standard 5e progression for the "${baseClassInput}" class.
+                        2. Keep it balanced and playable.
+                        3. Return JSON: { "name":str, "baseClass": "${baseClassInput}", "description":str (flavor), "features": [{ "level":int, "name":str, "description":str }] }.`;
+                    }
+                }
+
+                const result = await callGemini(sysPrompt);
+                if (result) {
+                    try {
+                        const parsed = JSON.parse(result);
+                        setGeneratedItem({ ...parsed, type, id: Date.now() });
+                    } catch (e) { alert("Failed to parse the ancient scrolls (JSON Error)."); }
+                }
+            };
+
+            const saveGeneratedItem = () => {
+                if (!generatedItem) return;
+                if (generatedItem.type === 'race') {
+                    setRaces(prev => [generatedItem, ...prev]);
+                } else if (generatedItem.type === 'class') {
+                    setClasses(prev => [generatedItem, ...prev]);
+                } else if (generatedItem.type === 'subclass') {
+                    setSubclasses(prev => [generatedItem, ...prev]);
+                }
+                setGeneratedItem(null);
+                setPromptInput('');
+                setView('library');
+            };
+
+            // --- EXPORT/IMPORT ---
+            const handleExport = () => {
+                const data = { races, classes, subclasses, exportedAt: new Date().toISOString() };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `genesis_archive_${new Date().toISOString().slice(0,10)}.json`;
+                a.click();
+            };
+
+            const handleImport = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        if (data.races) setRaces(prev => [...data.races, ...prev]);
+                        if (data.classes) setClasses(prev => [...data.classes, ...prev]);
+                        if (data.subclasses) setSubclasses(prev => [...data.subclasses, ...prev]);
+                        alert("Knowledge assimilated successfully.");
+                    } catch (err) { alert("Corrupted scroll."); }
+                };
+                reader.readAsText(file);
+            };
+
+            const deleteItem = () => {
+                if (!deleteTarget) return;
+                if (deleteTarget.type === 'race') {
+                    setRaces(prev => prev.filter(r => r.id !== deleteTarget.id));
+                } else if (deleteTarget.type === 'class') {
+                    setClasses(prev => prev.filter(c => c.id !== deleteTarget.id));
+                } else if (deleteTarget.type === 'subclass') {
+                    setSubclasses(prev => prev.filter(s => s.id !== deleteTarget.id));
+                }
+                setDeleteTarget(null);
+            };
+
+            // --- RENDER HELPERS ---
+            const filteredRaces = races.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()));
+            const filteredClasses = classes.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+            const filteredSubclasses = subclasses.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.baseClass.toLowerCase().includes(searchQuery.toLowerCase()));
+
+            return (
+                <div className="genesis-container p-2 sm:p-4 relative">
+                    <FloatingSettingsButton apiKey={userApiKey} setModalVisible={setShowSettingsModal} />
+                    
+                    {/* CONFIRMATION MODAL */}
+                    <ConfirmationModal 
+                        isOpen={!!deleteTarget} 
+                        title="Erase from Existence?" 
+                        message={`Are you sure you want to delete ${deleteTarget?.name}? This cannot be undone.`}
+                        onConfirm={deleteItem}
+                        onCancel={() => setDeleteTarget(null)}
+                    />
+
+                    {/* DETAIL MODAL */}
+                    <DetailModal 
+                        item={detailItem} 
+                        type={detailItem?.type || (detailItem?.traits ? 'race' : detailItem?.baseClass ? 'subclass' : 'class')} 
+                        onClose={() => setDetailItem(null)} 
+                    />
+
+                    {/* SETTINGS MODAL */}
+                    {showSettingsModal && (
+                        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                            <div className="bg-slate-900 w-full max-w-md rounded-xl shadow-2xl border border-slate-700 flex flex-col">
+                                <div className="flex justify-between items-center p-4 border-b border-slate-700">
+                                    <h2 className="text-xl font-bold text-white flex items-center gap-2"><Settings className="text-slate-400" /> Settings</h2>
+                                    <button onClick={() => setShowSettingsModal(false)} className="text-slate-400 hover:text-white"><X size={24} /></button>
+                                </div>
+                                <div className="p-6">
+                                    <label className="block text-sm font-bold text-white mb-2 flex items-center gap-2"><Key size={16} className="text-yellow-500" /> Gemini API Key</label>
+                                    <input type="password" placeholder="Paste your key here..." className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-teal-500 focus:outline-none mb-2" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} />
+                                    <p className="text-xs text-slate-400 mb-4">Required for AI generation. Stored locally on your browser.</p>
+                                    <div className="flex justify-end"><button onClick={() => setShowSettingsModal(false)} className="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded font-bold">Save & Close</button></div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* HEADER */}
+                    <nav className="bg-slate-900/80 backdrop-blur-md border-b border-teal-900/30 sticky top-0 z-50 px-4 py-3 shadow-md mb-6 rounded-xl">
+                        <div className="max-w-7xl mx-auto flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-slate-900 p-2 rounded-lg border border-teal-500 shadow-[0_0_15px_rgba(45,212,191,0.2)]">
+                                    <Dna className="text-teal-400 w-6 h-6" />
+                                </div>
+                                <span className="font-bold text-lg text-slate-100 hidden sm:block tracking-tight">Genesis Archives</span>
+                            </div>
+                            <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800 items-center shadow-inner">
+                                <a href="./index.html" className="flex items-center justify-center p-2 text-slate-400 hover:text-white rounded-md hover:bg-slate-800 transition-colors" title="Back to Hub"><Home size={18} /></a>
+                                <div className="w-px bg-slate-800 h-6 mx-1"></div>
+                                <SuiteDropdown />
+                            </div>
+                        </div>
+                    </nav>
+
+                    {/* MAIN CONTENT AREA */}
+                    <main className="max-w-7xl mx-auto min-h-[600px]">
+                        {/* TAB NAV */}
+                        <div className="flex justify-center mb-6 overflow-x-auto">
+                            <div className="bg-slate-900/80 p-1 rounded-lg border border-slate-700 inline-flex whitespace-nowrap">
+                                <button onClick={() => setView('library')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${view === 'library' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Library</button>
+                                <button onClick={() => setView('create-race')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${view === 'create-race' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}><Dna size={16}/> New Race</button>
+                                <button onClick={() => setView('create-class')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${view === 'create-class' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}><BookUser size={16}/> New Class</button>
+                                <button onClick={() => setView('create-subclass')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${view === 'create-subclass' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}><Split size={16}/> New Subclass</button>
+                            </div>
+                        </div>
+
+                        {/* VIEW: LIBRARY */}
+                        {view === 'library' && (
+                            <div className="animate-fade-in">
+                                {/* Search & Import/Export */}
+                                <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-between items-center">
+                                    <div className="relative w-full max-w-md">
+                                        <input 
+                                            type="text" 
+                                            placeholder="Search archives..." 
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="w-full bg-slate-900 border border-slate-700 rounded-full py-2 pl-10 pr-4 text-slate-200 focus:border-teal-500 focus:outline-none"
+                                        />
+                                        <Search className="absolute left-3 top-2.5 text-slate-500" size={16}/>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => fileInputRef.current.click()} className="flex items-center gap-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded text-xs text-slate-300 hover:text-white hover:border-slate-500 transition-colors">
+                                            <Upload size={14}/> Import
+                                        </button>
+                                        <input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".json"/>
+                                        <button onClick={handleExport} className="flex items-center gap-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded text-xs text-slate-300 hover:text-white hover:border-slate-500 transition-colors">
+                                            <Download size={14}/> Export
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    {/* RACES COLUMN */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-teal-400 font-bold uppercase tracking-wider text-xs flex items-center gap-2 border-b border-teal-900/50 pb-2">
+                                            <Dna size={14}/> Saved Races ({filteredRaces.length})
+                                        </h3>
+                                        <div className="space-y-3">
+                                            {filteredRaces.length === 0 ? <div className="text-slate-600 text-sm italic text-center py-4">No biological data found.</div> : 
+                                            filteredRaces.map(r => (
+                                                <div key={r.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 hover:border-teal-500/50 transition-colors group relative">
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="cursor-pointer flex-1" onClick={() => setDetailItem(r)}>
+                                                            <h4 className="font-bold text-white group-hover:text-teal-300 transition-colors">{r.name}</h4>
+                                                            <p className="text-xs text-slate-400 mt-1 line-clamp-2">{r.description || "No description provided."}</p>
+                                                            <div className="flex gap-2 mt-2">
+                                                                <span className="text-[10px] bg-slate-900 text-slate-400 px-2 py-0.5 rounded border border-slate-700">{r.size}</span>
+                                                                <span className="text-[10px] bg-slate-900 text-teal-400 px-2 py-0.5 rounded border border-slate-700">{r.asi}</span>
+                                                            </div>
+                                                        </div>
+                                                        <button onClick={() => setDeleteTarget({ ...r, type: 'race' })} className="text-slate-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16}/></button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* CLASSES COLUMN */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-teal-400 font-bold uppercase tracking-wider text-xs flex items-center gap-2 border-b border-teal-900/50 pb-2">
+                                            <BookUser size={14}/> Saved Classes ({filteredClasses.length})
+                                        </h3>
+                                        <div className="space-y-3">
+                                            {filteredClasses.length === 0 ? <div className="text-slate-600 text-sm italic text-center py-4">No class data found.</div> :
+                                            filteredClasses.map(c => (
+                                                <div key={c.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 hover:border-teal-500/50 transition-colors group relative">
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="cursor-pointer flex-1" onClick={() => setDetailItem(c)}>
+                                                            <h4 className="font-bold text-white group-hover:text-teal-300 transition-colors">{c.name}</h4>
+                                                            <p className="text-xs text-slate-400 mt-1 line-clamp-2">{c.description || "No description provided."}</p>
+                                                            <div className="flex gap-2 mt-2">
+                                                                <span className="text-[10px] bg-slate-900 text-slate-400 px-2 py-0.5 rounded border border-slate-700">HD: {c.hitDie}</span>
+                                                                <span className="text-[10px] bg-slate-900 text-teal-400 px-2 py-0.5 rounded border border-slate-700">{c.primaryAbility}</span>
+                                                            </div>
+                                                        </div>
+                                                        <button onClick={() => setDeleteTarget({ ...c, type: 'class' })} className="text-slate-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16}/></button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* SUBCLASSES COLUMN */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-teal-400 font-bold uppercase tracking-wider text-xs flex items-center gap-2 border-b border-teal-900/50 pb-2">
+                                            <Split size={14}/> Saved Subclasses ({filteredSubclasses.length})
+                                        </h3>
+                                        <div className="space-y-3">
+                                            {filteredSubclasses.length === 0 ? <div className="text-slate-600 text-sm italic text-center py-4">No specialized paths found.</div> :
+                                            filteredSubclasses.map(s => (
+                                                <div key={s.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 hover:border-teal-500/50 transition-colors group relative">
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="cursor-pointer flex-1" onClick={() => setDetailItem(s)}>
+                                                            <h4 className="font-bold text-white group-hover:text-teal-300 transition-colors">{s.name}</h4>
+                                                            <p className="text-xs text-teal-500 font-bold mb-1">{s.baseClass}</p>
+                                                            <p className="text-xs text-slate-400 line-clamp-2">{s.description || "No description provided."}</p>
+                                                        </div>
+                                                        <button onClick={() => setDeleteTarget({ ...s, type: 'subclass' })} className="text-slate-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16}/></button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* VIEW: CREATOR (RACE or CLASS) */}
+                        {(view === 'create-race' || view === 'create-class') && (
+                            <div className="animate-fade-in max-w-2xl mx-auto">
+                                <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl">
+                                    <h2 className="text-xl font-bold text-teal-400 mb-2 flex items-center gap-2">
+                                        {view === 'create-race' ? <Dna/> : <BookUser/>}
+                                        {view === 'create-race' ? "Biological Foundry" : "Class Academy"}
+                                    </h2>
+                                    <p className="text-slate-400 text-sm mb-6">Describe your idea, and the Genesis Engine will construct the mechanics for you.</p>
+
+                                    {!generatedItem ? (
+                                        <div className="space-y-4">
+                                            <textarea 
+                                                value={promptInput}
+                                                onChange={(e) => setPromptInput(e.target.value)}
+                                                className="w-full h-32 bg-slate-900 border border-slate-600 rounded-lg p-3 text-slate-200 focus:border-teal-500 focus:outline-none resize-none"
+                                                placeholder={view === 'create-race' 
+                                                    ? "E.g. A race of crystalline humanoids that vibrate with psionic energy. They are slow but durable..."
+                                                    : "E.g. A melee spellcaster who uses blood magic to fuel their attacks. Uses a d10 hit die..."}
+                                            ></textarea>
+                                            
+                                            <button 
+                                                onClick={() => handleGenerate(view === 'create-race' ? 'race' : 'class')}
+                                                disabled={isGenerating}
+                                                className="w-full py-3 bg-teal-700 hover:bg-teal-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold rounded-lg flex justify-center items-center gap-2 transition-colors"
+                                            >
+                                                {isGenerating ? <Sparkles className="animate-spin"/> : <Sparkles/>}
+                                                {isGenerating ? "Forging (This may take a moment)..." : "Generate Concept"}
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="animate-fade-in">
+                                            <div className="bg-slate-900/50 border border-teal-500/30 rounded-lg p-4 mb-4">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <h3 className="text-lg font-bold text-white">{generatedItem.name}</h3>
+                                                    <span className="text-xs bg-teal-900 text-teal-300 px-2 py-1 rounded uppercase font-bold">New</span>
+                                                </div>
+                                                <p className="text-sm text-slate-300 italic mb-4">{generatedItem.description}</p>
+                                                
+                                                {/* Preview Stats */}
+                                                <div className="grid grid-cols-2 gap-2 text-xs text-slate-400 mb-4">
+                                                    {generatedItem.type === 'race' ? (
+                                                        <>
+                                                            <div>Size: <span className="text-white">{generatedItem.size}</span></div>
+                                                            <div>Speed: <span className="text-white">{generatedItem.speed}</span></div>
+                                                            <div className="col-span-2">ASI: <span className="text-teal-400">{generatedItem.asi}</span></div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div>Hit Die: <span className="text-white">{generatedItem.hitDie}</span></div>
+                                                            <div>Primary: <span className="text-white">{generatedItem.primaryAbility}</span></div>
+                                                            <div className="col-span-2">Saves: <span className="text-teal-400">{generatedItem.saves}</span></div>
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                <button onClick={() => setDetailItem(generatedItem)} className="text-xs text-teal-400 underline mb-4">View Full Stats & Features</button>
+
+                                                <div className="flex gap-3">
+                                                    <button onClick={() => setGeneratedItem(null)} className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded font-medium text-sm">Discard</button>
+                                                    <button onClick={saveGeneratedItem} className="flex-1 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded font-bold text-sm">Save to Library</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* VIEW: CREATOR (SUBCLASS) */}
+                        {view === 'create-subclass' && (
+                            <div className="animate-fade-in max-w-2xl mx-auto">
+                                <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl">
+                                    <h2 className="text-xl font-bold text-teal-400 mb-2 flex items-center gap-2">
+                                        <Split/> Specialization Forge
+                                    </h2>
+                                    <p className="text-slate-400 text-sm mb-6">Create a new subclass. Choose your method below.</p>
+
+                                    {/* METHOD TOGGLE */}
+                                    <div className="flex bg-slate-900 rounded p-1 mb-6 border border-slate-700">
+                                        <button onClick={() => setSubclassMode('context')} className={`flex-1 py-2 text-sm font-bold rounded ${subclassMode === 'context' ? 'bg-teal-700 text-white' : 'text-slate-400 hover:text-white'}`}>From Archive Class</button>
+                                        <button onClick={() => setSubclassMode('free')} className={`flex-1 py-2 text-sm font-bold rounded ${subclassMode === 'free' ? 'bg-teal-700 text-white' : 'text-slate-400 hover:text-white'}`}>From Standard 5e</button>
+                                    </div>
+
+                                    {!generatedItem ? (
+                                        <div className="space-y-4">
+                                            {subclassMode === 'context' ? (
+                                                <div>
+                                                    <label className="block text-xs font-bold text-teal-400 uppercase mb-2">Select Base Class</label>
+                                                    {classes.length === 0 ? (
+                                                        <div className="p-3 bg-red-900/20 border border-red-900 rounded text-red-300 text-sm mb-2">No custom classes found in library. Import one first!</div>
+                                                    ) : (
+                                                        <select 
+                                                            className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm mb-4 focus:outline-none focus:border-teal-500"
+                                                            value={selectedBaseClassId}
+                                                            onChange={(e) => setSelectedBaseClassId(e.target.value)}
+                                                        >
+                                                            <option value="">-- Select a Class --</option>
+                                                            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                                        </select>
+                                                    )}
+                                                    <p className="text-xs text-slate-500 mb-4">The AI will read the selected class to ensure the subclass fits its unique mechanics and level progression.</p>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <label className="block text-xs font-bold text-teal-400 uppercase mb-2">Base Class Name</label>
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="e.g. Cleric, Wizard, Fighter..." 
+                                                        value={baseClassInput}
+                                                        onChange={(e) => setBaseClassInput(e.target.value)}
+                                                        className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm mb-4 focus:outline-none focus:border-teal-500"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            <label className="block text-xs font-bold text-teal-400 uppercase mb-2">Subclass Concept</label>
+                                            <textarea 
+                                                value={promptInput}
+                                                onChange={(e) => setPromptInput(e.target.value)}
+                                                className="w-full h-32 bg-slate-900 border border-slate-600 rounded-lg p-3 text-slate-200 focus:border-teal-500 focus:outline-none resize-none"
+                                                placeholder={subclassMode === 'context' 
+                                                    ? "Leave empty to Auto-Detect subclasses from Class Description, or type a specific concept..."
+                                                    : "E.g. A Life Domain Cleric but focused on necromancy and recycling souls..."}
+                                            ></textarea>
+                                            
+                                            <button 
+                                                onClick={() => handleGenerate('subclass')}
+                                                disabled={isGenerating || (subclassMode === 'context' && !selectedBaseClassId)}
+                                                className="w-full py-3 bg-teal-700 hover:bg-teal-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold rounded-lg flex justify-center items-center gap-2 transition-colors"
+                                            >
+                                                {isGenerating ? <Sparkles className="animate-spin"/> : <Sparkles/>}
+                                                {isGenerating ? "Forging Subclass..." : "Generate Subclass"}
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="animate-fade-in">
+                                            <div className="bg-slate-900/50 border border-teal-500/30 rounded-lg p-4 mb-4">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <h3 className="text-lg font-bold text-white">{generatedItem.name}</h3>
+                                                    <span className="text-xs bg-teal-900 text-teal-300 px-2 py-1 rounded uppercase font-bold">New Subclass</span>
+                                                </div>
+                                                <p className="text-sm text-slate-300 italic mb-4">{generatedItem.description}</p>
+                                                <p className="text-xs text-teal-500 font-bold mb-4">Base Class: {generatedItem.baseClass}</p>
+                                                
+                                                <button onClick={() => setDetailItem(generatedItem)} className="text-xs text-teal-400 underline mb-4">View Full Features</button>
+
+                                                <div className="flex gap-3">
+                                                    <button onClick={() => setGeneratedItem(null)} className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded font-medium text-sm">Discard</button>
+                                                    <button onClick={saveGeneratedItem} className="flex-1 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded font-bold text-sm">Save to Library</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
