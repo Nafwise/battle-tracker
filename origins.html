@@ -106,6 +106,8 @@
         const Copy = (props) => <Icon {...props}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></Icon>;
         const Split = (props) => <Icon {...props}><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.87l-4.243-4.242a2 2 0 0 1-.585-1.414V3"/><path d="m20 21-9-9"/><path d="M9 3v2.17a2 2 0 0 1-.586 1.414l-4.242 4.242a2 2 0 0 0-1.172 2.871V22"/></Icon>;
         const BookType = (props) => <Icon {...props}><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M9 10h6"/><path d="M9 6h6"/><path d="M9 14h6"/></Icon>;
+        const Pencil = (props) => <Icon {...props}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></Icon>;
+        const Check = (props) => <Icon {...props}><polyline points="20 6 9 17 4 12"/></Icon>;
 
         // --- SHARED COMPONENTS ---
         const SuiteDropdown = () => {
@@ -165,8 +167,15 @@
             );
         };
 
-        const DetailModal = ({ item, type, onClose }) => {
+        const DetailModal = ({ item, type, onClose, onRename }) => {
             if (!item) return null;
+            
+            // Local state for editing name inside the modal
+            const [isEditing, setIsEditing] = useState(false);
+            const [editName, setEditName] = useState(item.name);
+
+            // Update local state if item changes
+            useEffect(() => { setEditName(item.name); }, [item]);
             
             // Helper to render complex features
             const renderFeatures = (features) => {
@@ -188,15 +197,41 @@
                 ));
             };
 
+            const handleSaveName = () => {
+                if (editName.trim() && onRename) {
+                    onRename(item, editName);
+                    setIsEditing(false);
+                }
+            };
+
             return (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                     <div className="bg-slate-900 w-full max-w-3xl rounded-xl border border-slate-700 flex flex-col max-h-[90vh] shadow-2xl">
                         <div className="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-950/50 rounded-t-xl">
-                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                {type === 'race' ? <Dna className="text-teal-500"/> : type === 'subclass' ? <Split className="text-teal-500"/> : <BookUser className="text-teal-500"/>}
-                                {item.name}
-                                {item.baseClass && <span className="text-sm text-slate-400 font-normal ml-2">({item.baseClass} Subclass)</span>}
-                            </h2>
+                            <div className="flex items-center gap-3 flex-1 mr-4">
+                                {type === 'race' ? <Dna className="text-teal-500 shrink-0"/> : type === 'subclass' ? <Split className="text-teal-500 shrink-0"/> : <BookUser className="text-teal-500 shrink-0"/>}
+                                
+                                {/* Renaming Logic */}
+                                {isEditing ? (
+                                    <div className="flex items-center gap-2 flex-1 animate-fade-in">
+                                        <input 
+                                            autoFocus
+                                            className="bg-slate-800 border border-teal-500 text-white font-bold text-lg px-2 py-1 rounded w-full focus:outline-none"
+                                            value={editName}
+                                            onChange={(e) => setEditName(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                                        />
+                                        <button onClick={handleSaveName} className="p-1 bg-teal-700 text-white rounded hover:bg-teal-600"><Check size={18}/></button>
+                                        <button onClick={() => { setIsEditing(false); setEditName(item.name); }} className="p-1 bg-slate-700 text-white rounded hover:bg-slate-600"><X size={18}/></button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsEditing(true)} title="Click to rename">
+                                        <h2 className="text-xl font-bold text-white">{item.name}</h2>
+                                        {item.baseClass && <span className="text-sm text-slate-400 font-normal">({item.baseClass})</span>}
+                                        <Pencil size={14} className="text-slate-600 group-hover:text-teal-400 transition-colors"/>
+                                    </div>
+                                )}
+                            </div>
                             <button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button>
                         </div>
                         <div className="p-6 overflow-y-auto custom-scrollbar">
@@ -477,6 +512,30 @@
                 setDeleteTarget(null);
             };
 
+            // --- RENAME HANDLER ---
+            const handleRename = (item, newName) => {
+                if (!newName.trim()) return;
+                
+                // If it's the item currently being generated (not saved yet)
+                if (generatedItem && generatedItem.id === item.id) {
+                    setGeneratedItem(prev => ({ ...prev, name: newName }));
+                }
+                
+                // If it's a saved item, find and update it in the correct list
+                const updateList = (list, setList) => {
+                    setList(prev => prev.map(i => i.id === item.id ? { ...i, name: newName } : i));
+                };
+
+                if (item.type === 'race') updateList(races, setRaces);
+                else if (item.type === 'class') updateList(classes, setClasses);
+                else if (item.type === 'subclass') updateList(subclasses, setSubclasses);
+
+                // Also update the detail view if it's open
+                if (detailItem && detailItem.id === item.id) {
+                    setDetailItem(prev => ({ ...prev, name: newName }));
+                }
+            };
+
             // --- RENDER HELPERS ---
             const filteredRaces = races.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()));
             const filteredClasses = classes.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -500,6 +559,7 @@
                         item={detailItem} 
                         type={detailItem?.type || (detailItem?.traits ? 'race' : detailItem?.baseClass ? 'subclass' : 'class')} 
                         onClose={() => setDetailItem(null)} 
+                        onRename={handleRename}
                     />
 
                     {/* SETTINGS MODAL */}
@@ -685,8 +745,16 @@
                                         <div className="animate-fade-in">
                                             <div className="bg-slate-900/50 border border-teal-500/30 rounded-lg p-4 mb-4">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <h3 className="text-lg font-bold text-white">{generatedItem.name}</h3>
-                                                    <span className="text-xs bg-teal-900 text-teal-300 px-2 py-1 rounded uppercase font-bold">New</span>
+                                                    {/* Inline Rename for Generated Item */}
+                                                    <div className="flex items-center gap-2 mb-2 group w-full mr-2">
+                                                        <input 
+                                                            value={generatedItem.name}
+                                                            onChange={(e) => setGeneratedItem({...generatedItem, name: e.target.value})}
+                                                            className="text-lg font-bold text-white bg-transparent border-b border-transparent hover:border-teal-500 focus:border-teal-500 focus:outline-none transition-colors w-full"
+                                                        />
+                                                        <Pencil size={14} className="text-slate-500 group-hover:text-teal-400 shrink-0"/>
+                                                    </div>
+                                                    <span className="text-xs bg-teal-900 text-teal-300 px-2 py-1 rounded uppercase font-bold shrink-0">New</span>
                                                 </div>
                                                 <p className="text-sm text-slate-300 italic mb-4">{generatedItem.description}</p>
                                                 
@@ -790,8 +858,16 @@
                                         <div className="animate-fade-in">
                                             <div className="bg-slate-900/50 border border-teal-500/30 rounded-lg p-4 mb-4">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <h3 className="text-lg font-bold text-white">{generatedItem.name}</h3>
-                                                    <span className="text-xs bg-teal-900 text-teal-300 px-2 py-1 rounded uppercase font-bold">New Subclass</span>
+                                                    {/* Inline Rename for Generated Subclass */}
+                                                    <div className="flex items-center gap-2 mb-2 group w-full mr-2">
+                                                        <input 
+                                                            value={generatedItem.name}
+                                                            onChange={(e) => setGeneratedItem({...generatedItem, name: e.target.value})}
+                                                            className="text-lg font-bold text-white bg-transparent border-b border-transparent hover:border-teal-500 focus:border-teal-500 focus:outline-none transition-colors w-full"
+                                                        />
+                                                        <Pencil size={14} className="text-slate-500 group-hover:text-teal-400 shrink-0"/>
+                                                    </div>
+                                                    <span className="text-xs bg-teal-900 text-teal-300 px-2 py-1 rounded uppercase font-bold shrink-0">New Subclass</span>
                                                 </div>
                                                 <p className="text-sm text-slate-300 italic mb-4">{generatedItem.description}</p>
                                                 <p className="text-xs text-teal-500 font-bold mb-4">Base Class: {generatedItem.baseClass}</p>
