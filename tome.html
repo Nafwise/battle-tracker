@@ -247,7 +247,7 @@
             return 'Unknown';
         };
 
-        const callGemini = async (prompt, userApiKey, isJson = false) => {
+        const callGemini = async (prompt, userApiKey, aiModel, isJson = false) => {
             let attempt = 0;
             if (!userApiKey) return null;
             
@@ -255,7 +255,7 @@
 
             while (attempt < 3) {
                 try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`, { 
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${aiModel}:generateContent?key=${userApiKey}`, { 
                         method: 'POST', 
                         headers: { 'Content-Type': 'application/json' }, 
                         body: JSON.stringify({ 
@@ -548,6 +548,7 @@
             // Read-only access to local Homebrew library
             const [homebrew, setHomebrew] = useState(() => safeLoad('dm-tracker-homebrew', [])); 
             const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('dm-tracker-api-key') || "");
+            const [aiModel, setAiModel] = useState(() => localStorage.getItem('dm-tracker-model') || "gemini-2.5-flash");
             const [exportFileName, setExportFileName] = useState(() => localStorage.getItem('dm-tracker-filename') || 'encounter_data');
             const [combatState, setCombatState] = useState(() => {
                 const loaded = safeLoad('dm-tracker-combat-state', { round: 1, turnIndex: 0, status: 'prep' });
@@ -595,6 +596,7 @@
 
             useEffect(() => { localStorage.setItem('dm-tracker-monsters', JSON.stringify(combatants)); }, [combatants]);
             useEffect(() => { if (userApiKey && userApiKey !== localStorage.getItem('dm-tracker-api-key')) localStorage.setItem('dm-tracker-api-key', userApiKey); }, [userApiKey]);
+            useEffect(() => { if (aiModel && aiModel !== localStorage.getItem('dm-tracker-model')) localStorage.setItem('dm-tracker-model', aiModel); }, [aiModel]);
             useEffect(() => { localStorage.setItem('dm-tracker-filename', exportFileName); }, [exportFileName]);
             useEffect(() => { localStorage.setItem('dm-tracker-combat-state', JSON.stringify(combatState)); }, [combatState]);
             useEffect(() => { localStorage.setItem('dm-tracker-logs', JSON.stringify(battleLogs)); }, [battleLogs]);
@@ -679,10 +681,10 @@
             const handleClearAll = () => { if (clearConfirm) { setCombatants([]); setNarrations({}); setCombatState({ round: 1, turnIndex: 0, status: 'prep' }); setBattleLogs([]); setClearConfirm(false); showNotification("Cleared", "success"); } else { setClearConfirm(true); setTimeout(() => setClearConfirm(false), 3000); } };
             const handleNarrate = useCallback(async (combatant) => {
                 setNarratingId(combatant.id);
-                const txt = await callGemini(`Write short visceral combat flavor text for ${combatant.name} (HP ${combatant.currentHp}/${combatant.maxHp}). No quotes.`, userApiKey, false);
+                const txt = await callGemini(`Write short visceral combat flavor text for ${combatant.name} (HP ${combatant.currentHp}/${combatant.maxHp}). No quotes.`, userApiKey, aiModel, false);
                 if (txt) setNarrations(prev => ({ ...prev, [combatant.id]: txt.trim() }));
                 setNarratingId(null);
-            }, [userApiKey]);
+            }, [userApiKey, aiModel]);
             const handleManualRoll = () => {
                 if (addMode !== 'player') return;
                 setIsRollingInit(true);
@@ -715,7 +717,7 @@
                 setIsGeneratingStats(true);
                 const prompt = `You are a D&D 5e Rules Expert. Generate a COMPLETE, DETAILED stat block for the monster "${formData.name}". Return a JSON object with: - 'hp' (integer) - 'ac' (integer) - 'initMod' (integer) - 'cr' (number, e.g. 0.25, 2, 15) - 'resistances' (string: list or "None") - 'vulnerabilities' (string: list or "None") - 'actions' (string: concise list of action names and damage dice) - 'statBlockSummary' (string: A full markdown text block including: Ability Scores, Saving Throws, Skills, Senses, Languages, Challenge, Special Traits, Actions, and Legendary Actions if applicable. Use strict markdown headers like **Actions**.) - 'type' (string: e.g. "Aberration", "Beast", "Celestial") Return ONLY valid JSON.`;
                 
-                const txt = await callGemini(prompt, userApiKey, true);
+                const txt = await callGemini(prompt, userApiKey, aiModel, true);
                 
                 if (txt) {
                     try {
@@ -956,7 +958,31 @@
                         </main>
                     </div>
 
-                    {showSettingsModal && (<div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"><div className="bg-gray-900 w-full max-w-md rounded-xl shadow-2xl border border-gray-700 flex flex-col"><div className="flex justify-between items-center p-4 border-b border-gray-700"><h2 className="text-xl font-bold text-white flex items-center gap-2"><Settings className="text-slate-400" /> Settings</h2><button onClick={() => setShowSettingsModal(false)} className="text-slate-400 hover:text-white"><X size={24} /></button></div><div className="p-6"><label className="block text-sm font-bold text-white mb-2 flex items-center gap-2"><Key size={16} className="text-yellow-500" /> Gemini API Key</label><input type="password" placeholder="Paste your key here..." className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-2" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} /><p className="text-xs text-slate-400 mb-4">The AI features require a Google Gemini API Key. Stored locally.<br/><br/><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-400 underline hover:text-indigo-300">Get a free API Key here</a></p><div className="flex justify-end"><button onClick={() => {setShowSettingsModal(false); showNotification("Settings saved!", "success");}} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded font-bold">Save & Close</button></div></div></div></div>)}
+                    {/* MODALS (Settings & Help) */}
+                    {showSettingsModal && (
+                        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                            <div className="bg-gray-900 w-full max-w-md rounded-xl shadow-2xl border border-gray-700 flex flex-col">
+                                <div className="flex justify-between items-center p-4 border-b border-gray-700">
+                                    <h2 className="text-xl font-bold text-white flex items-center gap-2"><Settings className="text-slate-400" /> Settings</h2>
+                                    <button onClick={() => setShowSettingsModal(false)} className="text-slate-400 hover:text-white"><X size={24} /></button>
+                                </div>
+                                <div className="p-6">
+                                    <label className="block text-sm font-bold text-white mb-2 flex items-center gap-2"><Key size={16} className="text-yellow-500" /> Gemini API Key</label>
+                                    <input type="password" placeholder="Paste your key here..." className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-2" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} />
+                                    <p className="text-xs text-slate-400 mb-4">The AI features require a Google Gemini API Key. Stored locally.<br/><br/><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-400 underline hover:text-indigo-300">Get a free API Key here</a></p>
+                                    
+                                    {/* AI MODEL STRING */}
+                                    <label className="block text-sm font-bold text-white mb-2 mt-4 flex items-center gap-2"><Settings size={16} className="text-indigo-400" /> AI Model String</label>
+                                    <input type="text" placeholder="e.g. gemini-2.5-flash" className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-2 font-mono text-sm" value={aiModel} onChange={(e) => setAiModel(e.target.value)} />
+                                    <p className="text-xs text-slate-400 mb-6">Default is <strong>gemini-2.5-flash</strong>. Change this if your specific API key requires a different model (e.g., <code>gemini-2.0-flash</code>).</p>
+
+                                    <div className="flex justify-end">
+                                        <button onClick={() => {setShowSettingsModal(false); showNotification("Settings saved!", "success");}} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded font-bold">Save & Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
