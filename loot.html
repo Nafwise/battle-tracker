@@ -92,7 +92,7 @@
         const Icon = ({ children, className, ...props }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>
         );
-        const Coins = (props) => <Icon {...props}><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></Icon>;
+        const Coins = (props) => <Icon {...props}><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7 .71-2.82 2.82"/></Icon>;
         const Gem = (props) => <Icon {...props}><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></Icon>;
         const Scroll = (props) => <Icon {...props}><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/></Icon>;
         const Skull = (props) => <Icon {...props}><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></Icon>;
@@ -295,6 +295,7 @@
             const [isGenerating, setIsGenerating] = useState(false);
             const [aiPrompt, setAiPrompt] = useState('');
             const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('dm-tracker-api-key') || "");
+            const [aiModel, setAiModel] = useState(() => localStorage.getItem('dm-tracker-model') || "gemini-2.5-flash");
             const [showSettingsModal, setShowSettingsModal] = useState(false);
             const [expandedItem, setExpandedItem] = useState(null);
             const [deleteTarget, setDeleteTarget] = useState(null);
@@ -309,6 +310,11 @@
                     localStorage.setItem('dm-tracker-api-key', userApiKey);
                 }
             }, [userApiKey]);
+            useEffect(() => { 
+                if (aiModel && aiModel !== localStorage.getItem('dm-tracker-model')) {
+                    localStorage.setItem('dm-tracker-model', aiModel);
+                }
+            }, [aiModel]);
 
             // --- SCANNER LOGIC (LOCAL ONLY) ---
             const scanBattlefield = () => {
@@ -406,7 +412,7 @@
                 setIsGenerating(true);
                 const prompt = `Create a D&D 5e item based on: "${aiPrompt}". Return ONLY JSON: { "name":str, "type":str(weapon/armor/magic/potion/gem/currency), "rarity":str, "val":str, "description":str (stats) }.`;
                 
-                const response = await callGemini(prompt, userApiKey);
+                const response = await callGemini(prompt, userApiKey, aiModel);
                 
                 if (response) {
                     try {
@@ -425,9 +431,9 @@
                 setForgeForm({ name: '', type: 'weapon', rarity: 'common', val: '', description: '', qty: 1 });
             };
 
-            const callGemini = async (prompt, key) => {
+            const callGemini = async (prompt, key, model) => {
                 try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${key}`, { 
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, { 
                         method: 'POST', 
                         headers: { 'Content-Type': 'application/json' }, 
                         body: JSON.stringify({ 
@@ -561,7 +567,30 @@
 
                     {deleteTarget !== null && (<div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70"><div className="bg-gray-900 w-full max-w-sm rounded-xl p-5 text-center"><h3 className="font-bold text-white mb-4">Delete Entry?</h3><div className="flex gap-2"><button onClick={() => setDeleteTarget(null)} className="flex-1 py-2 bg-slate-700 text-white rounded">Cancel</button><button onClick={() => { setLootHistory(p => p.filter(e => e.id !== deleteTarget)); setDeleteTarget(null); }} className="flex-1 py-2 bg-red-600 text-white rounded">Delete</button></div></div></div>)}
                     {/* SETTINGS MODAL */}
-                    {showSettingsModal && (<div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"><div className="bg-gray-900 w-full max-w-md rounded-xl shadow-2xl border border-gray-700 flex flex-col"><div className="flex justify-between items-center p-4 border-b border-gray-700"><h2 className="text-xl font-bold text-white flex items-center gap-2"><Settings className="text-slate-400" /> Settings</h2><button onClick={() => setShowSettingsModal(false)} className="text-slate-400 hover:text-white"><X size={24} /></button></div><div className="p-6"><label className="block text-sm font-bold text-white mb-2 flex items-center gap-2"><Key size={16} className="text-yellow-500" /> Gemini API Key</label><input type="password" placeholder="Paste your key here..." className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-2" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} /><p className="text-xs text-slate-400 mb-4">The AI features require a Google Gemini API Key. Stored locally.<br/><br/><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-400 underline hover:text-indigo-300">Get a free API Key here</a></p><div className="flex justify-end"><button onClick={() => {setShowSettingsModal(false);}} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded font-bold">Save & Close</button></div></div></div></div>)}
+                    {showSettingsModal && (
+                        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                            <div className="bg-gray-900 w-full max-w-md rounded-xl shadow-2xl border border-gray-700 flex flex-col">
+                                <div className="flex justify-between items-center p-4 border-b border-gray-700">
+                                    <h2 className="text-xl font-bold text-white flex items-center gap-2"><Settings className="text-slate-400" /> Settings</h2>
+                                    <button onClick={() => setShowSettingsModal(false)} className="text-slate-400 hover:text-white"><X size={24} /></button>
+                                </div>
+                                <div className="p-6">
+                                    <label className="block text-sm font-bold text-white mb-2 flex items-center gap-2"><Key size={16} className="text-yellow-500" /> Gemini API Key</label>
+                                    <input type="password" placeholder="Paste your key here..." className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-2" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} />
+                                    <p className="text-xs text-slate-400 mb-4">The AI features require a Google Gemini API Key. Stored locally.<br/><br/><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-400 underline hover:text-indigo-300">Get a free API Key here</a></p>
+                                    
+                                    {/* AI MODEL STRING */}
+                                    <label className="block text-sm font-bold text-white mb-2 mt-4 flex items-center gap-2"><Settings size={16} className="text-indigo-400" /> AI Model String</label>
+                                    <input type="text" placeholder="e.g. gemini-2.5-flash" className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-2 font-mono text-sm" value={aiModel} onChange={(e) => setAiModel(e.target.value)} />
+                                    <p className="text-xs text-slate-400 mb-6">Default is <strong>gemini-2.5-flash</strong>. Change this if your specific API key requires a different model (e.g., <code>gemini-2.0-flash</code>).</p>
+
+                                    <div className="flex justify-end">
+                                        <button onClick={() => {setShowSettingsModal(false);}} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded font-bold">Save & Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
