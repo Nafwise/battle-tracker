@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Akashic Tome</title>
+    <title>The Akashic Tome | DM Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #020617; color: #F8FAFC; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
@@ -19,32 +19,14 @@
         }
         
         /* --- Color-Coded Hovers --- */
-        
-        /* Tracker: Purple */
         .tracker-hover:hover { border-color: #A855F7; box-shadow: 0 0 25px rgba(168, 85, 247, 0.4); }
-        
-        /* Atlas: Cyan */
         .map-hover:hover { border-color: #22D3EE; box-shadow: 0 0 25px rgba(34, 211, 238, 0.4); }
-        
-        /* Records: Red */
         .sheet-hover:hover { border-color: #EF4444; box-shadow: 0 0 25px rgba(239, 68, 68, 0.4); }
-        
-        /* Workshop: Green */
         .workshop-hover:hover { border-color: #22C55E; box-shadow: 0 0 25px rgba(34, 197, 94, 0.4); }
-        
-        /* Genesis: Teal */
         .genesis-hover:hover { border-color: #2DD4BF; box-shadow: 0 0 25px rgba(45, 212, 191, 0.4); }
-
-        /* Forge: Orange/Amber */
         .forge-hover:hover { border-color: #F97316; box-shadow: 0 0 25px rgba(249, 115, 22, 0.4); }
-        
-        /* Loot: Gold */
         .loot-hover:hover { border-color: #F59E0B; box-shadow: 0 0 25px rgba(245, 158, 11, 0.4); }
-        
-        /* Campaign: Slate/Grey */
         .campaign-hover:hover { border-color: #94A3B8; box-shadow: 0 0 25px rgba(148, 163, 184, 0.4); }
-        
-        /* Compendium: Indigo */
         .compendium-hover:hover { border-color: #6366F1; box-shadow: 0 0 25px rgba(99, 102, 241, 0.4); }
 
         .scanline {
@@ -69,7 +51,7 @@
                 </h1>
                 <div class="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent blur-sm"></div>
             </div>
-            <p class="mt-4 text-slate-400 text-lg font-light tracking-wide">Universal DM Tools & VTT Suite v1.7.0</p>
+            <p class="mt-4 text-slate-400 text-lg font-light tracking-wide">Universal DM Tools & VTT Suite v1.8.0</p>
         </header>
 
         <!-- APP GRID -->
@@ -190,10 +172,18 @@
                 <span class="text-amber-400">⚡</span> Changelog
             </h3>
             
+            <!-- Version 1.8.0 -->
             <div class="cl-section mb-6">
-                <div class="cl-header font-bold text-emerald-400 mb-2 uppercase tracking-wider text-xs">Version 1.7.0 (Current)</div>
-                <div class="cl-item mb-1 flex items-start gap-2"><span class="text-amber-500">•</span> New App: <strong>Genesis Archives</strong> added.</div>
-                <div class="cl-item mb-1 flex items-start gap-2 ml-4 text-slate-400 text-xs">Create custom Classes and Races for your campaign using AI.</div>
+                <div class="cl-header font-bold text-indigo-400 mb-2 uppercase tracking-wider text-xs border-l-2 border-indigo-500 pl-2">Version 1.8.0</div>
+                <div class="cl-item mb-1 flex items-start gap-2"><span class="text-indigo-500">•</span> <strong>Gemini API Stability Fix:</strong> Unified the API callback logic. You can now manually specify the Model String in Settings to bypass deprecations.</div>
+                <div class="cl-item mb-1 flex items-start gap-2"><span class="text-red-500 font-bold">!</span> <strong>IMAGE GEN NOTE:</strong> Astral Forge (Imagen 4.0) now requires a <strong>PAID API KEY</strong> with billing enabled in your Google Cloud project. Free-tier keys are limited to text models only.</div>
+                <div class="cl-item mb-1 flex items-start gap-2"><span class="text-indigo-500">•</span> <strong>Forge Cache:</strong> Tokens generated in Astral Forge are now saved to your local browser storage automatically.</div>
+            </div>
+
+            <!-- Version 1.7.0 -->
+            <div class="cl-section mb-6">
+                <div class="cl-header font-bold text-emerald-400 mb-2 uppercase tracking-wider text-xs border-l-2 border-emerald-500 pl-2">Version 1.7.0</div>
+                <div class="cl-item mb-1 flex items-start gap-2"><span class="text-amber-500">•</span> New App: <strong>Genesis Archives</strong> added. Create custom Classes and Races for your campaign using AI.</div>
             </div>
 
             <div class="mt-6 text-center">
