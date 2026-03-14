@@ -124,7 +124,7 @@
         const Download = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></Icon>;
         const Upload = (props) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></Icon>;
         const LinkIcon = (props) => <Icon {...props}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></Icon>;
-        const Settings = (props) => <Icon {...props}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></Icon>;
+        const Settings = (props) => <Icon {...props}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></Icon>;
         const Copy = (props) => <Icon {...props}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></Icon>;
         const Info = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></Icon>;
         
@@ -158,6 +158,7 @@
             speed: 30,
             initiative: 0,
             proficiencies: [], 
+            expertise: [], // Added expertise array
             otherProficiencies: "", 
             inventory: [],
             attunedItems: ['', '', ''],
@@ -167,6 +168,7 @@
             features: [], 
             attacks: [], 
             savingThrows: [], 
+            saveOverrides: {},
             resources: [], 
             notes: "",
             coins: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
@@ -664,24 +666,29 @@
             );
         };
 
-        const SkillRow = ({ skill, char, onToggle, onRoll }) => {
+        const SkillRow = ({ skill, char, onCycle }) => {
             const modVal = getMod(char.stats[skill.stat]);
-            const isProf = char.proficiencies.includes(skill.name);
+            const isProf = (char.proficiencies || []).includes(skill.name);
+            const isExpert = (char.expertise || []).includes(skill.name);
             const pb = getProficiency(char.level);
-            const total = modVal + (isProf ? pb : 0);
+            
+            let total = modVal;
+            if (isExpert) total += (pb * 2);
+            else if (isProf) total += pb;
+            
+            let dotClass = 'border-slate-600 group-hover:border-slate-400';
+            if (isExpert) dotClass = 'bg-yellow-500 border-yellow-500 shadow-[0_0_5px_rgba(234,179,8,0.6)]';
+            else if (isProf) dotClass = 'bg-fuchsia-500 border-fuchsia-500';
             
             return (
-                <div className="flex items-center justify-between text-sm py-1 border-b border-slate-800 hover:bg-slate-800/50 rounded px-1 group cursor-pointer">
-                    <div className="flex items-center gap-2" onClick={() => onToggle(skill.name)}>
-                        <div className={`w-3 h-3 rounded-full border ${isProf ? 'bg-fuchsia-500 border-fuchsia-500' : 'border-slate-600 group-hover:border-slate-400'}`} />
+                <div className="flex items-center justify-between text-sm py-1 border-b border-slate-800 hover:bg-slate-800/50 rounded px-1 group cursor-pointer" onClick={() => onCycle(skill.name)}>
+                    <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full border transition-colors ${dotClass}`} />
                         <span className="text-slate-300">{skill.name} <span className="text-[10px] text-slate-500 uppercase">({skill.stat})</span></span>
                     </div>
-                    <button 
-                        onClick={() => onRoll(skill.name, '1d20', total)}
-                        className={`font-mono font-bold hover:text-white px-2 rounded hover:bg-slate-700 ${total >= 0 ? 'text-fuchsia-300' : 'text-slate-400'}`}
-                    >
+                    <span className={`font-mono font-bold px-2 ${total >= 0 ? (isExpert ? 'text-yellow-400' : 'text-fuchsia-300') : 'text-slate-400'}`}>
                         {total >= 0 ? `+${total}` : total}
-                    </button>
+                    </span>
                 </div>
             );
         };
@@ -940,6 +947,38 @@
             );
         };
 
+        // --- SPELL DETAIL MODAL ---
+        const SpellDetailModal = ({ spell, onClose, onUpdate }) => {
+            if (!spell) return null;
+            return (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
+                    <div className="bg-slate-900 border border-slate-600 rounded-xl w-full max-w-lg p-6 shadow-2xl relative animate-fade-in max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white"><XIcon size={20}/></button>
+                        
+                        <div className="flex items-center gap-3 pr-8 mb-4 border-b border-slate-700 pb-3">
+                            <Wand className="text-purple-400" size={24} />
+                            <h2 className="text-xl font-bold text-white flex-1">{spell.name || "Unnamed Spell"}</h2>
+                            <span className="text-xs bg-slate-800 border border-slate-700 text-slate-300 px-2 py-1 rounded">Level {spell.level}</span>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                            <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Spell Description & Effects</label>
+                            <textarea 
+                                className="w-full h-64 bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-sm text-slate-300 resize-none focus:border-purple-500 focus:bg-slate-800 transition-colors"
+                                placeholder="Enter spell description, cast time, range, duration, damage dice, saving throw effects..."
+                                value={spell.notes || ""}
+                                onChange={(e) => onUpdate('notes', e.target.value)}
+                            />
+                        </div>
+                        
+                        <div className="mt-4 pt-4 border-t border-slate-700 flex justify-end">
+                            <button onClick={onClose} className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded text-sm font-bold transition-colors">Done</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         function App() {
             const [characters, setCharacters] = useState(() => {
                 const saved = localStorage.getItem('akashic_characters');
@@ -977,6 +1016,7 @@
             const [weaponModalOpen, setWeaponModalOpen] = useState(false);
             const [armorModalOpen, setArmorModalOpen] = useState(false);
             const [viewItem, setViewItem] = useState(null); // Item to show in modal
+            const [viewSpell, setViewSpell] = useState(null); // Spell to show in modal
             
             const fileInputRef = useRef(null);
             const lootImportRef = useRef(null);
@@ -993,10 +1033,25 @@
             // --- ACTIONS ---
             const updateChar = (field, value) => setCharacters(prev => prev.map(c => c.id === activeId ? { ...c, [field]: value } : c));
             const updateStat = (stat, val) => setCharacters(prev => prev.map(c => c.id === activeId ? { ...c, stats: { ...c.stats, [stat]: val } } : c));
-            const toggleProficiency = (skillName) => {
-                const current = char.proficiencies;
-                updateChar('proficiencies', current.includes(skillName) ? current.filter(p => p !== skillName) : [...current, skillName]);
+            
+            // Handle cycling through Normal -> Proficiency -> Expertise
+            const cycleSkillProficiency = (skillName) => {
+                const currentProf = char.proficiencies || [];
+                const currentExp = char.expertise || [];
+                
+                if (currentExp.includes(skillName)) {
+                    // Expert -> None
+                    updateChar('expertise', currentExp.filter(p => p !== skillName));
+                } else if (currentProf.includes(skillName)) {
+                    // Prof -> Expert
+                    updateChar('proficiencies', currentProf.filter(p => p !== skillName));
+                    updateChar('expertise', [...currentExp, skillName]);
+                } else {
+                    // None -> Prof
+                    updateChar('proficiencies', [...currentProf, skillName]);
+                }
             };
+
             const toggleSave = (stat) => {
                 const current = char.savingThrows || [];
                 updateChar('savingThrows', current.includes(stat) ? current.filter(s => s !== stat) : [...current, stat]);
@@ -1319,6 +1374,18 @@ ${attacks || "- Unarmed"}`;
                             onClose={() => setViewItem(null)} 
                         />
                     )}
+                    
+                    {viewSpell && (
+                        <SpellDetailModal 
+                            spell={viewSpell} 
+                            onClose={() => setViewSpell(null)}
+                            onUpdate={(field, val) => {
+                                updateItemInArray('spells', viewSpell.id, field, val);
+                                // Also update local modal state so the UI reflects it instantly while typing
+                                setViewSpell(prev => ({ ...prev, [field]: val }));
+                            }}
+                        />
+                    )}
 
                     <div className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur border-b border-slate-800 p-2 shadow-lg">
                         <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
@@ -1375,7 +1442,7 @@ ${attacks || "- Unarmed"}`;
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="glass-panel p-4 rounded-xl">
                                         <h3 className="font-bold text-slate-300 border-b border-slate-700 pb-2 mb-2">Skills</h3>
-                                        <div className="space-y-1 max-h-80 overflow-y-auto">{SKILLS.map(skill => <SkillRow key={skill.name} skill={skill} char={char} onToggle={toggleProficiency} />)}</div>
+                                        <div className="space-y-1 max-h-80 overflow-y-auto">{SKILLS.map(skill => <SkillRow key={skill.name} skill={skill} char={char} onCycle={cycleSkillProficiency} />)}</div>
                                     </div>
                                     <div className="glass-panel p-4 rounded-xl flex flex-col">
                                         <h3 className="font-bold text-slate-300 border-b border-slate-700 pb-2 mb-2">Proficiencies & Languages</h3>
@@ -1431,11 +1498,37 @@ ${attacks || "- Unarmed"}`;
                                         {['str','dex','con','int','wis','cha'].map(stat => {
                                             const mod = getMod(char.stats[stat]);
                                             const isProf = (char.savingThrows||[]).includes(stat);
-                                            const total = mod + (isProf ? pb : 0);
+                                            const calcTotal = mod + (isProf ? pb : 0);
+                                            const overrideVal = char.saveOverrides ? char.saveOverrides[stat] : undefined;
+                                            
+                                            let displayVal = "";
+                                            if (overrideVal !== undefined) {
+                                                displayVal = overrideVal;
+                                            } else {
+                                                displayVal = calcTotal >= 0 ? `+${calcTotal}` : `${calcTotal}`;
+                                            }
+
+                                            const isPositive = displayVal.toString().includes('+') || (!displayVal.toString().includes('-') && parseInt(displayVal) >= 0);
+
                                             return (
-                                                <div key={stat} onClick={() => toggleSave(stat)} className={`flex justify-between items-center p-2 rounded cursor-pointer border ${isProf ? 'bg-fuchsia-900/30 border-fuchsia-500' : 'bg-slate-900 border-slate-700'}`}>
+                                                <div key={stat} className={`flex justify-between items-center p-2 rounded border ${isProf ? 'bg-fuchsia-900/30 border-fuchsia-500' : 'bg-slate-900 border-slate-700'}`}>
                                                     <span className="uppercase text-xs font-bold text-slate-400">{stat}</span>
-                                                    <span className={`font-mono font-bold ${total >= 0 ? 'text-green-400' : 'text-red-400'}`}>{total >= 0 ? `+${total}` : total}</span>
+                                                    <input 
+                                                        type="text" 
+                                                        className={`w-12 text-right bg-transparent border-b border-transparent hover:border-slate-700 focus:border-fuchsia-500 p-0 m-0 focus:ring-0 font-mono font-bold outline-none transition-colors ${isPositive ? 'text-green-400' : 'text-red-400'}`}
+                                                        value={displayVal}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            const overrides = char.saveOverrides || {};
+                                                            if (val === '') {
+                                                                const newOverrides = { ...overrides };
+                                                                delete newOverrides[stat];
+                                                                updateChar('saveOverrides', newOverrides);
+                                                            } else {
+                                                                updateChar('saveOverrides', { ...overrides, [stat]: val });
+                                                            }
+                                                        }}
+                                                    />
                                                 </div>
                                             )
                                         })}
@@ -1507,11 +1600,14 @@ ${attacks || "- Unarmed"}`;
                                     <div className="flex justify-between items-center mb-3"><h3 className="font-bold text-slate-300 flex items-center gap-2"><Wand size={16} className="text-purple-400"/> Spells</h3><button onClick={addSpell} className="p-1 bg-slate-700 rounded hover:bg-slate-600 text-white"><Plus size={16}/></button></div>
                                     <div className="space-y-2">
                                         {(char.spells||[]).sort((a,b)=>a.level-b.level).map(spell => (
-                                            <div key={spell.id} className="flex gap-2 items-center bg-slate-900/50 p-2 rounded border border-slate-700">
+                                            <div key={spell.id} className="flex gap-2 items-center bg-slate-900/50 p-2 rounded border border-slate-700 group">
                                                 <input type="number" className="w-6 bg-transparent text-center text-xs text-slate-500 border-none" value={spell.level} onChange={e=>updateItemInArray('spells', spell.id, 'level', parseInt(e.target.value))} placeholder="Lvl" />
-                                                <input className="flex-1 bg-transparent border-none text-sm font-bold text-white placeholder-slate-600" value={spell.name} onChange={e=>updateItemInArray('spells', spell.id, 'name', e.target.value)} placeholder="Spell Name" />
+                                                <div className="flex-1 flex items-center justify-between gap-2">
+                                                    <input className="w-full bg-transparent border-none text-sm font-bold text-white placeholder-slate-600 focus:ring-0 p-0" value={spell.name} onChange={e=>updateItemInArray('spells', spell.id, 'name', e.target.value)} placeholder="Spell Name" />
+                                                    <button onClick={() => setViewSpell(spell)} className="text-slate-500 hover:text-purple-400 transition-colors" title="View/Edit Description"><Info size={14}/></button>
+                                                </div>
                                                 <button onClick={()=>updateItemInArray('spells', spell.id, 'prepared', !spell.prepared)} className={`text-[10px] px-2 py-0.5 rounded border ${spell.prepared ? 'bg-blue-900/50 border-blue-500 text-blue-300' : 'border-slate-600 text-slate-500'}`}>Prep</button>
-                                                <button onClick={() => deleteItemFromArray('spells', spell.id)} className="text-slate-600 hover:text-red-500"><Trash2 size={14}/></button>
+                                                <button onClick={() => deleteItemFromArray('spells', spell.id)} className="text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14}/></button>
                                             </div>
                                         ))}
                                     </div>
@@ -1588,7 +1684,8 @@ ${attacks || "- Unarmed"}`;
                                         ))}
                                     </div>
                                     <div className="grid grid-cols-5 gap-2 mt-4 pt-3 border-t border-slate-700">
-                                        {['cp','sp','ep','gp','pp'].map(curr => ( <div key={curr} className="flex flex-col items-center"><span className="text-[10px] uppercase text-slate-500 font-bold">{curr}</span><input type="number" className="w-full text-center text-xs bg-slate-900 border-slate-700 p-1" value={char.coins[curr]} onChange={(e) => updateChar('coins', {...char.coins, [curr]: parseInt(e.target.value)})} /></div> ))}\r\n                                    </div>
+                                        {['cp','sp','ep','gp','pp'].map(curr => ( <div key={curr} className="flex flex-col items-center"><span className="text-[10px] uppercase text-slate-500 font-bold">{curr}</span><input type="number" className="w-full text-center text-xs bg-slate-900 border-slate-700 p-1" value={char.coins[curr]} onChange={(e) => updateChar('coins', {...char.coins, [curr]: parseInt(e.target.value)})} /></div> ))}
+                                    </div>
                                 </div>
                                 <div className="glass-panel p-4 rounded-xl flex flex-col">
                                     <h3 className="font-bold text-slate-300 flex items-center gap-2 mb-3"><Scroll size={16} className="text-indigo-400"/> Notes & Bio</h3>
