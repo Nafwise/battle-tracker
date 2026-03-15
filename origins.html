@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Genesis Archives - Class & Race Creator</title>
+    <title>Genesis Archives - Origins Creator</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0F172A">
@@ -41,7 +41,7 @@
             box-shadow: 0 0 40px var(--accent-glow), 0 0 0 1px #334155;
             border-radius: 12px;
             margin: 20px auto;
-            max-width: 1400px; /* Widened for 3 columns */
+            max-width: 1600px; /* Widened for 4 columns */
             min-height: 95vh;
         }
         
@@ -72,8 +72,9 @@
         .workshop-hover:hover { border-left-color: #22C55E; background: linear-gradient(90deg, rgba(34, 197, 94, 0.1), transparent); }
         .loot-hover:hover { border-left-color: #F59E0B; background: linear-gradient(90deg, rgba(245, 158, 11, 0.1), transparent); }
         
-        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Utility */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100">
@@ -108,12 +109,10 @@
         const BookOpen = (props) => <Icon {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>;
         const Copy = (props) => <Icon {...props}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></Icon>;
         const Split = (props) => <Icon {...props}><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.87l-4.243-4.242a2 2 0 0 1-.585-1.414V3"/><path d="m20 21-9-9"/><path d="M9 3v2.17a2 2 0 0 1-.586 1.414l-4.242 4.242a2 2 0 0 0-1.172 2.871V22"/></Icon>;
-        const BookType = (props) => <Icon {...props}><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M9 10h6"/><path d="M9 6h6"/><path d="M9 14h6"/></Icon>;
         const Pencil = (props) => <Icon {...props}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></Icon>;
         const Check = (props) => <Icon {...props}><polyline points="20 6 9 17 4 12"/></Icon>;
         const FileJson = (props) => <Icon {...props}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></Icon>;
-        const CheckSquare = (props) => <Icon {...props}><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></Icon>;
-        const Square = (props) => <Icon {...props}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/></Icon>;
+        const Compass = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></Icon>;
 
         // --- SHARED COMPONENTS ---
         const SuiteDropdown = () => {
@@ -142,7 +141,7 @@
                         <a href="./sheet.html" className="suite-item workshop-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50"><User size={18} className="text-slate-400"/><div className="flex flex-col"><span className="text-sm font-bold">Records</span><span className="text-[10px] opacity-60">Character Sheets</span></div></a>
                         <a href="./homebrew.html" className="suite-item workshop-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50"><Hammer size={18} className="text-slate-400"/><div className="flex flex-col"><span className="text-sm font-bold">Workshop</span><span className="text-[10px] opacity-60">Monster Creator</span></div></a>
                         {/* Current App */}
-                        <div className="suite-item border-l-4 border-teal-500 bg-slate-800/50 flex items-center gap-3 px-4 py-3 text-white"><Dna size={18} className="text-teal-400"/><div className="flex flex-col"><span className="text-sm font-bold">Genesis</span><span className="text-[10px] opacity-60">Class & Race Creator</span></div></div>
+                        <div className="suite-item border-l-4 border-teal-500 bg-slate-800/50 flex items-center gap-3 px-4 py-3 text-white"><Dna size={18} className="text-teal-400"/><div className="flex flex-col"><span className="text-sm font-bold">Genesis</span><span className="text-[10px] opacity-60">Origins Creator</span></div></div>
                         <a href="./loot.html" className="suite-item loot-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50"><Coins size={18} className="text-slate-400"/><div className="flex flex-col"><span className="text-sm font-bold">Loot</span><span className="text-[10px] opacity-60">Treasury</span></div></a>
                         <a href="./campaign.html" className="suite-item loot-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50"><Flag size={18} className="text-slate-400"/><div className="flex flex-col"><span className="text-sm font-bold">Campaign</span><span className="text-[10px] opacity-60">Adventure Module</span></div></a>
                         <a href="./compendium.html" className="suite-item loot-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50 border-t border-slate-700"><BookOpen size={18} className="text-slate-400"/><div className="flex flex-col"><span className="text-sm font-bold">Compendium</span><span className="text-[10px] opacity-60">Rules & Spells</span></div></a>
@@ -173,32 +172,16 @@
             );
         };
 
-        const MessageModal = ({ isOpen, message, onClose }) => {
-            if (!isOpen) return null;
-            return (
-                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-                    <div className="bg-slate-900 w-full max-w-sm rounded-xl border border-teal-800 p-6 shadow-2xl text-center">
-                        <Info className="mx-auto text-teal-400 mb-4" size={32} />
-                        <p className="text-white mb-6 text-sm">{message}</p>
-                        <button onClick={onClose} className="px-6 py-2 bg-teal-700 hover:bg-teal-600 text-white rounded text-sm font-bold">OK</button>
-                    </div>
-                </div>
-            );
-        };
-
-        // --- NEW COMPONENT: SELECTIVE EXPORT MODAL ---
-        const ExportModal = ({ isOpen, onClose, races, classes, subclasses }) => {
+        const ExportModal = ({ isOpen, onClose, races, classes, subclasses, backgrounds }) => {
             if (!isOpen) return null;
 
-            // Default filename with current date
             const [fileName, setFileName] = useState(`genesis_archive_${new Date().toISOString().slice(0,10)}`);
             
-            // Selection State: Start with everything selected
             const [selectedRaces, setSelectedRaces] = useState(new Set(races.map(r => r.id)));
             const [selectedClasses, setSelectedClasses] = useState(new Set(classes.map(c => c.id)));
             const [selectedSubclasses, setSelectedSubclasses] = useState(new Set(subclasses.map(s => s.id)));
+            const [selectedBackgrounds, setSelectedBackgrounds] = useState(new Set(backgrounds.map(b => b.id)));
 
-            // Helper for Toggling
             const toggle = (set, setter, id) => {
                 const newSet = new Set(set);
                 if (newSet.has(id)) newSet.delete(id);
@@ -207,8 +190,8 @@
             };
 
             const toggleAll = (items, set, setter) => {
-                if (set.size === items.length) setter(new Set()); // Deselect all if all are selected
-                else setter(new Set(items.map(i => i.id))); // Select all
+                if (set.size === items.length) setter(new Set()); 
+                else setter(new Set(items.map(i => i.id))); 
             };
 
             const handleExport = () => {
@@ -216,10 +199,10 @@
                     races: races.filter(r => selectedRaces.has(r.id)),
                     classes: classes.filter(c => selectedClasses.has(c.id)),
                     subclasses: subclasses.filter(s => selectedSubclasses.has(s.id)),
+                    backgrounds: backgrounds.filter(b => selectedBackgrounds.has(b.id)),
                     exportedAt: new Date().toISOString()
                 };
                 
-                // Add extension if missing
                 let finalName = fileName.trim() || "genesis_export";
                 if (!finalName.toLowerCase().endsWith('.json')) finalName += '.json';
 
@@ -232,7 +215,6 @@
                 onClose();
             };
 
-            // Render a List Section
             const renderSection = (title, icon, items, selectedSet, setSetter) => (
                 <div className="flex-1 min-w-[200px] flex flex-col h-full bg-slate-950/50 rounded-lg border border-slate-700 overflow-hidden">
                     <div className="p-3 bg-slate-800/80 border-b border-slate-700 flex justify-between items-center">
@@ -241,7 +223,7 @@
                             {selectedSet.size === items.length ? "Clear" : "All"}
                         </button>
                     </div>
-                    <div className="overflow-y-auto p-2 space-y-1 custom-scrollbar max-h-[250px]">
+                    <div className="overflow-y-auto p-2 space-y-1 custom-scrollbar lg:max-h-full max-h-[200px] flex-1">
                         {items.length === 0 && <div className="text-xs text-slate-500 italic p-2 text-center">No items found.</div>}
                         {items.map(item => (
                             <div key={item.id} onClick={() => toggle(selectedSet, setSetter, item.id)} className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors border ${selectedSet.has(item.id) ? 'bg-teal-900/20 border-teal-500/50' : 'hover:bg-slate-800 border-transparent'}`}>
@@ -257,44 +239,43 @@
 
             return (
                 <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="bg-slate-900 w-full max-w-4xl rounded-xl border border-slate-700 flex flex-col shadow-2xl max-h-[90vh]">
+                    <div className="bg-slate-900 w-full max-w-5xl rounded-xl border border-slate-700 flex flex-col shadow-2xl max-h-[90vh]">
                         <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50 rounded-t-xl">
                             <h2 className="text-xl font-bold text-white flex items-center gap-2"><Upload className="text-teal-400 rotate-180"/> Selective Export</h2>
                             <button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button>
                         </div>
                         
                         <div className="p-6 overflow-y-auto">
-                            {/* File Name Input */}
                             <div className="mb-6">
                                 <label className="block text-xs font-bold text-teal-400 uppercase mb-2">Filename</label>
                                 <div className="flex items-center gap-2 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 focus-within:border-teal-500 transition-colors">
-                                    <FileJson size={18} className="text-slate-500"/>
+                                    <FileJson size={18} className="text-slate-500 shrink-0"/>
                                     <input 
                                         type="text" 
                                         value={fileName}
                                         onChange={(e) => setFileName(e.target.value)}
-                                        className="bg-transparent border-none text-white w-full focus:outline-none text-sm font-mono"
+                                        className="bg-transparent border-none text-white w-full focus:outline-none text-sm font-mono min-w-0"
                                         placeholder="filename.json"
                                     />
-                                    <span className="text-slate-500 text-xs">.json</span>
+                                    <span className="text-slate-500 text-xs shrink-0">.json</span>
                                 </div>
                             </div>
 
-                            {/* Selection Columns */}
-                            <div className="flex flex-col md:flex-row gap-4 h-[350px]">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:h-[350px] overflow-y-auto lg:overflow-visible">
                                 {renderSection("Races", <Dna size={14}/>, races, selectedRaces, setSelectedRaces)}
                                 {renderSection("Classes", <BookUser size={14}/>, classes, selectedClasses, setSelectedClasses)}
                                 {renderSection("Subclasses", <Split size={14}/>, subclasses, selectedSubclasses, setSelectedSubclasses)}
+                                {renderSection("Backgrounds", <Compass size={14}/>, backgrounds, selectedBackgrounds, setSelectedBackgrounds)}
                             </div>
                         </div>
 
-                        <div className="p-4 border-t border-slate-700 bg-slate-800/50 rounded-b-xl flex justify-between items-center">
-                            <div className="text-xs text-slate-400">
-                                Selected: <span className="text-white font-bold">{selectedRaces.size + selectedClasses.size + selectedSubclasses.size}</span> items
+                        <div className="p-4 border-t border-slate-700 bg-slate-800/50 rounded-b-xl flex justify-between items-center flex-wrap gap-4">
+                            <div className="text-xs text-slate-400 w-full sm:w-auto text-center sm:text-left">
+                                Selected: <span className="text-white font-bold">{selectedRaces.size + selectedClasses.size + selectedSubclasses.size + selectedBackgrounds.size}</span> items
                             </div>
-                            <div className="flex gap-2">
-                                <button onClick={onClose} className="px-4 py-2 text-slate-400 hover:text-white font-medium text-sm">Cancel</button>
-                                <button onClick={handleExport} className="px-6 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg shadow-lg shadow-teal-900/20 flex items-center gap-2">
+                            <div className="flex gap-2 w-full sm:w-auto justify-center sm:justify-end">
+                                <button onClick={onClose} className="flex-1 sm:flex-none px-4 py-2 text-slate-400 hover:text-white font-medium text-sm bg-slate-800 sm:bg-transparent rounded-lg">Cancel</button>
+                                <button onClick={handleExport} className="flex-1 sm:flex-none px-6 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg shadow-lg shadow-teal-900/20 flex items-center justify-center gap-2">
                                     <Download size={16}/> Export Selection
                                 </button>
                             </div>
@@ -304,20 +285,16 @@
             );
         };
 
-        const DetailModal = ({ item, type, onClose, onRename, onAlert }) => {
+        const DetailModal = ({ item, type, onClose, onRename }) => {
             if (!item) return null;
             
-            // Local state for editing name inside the modal
             const [isEditing, setIsEditing] = useState(false);
             const [editName, setEditName] = useState(item.name);
 
-            // Update local state if item changes
             useEffect(() => { setEditName(item.name); }, [item]);
             
-            // Helper to render complex features
             const renderFeatures = (features) => {
                 if (!Array.isArray(features)) return <p className="text-slate-500 italic">No features listed.</p>;
-                // Sort by level if available
                 const sortedFeatures = [...features].sort((a, b) => {
                     if (a.level && b.level) return a.level - b.level;
                     return 0;
@@ -344,32 +321,31 @@
             return (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                     <div className="bg-slate-900 w-full max-w-3xl rounded-xl border border-slate-700 flex flex-col max-h-[90vh] shadow-2xl">
-                        <div className="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-950/50 rounded-t-xl">
-                            <div className="flex items-center gap-3 flex-1 mr-4">
-                                {type === 'race' ? <Dna className="text-teal-500 shrink-0"/> : type === 'subclass' ? <Split className="text-teal-500 shrink-0"/> : <BookUser className="text-teal-500 shrink-0"/>}
+                        <div className="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-950/50 rounded-t-xl gap-2">
+                            <div className="flex items-center gap-3 flex-1 mr-4 min-w-0">
+                                {type === 'race' ? <Dna className="text-teal-500 shrink-0"/> : type === 'subclass' ? <Split className="text-teal-500 shrink-0"/> : type === 'background' ? <Compass className="text-teal-500 shrink-0"/> : <BookUser className="text-teal-500 shrink-0"/>}
                                 
-                                {/* Renaming Logic */}
                                 {isEditing ? (
-                                    <div className="flex items-center gap-2 flex-1 animate-fade-in">
+                                    <div className="flex items-center gap-2 flex-1 animate-fade-in min-w-0">
                                         <input 
                                             autoFocus
-                                            className="bg-slate-800 border border-teal-500 text-white font-bold text-lg px-2 py-1 rounded w-full focus:outline-none"
+                                            className="bg-slate-800 border border-teal-500 text-white font-bold text-base sm:text-lg px-2 py-1.5 rounded w-full focus:outline-none min-w-0"
                                             value={editName}
                                             onChange={(e) => setEditName(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
                                         />
-                                        <button onClick={handleSaveName} className="p-1 bg-teal-700 text-white rounded hover:bg-teal-600"><Check size={18}/></button>
-                                        <button onClick={() => { setIsEditing(false); setEditName(item.name); }} className="p-1 bg-slate-700 text-white rounded hover:bg-slate-600"><X size={18}/></button>
+                                        <button onClick={handleSaveName} className="p-1.5 bg-teal-700 text-white rounded hover:bg-teal-600 shrink-0"><Check size={18}/></button>
+                                        <button onClick={() => { setIsEditing(false); setEditName(item.name); }} className="p-1.5 bg-slate-700 text-white rounded hover:bg-slate-600 shrink-0"><X size={18}/></button>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setIsEditing(true)} title="Click to rename">
-                                        <h2 className="text-xl font-bold text-white">{item.name}</h2>
-                                        {item.baseClass && <span className="text-sm text-slate-400 font-normal">({item.baseClass})</span>}
-                                        <Pencil size={14} className="text-slate-600 group-hover:text-teal-400 transition-colors"/>
+                                    <div className="flex items-center gap-2 group cursor-pointer min-w-0 overflow-hidden" onClick={() => setIsEditing(true)} title="Click to rename">
+                                        <h2 className="text-lg sm:text-xl font-bold text-white truncate">{item.name}</h2>
+                                        {item.baseClass && <span className="text-xs sm:text-sm text-slate-400 font-normal truncate">({item.baseClass})</span>}
+                                        <Pencil size={14} className="text-slate-600 group-hover:text-teal-400 transition-colors shrink-0"/>
                                     </div>
                                 )}
                             </div>
-                            <button onClick={onClose}><X size={24} className="text-gray-400 hover:text-white"/></button>
+                            <button onClick={onClose} className="shrink-0"><X size={24} className="text-gray-400 hover:text-white"/></button>
                         </div>
                         <div className="p-6 overflow-y-auto custom-scrollbar">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-sm">
@@ -403,8 +379,30 @@
                                             <span className="text-teal-300 font-bold">{item.saves}</span>
                                         </div>
                                     </>
+                                ) : type === 'background' ? (
+                                    <>
+                                        <div className="bg-slate-800 p-3 rounded md:col-span-2">
+                                            <span className="block text-xs text-slate-500 uppercase font-bold">Source</span>
+                                            <span className="text-white">{item.source || 'Homebrew'}</span>
+                                        </div>
+                                        <div className="bg-slate-800 p-3 rounded">
+                                            <span className="block text-xs text-slate-500 uppercase font-bold">Skill Proficiencies</span>
+                                            <span className="text-white">{item.skillProficiencies}</span>
+                                        </div>
+                                        <div className="bg-slate-800 p-3 rounded">
+                                            <span className="block text-xs text-slate-500 uppercase font-bold">Tool Proficiencies</span>
+                                            <span className="text-white">{item.toolProficiencies}</span>
+                                        </div>
+                                        <div className="bg-slate-800 p-3 rounded">
+                                            <span className="block text-xs text-slate-500 uppercase font-bold">Languages</span>
+                                            <span className="text-white">{item.languages}</span>
+                                        </div>
+                                        <div className="bg-slate-800 p-3 rounded">
+                                            <span className="block text-xs text-slate-500 uppercase font-bold">Equipment</span>
+                                            <span className="text-white">{item.equipment}</span>
+                                        </div>
+                                    </>
                                 ) : (
-                                    // SUBCLASS HEADER
                                     <div className="bg-slate-800 p-3 rounded md:col-span-2">
                                         <span className="block text-xs text-slate-500 uppercase font-bold">Base Class</span>
                                         <span className="text-white font-bold">{item.baseClass}</span>
@@ -415,13 +413,29 @@
                             {item.description && (
                                 <div className="mb-6">
                                     <h3 className="text-sm font-bold text-slate-400 uppercase mb-2">Description</h3>
-                                    <p className="text-slate-300 text-sm italic">{item.description}</p>
+                                    <p className="text-slate-300 text-sm italic whitespace-pre-wrap">{item.description}</p>
                                 </div>
                             )}
 
                             <div>
-                                <h3 className="text-sm font-bold text-slate-400 uppercase mb-3 border-b border-slate-700 pb-1">Traits & Features</h3>
-                                {renderFeatures(type === 'race' ? item.traits : item.features)}
+                                {type === 'background' ? (
+                                    item.featureName && (
+                                        <>
+                                            <h3 className="text-sm font-bold text-slate-400 uppercase mb-3 border-b border-slate-700 pb-1">Background Feature</h3>
+                                            <div className="mb-4 pb-2">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="font-bold text-teal-300">{item.featureName}</span>
+                                                </div>
+                                                <p className="text-sm text-slate-300 whitespace-pre-wrap">{item.featureDescription}</p>
+                                            </div>
+                                        </>
+                                    )
+                                ) : (
+                                    <>
+                                        <h3 className="text-sm font-bold text-slate-400 uppercase mb-3 border-b border-slate-700 pb-1">Traits & Features</h3>
+                                        {renderFeatures(type === 'race' ? item.traits : item.features)}
+                                    </>
+                                )}
                             </div>
                         </div>
                         <div className="p-4 border-t border-slate-700 bg-slate-950/50 rounded-b-xl flex justify-end gap-2">
@@ -433,10 +447,10 @@
                                 textArea.select();
                                 try {
                                     document.execCommand('copy');
-                                    onAlert("Copied JSON to clipboard!");
+                                    alert("Copied JSON to clipboard!");
                                 } catch (err) {
                                     console.error('Copy failed', err);
-                                    onAlert("Manual copy required. Permissions blocked.");
+                                    alert("Manual copy required. Permissions blocked.");
                                 }
                                 document.body.removeChild(textArea);
                             }} className="px-3 py-1.5 bg-slate-800 text-slate-300 hover:text-white rounded text-sm flex items-center gap-2"><Copy size={14}/> Copy JSON</button>
@@ -447,22 +461,62 @@
             );
         };
 
+        const LibrarySection = ({ title, icon, items, type, expanded, onToggle, onDetail, onDelete, emptyMessage, renderTags }) => {
+            return (
+                <div className="bg-slate-800/30 border border-slate-700 rounded-lg overflow-hidden flex flex-col transition-all duration-300">
+                    <button onClick={onToggle} className="w-full flex items-center justify-between p-4 bg-slate-800/80 hover:bg-slate-700/80 transition-colors border-b border-transparent">
+                        <div className="flex items-center gap-3">
+                            {icon}
+                            <span className="text-teal-400 font-bold uppercase tracking-wider text-sm">{title} ({items.length})</span>
+                        </div>
+                        <ChevronDown size={18} className={`text-slate-400 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}/>
+                    </button>
+                    {expanded && (
+                        <div className="p-4 bg-slate-900/30 border-t border-slate-700 animate-fade-in">
+                            {items.length === 0 ? (
+                                <div className="text-slate-500 text-sm italic py-8 text-center">{emptyMessage}</div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    {items.map(item => (
+                                        <div key={item.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 hover:border-teal-500/50 transition-colors group relative flex flex-col h-full shadow-md">
+                                            <div className="flex justify-between items-start mb-1">
+                                                <div className="cursor-pointer flex-1 pr-6" onClick={() => onDetail({ ...item, type })}>
+                                                    <h4 className="font-bold text-white group-hover:text-teal-300 transition-colors">{item.name}</h4>
+                                                    {type === 'subclass' && <p className="text-xs text-teal-500 font-bold mt-1">{item.baseClass}</p>}
+                                                    {type === 'background' && <p className="text-xs text-slate-500 mt-1">{item.source || 'Homebrew'}</p>}
+                                                </div>
+                                                <button onClick={(e) => { e.stopPropagation(); onDelete({ ...item, type }); }} className="text-slate-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 top-2 bg-slate-800 rounded-md"><Trash2 size={16}/></button>
+                                            </div>
+                                            <div className="cursor-pointer flex-grow mt-1" onClick={() => onDetail({ ...item, type })}>
+                                                <p className="text-xs text-slate-400 line-clamp-2">{item.description || "No description provided."}</p>
+                                            </div>
+                                            <div className="flex gap-2 mt-3 flex-wrap">
+                                                {renderTags && renderTags(item)}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
         // --- MAIN APP COMPONENT ---
         function App() {
-            const [view, setView] = useState('library'); // 'library', 'create-race', 'create-class', 'create-subclass'
+            const [view, setView] = useState('library'); 
             const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('dm-tracker-api-key') || "");
-            const [aiModel, setAiModel] = useState(() => localStorage.getItem('dm-tracker-model') || "gemini-2.5-flash");
             const [showSettingsModal, setShowSettingsModal] = useState(false);
             const [showExportModal, setShowExportModal] = useState(false);
-            const [alertMessage, setAlertMessage] = useState(null); // Custom Alert State
             const [searchQuery, setSearchQuery] = useState('');
             const [deleteTarget, setDeleteTarget] = useState(null);
             const [detailItem, setDetailItem] = useState(null);
             const fileInputRef = useRef(null);
 
-            // Subclass Creation Mode State
-            const [subclassMode, setSubclassMode] = useState('context'); // 'context' (from library) or 'free' (text prompt)
+            const [subclassMode, setSubclassMode] = useState('context'); 
             const [selectedBaseClassId, setSelectedBaseClassId] = useState('');
+            const [expandedSections, setExpandedSections] = useState({ races: true, classes: true, subclasses: true, backgrounds: true });
 
             // Data State
             const [races, setRaces] = useState(() => {
@@ -474,34 +528,33 @@
             const [subclasses, setSubclasses] = useState(() => {
                 try { return JSON.parse(localStorage.getItem('dm-tracker-origins-subclasses')) || []; } catch { return []; }
             });
+            const [backgrounds, setBackgrounds] = useState(() => {
+                try { return JSON.parse(localStorage.getItem('dm-tracker-origins-backgrounds')) || []; } catch { return []; }
+            });
 
             // Form/Generation State
             const [isGenerating, setIsGenerating] = useState(false);
             const [promptInput, setPromptInput] = useState('');
-            const [baseClassInput, setBaseClassInput] = useState(''); // For freeform subclass creation
+            const [baseClassInput, setBaseClassInput] = useState(''); 
             const [generatedItem, setGeneratedItem] = useState(null); 
 
             // Persistence Effects
             useEffect(() => { localStorage.setItem('dm-tracker-origins-races', JSON.stringify(races)); }, [races]);
             useEffect(() => { localStorage.setItem('dm-tracker-origins-classes', JSON.stringify(classes)); }, [classes]);
             useEffect(() => { localStorage.setItem('dm-tracker-origins-subclasses', JSON.stringify(subclasses)); }, [subclasses]);
+            useEffect(() => { localStorage.setItem('dm-tracker-origins-backgrounds', JSON.stringify(backgrounds)); }, [backgrounds]);
             useEffect(() => { 
                 if (userApiKey && userApiKey !== localStorage.getItem('dm-tracker-api-key')) {
                     localStorage.setItem('dm-tracker-api-key', userApiKey);
                 }
             }, [userApiKey]);
-            useEffect(() => { 
-                if (aiModel && aiModel !== localStorage.getItem('dm-tracker-model')) {
-                    localStorage.setItem('dm-tracker-model', aiModel);
-                }
-            }, [aiModel]);
 
             // --- AI GENERATION ---
             const callGemini = async (prompt) => {
                 if (!userApiKey) { setShowSettingsModal(true); return null; }
                 setIsGenerating(true);
                 try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${aiModel}:generateContent?key=${userApiKey}`, { 
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`, { 
                         method: 'POST', 
                         headers: { 'Content-Type': 'application/json' }, 
                         body: JSON.stringify({ 
@@ -515,18 +568,17 @@
                     return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
                 } catch (e) {
                     setIsGenerating(false);
-                    setAlertMessage("Creation failed. The weave is disrupted.");
+                    alert("Creation failed. The weave is disrupted.");
                     console.error(e);
                     return null;
                 }
             };
 
             const handleGenerate = async (type) => {
-                // Modified validation to allow empty prompt for 'context' subclass mode
                 if (type === 'subclass' && subclassMode === 'context') {
                     // Allowed to be empty
                 } else {
-                    if (!promptInput.trim()) { setAlertMessage("Please describe your concept first."); return; }
+                    if (!promptInput.trim()) { alert("Please describe your concept first."); return; }
                 }
                 
                 let sysPrompt = "";
@@ -543,23 +595,18 @@
                     4. PLACEHOLDERS: Generate specific features entries for those future subclass levels named "Subclass Feature" with the description "Feature derived from your chosen archetype."
                     5. STANDARD ASIS: Include "Ability Score Improvement" at levels 4, 8, 12, 16, 19.`;
                 } else if (type === 'subclass') {
-                    // SUBCLASS GENERATION LOGIC
                     if (subclassMode === 'context') {
-                        // Find the base class using strict equality after converting to string
                         const baseClass = classes.find(c => String(c.id) === String(selectedBaseClassId));
                         
                         if (!baseClass) { 
-                            console.error("Base class not found. Selected ID:", selectedBaseClassId, "Available Classes:", classes);
-                            setAlertMessage("Please select a valid base class from the library first."); 
+                            alert("Please select a valid base class from the library first."); 
                             return; 
                         }
                         
-                        // Construct context based on input presence
                         const userConcept = promptInput.trim() 
                             ? `based on the concept: "${promptInput}"` 
                             : `based on the named subclasses or themes found within the base class description`;
 
-                        // Get existing names to prevent duplication
                         const existingNames = subclasses
                             .filter(s => s.baseClass === baseClass.name)
                             .map(s => s.name)
@@ -573,26 +620,36 @@
                         EXISTING SUBCLASSES (DO NOT DUPLICATE): ${existingNames || "None"}.
                         
                         INSTRUCTIONS:
-                        1. Analyze the base class features to identify the levels where subclass features are granted (look for "Archetype", "Path", "Tradition", "College", or "Subclass" features).
+                        1. Analyze the base class features to identify the levels where subclass features are granted.
                         2. If the user provided a concept, use it. 
-                        3. If NO concept was provided:
-                           - Scan the Base Class Description for mentioned subclasses.
-                           - Compare found names against the "EXISTING SUBCLASSES" list.
-                           - Generate ONE subclass that is NOT in the existing list.
-                           - If all mentioned subclasses already exist, invent a new, thematically appropriate subclass.
-                        4. Create a balanced subclass that fits the theme and mechanics of the base class.
-                        5. Return JSON: { "name":str, "baseClass": "${baseClass.name}", "description":str (flavor), "features": [{ "level":int, "name":str, "description":str }] }.
-                        6. Ensure you only provide features for the levels specified in the base class. Keep it balanced.`;
+                        3. If NO concept was provided: Generate ONE subclass that is NOT in the existing list based on class lore.
+                        4. Return JSON: { "name":str, "baseClass": "${baseClass.name}", "description":str (flavor), "features": [{ "level":int, "name":str, "description":str }] }.`;
                     } else {
-                        // Freeform
-                        if (!baseClassInput) { setAlertMessage("Please enter a Base Class name (e.g. Cleric)."); return; }
+                        if (!baseClassInput) { alert("Please enter a Base Class name (e.g. Cleric)."); return; }
                         sysPrompt = `Create a D&D 5e Subclass for the standard "${baseClassInput}" class based on the concept: "${promptInput}".
-                        
                         INSTRUCTIONS:
                         1. Use standard 5e progression for the "${baseClassInput}" class.
-                        2. Keep it balanced and playable.
-                        3. Return JSON: { "name":str, "baseClass": "${baseClassInput}", "description":str (flavor), "features": [{ "level":int, "name":str, "description":str }] }.`;
+                        2. Return JSON: { "name":str, "baseClass": "${baseClassInput}", "description":str (flavor), "features": [{ "level":int, "name":str, "description":str }] }.`;
                     }
+                } else if (type === 'background') {
+                    sysPrompt = `Create a D&D 5e Background based on: "${promptInput}".
+                    
+                    CRITICAL INSTRUCTIONS:
+                    1. Unless the prompt asks to be overpowered, adhere STRICTLY to D&D 5e balance: Backgrounds usually provide EXACTLY 2 Skill Proficiencies, and a mix of 2 Tool Proficiencies OR Languages (e.g., 2 tools, OR 2 languages, OR 1 tool and 1 language).
+                    2. Provide starting equipment suitable for the background and 5e standards.
+                    3. Give them one unique, non-combat Background Feature that provides roleplay utility.
+                    4. Return JSON exactly like this structure:
+                    {
+                      "name": "String",
+                      "description": "String (Detailed flavor text)",
+                      "source": "String (Use 'Homebrew' or generate a fitting unofficial book name)",
+                      "skillProficiencies": "String (e.g., Acrobatics, Performance)",
+                      "toolProficiencies": "String (e.g., Disguise kit, one type of musical instrument. If none, say 'None')",
+                      "languages": "String (e.g., One of your choice. If none, say 'None')",
+                      "equipment": "String (List items and starting gold)",
+                      "featureName": "String",
+                      "featureDescription": "String"
+                    }`;
                 }
 
                 const result = await callGemini(sysPrompt);
@@ -600,19 +657,17 @@
                     try {
                         const parsed = JSON.parse(result);
                         setGeneratedItem({ ...parsed, type, id: Date.now() });
-                    } catch (e) { setAlertMessage("Failed to parse the ancient scrolls (JSON Error)."); }
+                    } catch (e) { alert("Failed to parse the ancient scrolls (JSON Error)."); }
                 }
             };
 
             const saveGeneratedItem = () => {
                 if (!generatedItem) return;
-                if (generatedItem.type === 'race') {
-                    setRaces(prev => [generatedItem, ...prev]);
-                } else if (generatedItem.type === 'class') {
-                    setClasses(prev => [generatedItem, ...prev]);
-                } else if (generatedItem.type === 'subclass') {
-                    setSubclasses(prev => [generatedItem, ...prev]);
-                }
+                if (generatedItem.type === 'race') setRaces(prev => [generatedItem, ...prev]);
+                else if (generatedItem.type === 'class') setClasses(prev => [generatedItem, ...prev]);
+                else if (generatedItem.type === 'subclass') setSubclasses(prev => [generatedItem, ...prev]);
+                else if (generatedItem.type === 'background') setBackgrounds(prev => [generatedItem, ...prev]);
+                
                 setGeneratedItem(null);
                 setPromptInput('');
                 setView('library');
@@ -629,21 +684,19 @@
                         if (data.races) setRaces(prev => [...data.races, ...prev]);
                         if (data.classes) setClasses(prev => [...data.classes, ...prev]);
                         if (data.subclasses) setSubclasses(prev => [...data.subclasses, ...prev]);
-                        setAlertMessage("Knowledge assimilated successfully.");
-                    } catch (err) { setAlertMessage("Corrupted scroll."); }
+                        if (data.backgrounds) setBackgrounds(prev => [...data.backgrounds, ...prev]);
+                        alert("Knowledge assimilated successfully.");
+                    } catch (err) { alert("Corrupted scroll."); }
                 };
                 reader.readAsText(file);
             };
 
             const deleteItem = () => {
                 if (!deleteTarget) return;
-                if (deleteTarget.type === 'race') {
-                    setRaces(prev => prev.filter(r => r.id !== deleteTarget.id));
-                } else if (deleteTarget.type === 'class') {
-                    setClasses(prev => prev.filter(c => c.id !== deleteTarget.id));
-                } else if (deleteTarget.type === 'subclass') {
-                    setSubclasses(prev => prev.filter(s => s.id !== deleteTarget.id));
-                }
+                if (deleteTarget.type === 'race') setRaces(prev => prev.filter(r => r.id !== deleteTarget.id));
+                else if (deleteTarget.type === 'class') setClasses(prev => prev.filter(c => c.id !== deleteTarget.id));
+                else if (deleteTarget.type === 'subclass') setSubclasses(prev => prev.filter(s => s.id !== deleteTarget.id));
+                else if (deleteTarget.type === 'background') setBackgrounds(prev => prev.filter(b => b.id !== deleteTarget.id));
                 setDeleteTarget(null);
             };
 
@@ -651,12 +704,10 @@
             const handleRename = (item, newName) => {
                 if (!newName.trim()) return;
                 
-                // If it's the item currently being generated (not saved yet)
                 if (generatedItem && generatedItem.id === item.id) {
                     setGeneratedItem(prev => ({ ...prev, name: newName }));
                 }
                 
-                // If it's a saved item, find and update it in the correct list
                 const updateList = (list, setList) => {
                     setList(prev => prev.map(i => i.id === item.id ? { ...i, name: newName } : i));
                 };
@@ -664,26 +715,35 @@
                 if (item.type === 'race') updateList(races, setRaces);
                 else if (item.type === 'class') updateList(classes, setClasses);
                 else if (item.type === 'subclass') updateList(subclasses, setSubclasses);
+                else if (item.type === 'background') updateList(backgrounds, setBackgrounds);
 
-                // Also update the detail view if it's open
                 if (detailItem && detailItem.id === item.id) {
                     setDetailItem(prev => ({ ...prev, name: newName }));
                 }
+            };
+
+            const toggleSection = (section) => {
+                setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+            };
+
+            const getTypeCheck = (item) => {
+                if (item?.type) return item.type;
+                if (item?.traits) return 'race';
+                if (item?.baseClass) return 'subclass';
+                if (item?.skillProficiencies) return 'background';
+                return 'class';
             };
 
             // --- RENDER HELPERS ---
             const filteredRaces = races.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()));
             const filteredClasses = classes.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
             const filteredSubclasses = subclasses.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.baseClass.toLowerCase().includes(searchQuery.toLowerCase()));
+            const filteredBackgrounds = backgrounds.filter(b => b.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
             return (
                 <div className="genesis-container p-2 sm:p-4 relative">
                     <FloatingSettingsButton apiKey={userApiKey} setModalVisible={setShowSettingsModal} />
                     
-                    {/* MESSAGE MODAL (Replaces regular alert() calls) */}
-                    <MessageModal isOpen={!!alertMessage} message={alertMessage} onClose={() => setAlertMessage(null)} />
-
-                    {/* CONFIRMATION MODAL */}
                     <ConfirmationModal 
                         isOpen={!!deleteTarget} 
                         title="Erase from Existence?" 
@@ -692,22 +752,20 @@
                         onCancel={() => setDeleteTarget(null)}
                     />
 
-                    {/* DETAIL MODAL */}
                     <DetailModal 
                         item={detailItem} 
-                        type={detailItem?.type || (detailItem?.traits ? 'race' : detailItem?.baseClass ? 'subclass' : 'class')} 
+                        type={getTypeCheck(detailItem)} 
                         onClose={() => setDetailItem(null)} 
                         onRename={handleRename}
-                        onAlert={setAlertMessage}
                     />
                     
-                    {/* EXPORT MODAL */}
                     <ExportModal
                         isOpen={showExportModal}
                         onClose={() => setShowExportModal(false)}
                         races={races}
                         classes={classes}
                         subclasses={subclasses}
+                        backgrounds={backgrounds}
                     />
 
                     {/* SETTINGS MODAL */}
@@ -722,12 +780,6 @@
                                     <label className="block text-sm font-bold text-white mb-2 flex items-center gap-2"><Key size={16} className="text-yellow-500" /> Gemini API Key</label>
                                     <input type="password" placeholder="Paste your key here..." className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-teal-500 focus:outline-none mb-2" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} />
                                     <p className="text-xs text-slate-400 mb-4">Required for AI generation. Stored locally on your browser.</p>
-
-                                    {/* AI MODEL STRING (The Fix) */}
-                                    <label className="block text-sm font-bold text-white mb-2 mt-4 flex items-center gap-2"><Settings size={16} className="text-teal-400" /> AI Model String</label>
-                                    <input type="text" placeholder="e.g. gemini-2.5-flash" className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-teal-500 focus:outline-none mb-2 font-mono text-sm" value={aiModel} onChange={(e) => setAiModel(e.target.value)} />
-                                    <p className="text-xs text-slate-400 mb-6">Default is <strong>gemini-2.5-flash</strong>. Change this if your specific API key requires a different model (e.g., <code>gemini-2.0-flash</code>).</p>
-
                                     <div className="flex justify-end"><button onClick={() => setShowSettingsModal(false)} className="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded font-bold">Save & Close</button></div>
                                 </div>
                             </div>
@@ -752,14 +804,17 @@
                     </nav>
 
                     {/* MAIN CONTENT AREA */}
-                    <main className="max-w-7xl mx-auto min-h-[600px]">
+                    <main className="max-w-full xl:max-w-[1500px] mx-auto min-h-[600px] px-2 sm:px-4 lg:px-6">
                         {/* TAB NAV */}
-                        <div className="flex justify-center mb-6 overflow-x-auto">
-                            <div className="bg-slate-900/80 p-1 rounded-lg border border-slate-700 inline-flex whitespace-nowrap">
-                                <button onClick={() => setView('library')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${view === 'library' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Library</button>
-                                <button onClick={() => setView('create-race')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${view === 'create-race' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}><Dna size={16}/> New Race</button>
-                                <button onClick={() => setView('create-class')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${view === 'create-class' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}><BookUser size={16}/> New Class</button>
-                                <button onClick={() => setView('create-subclass')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${view === 'create-subclass' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}><Split size={16}/> New Subclass</button>
+                        <div className="w-full overflow-x-auto no-scrollbar mb-6 pb-2 -mx-2 px-2 sm:mx-0 sm:px-0">
+                            <div className="flex sm:justify-center w-max sm:w-full min-w-full">
+                                <div className="bg-slate-900/80 p-1.5 rounded-lg border border-slate-700 inline-flex whitespace-nowrap gap-1">
+                                    <button onClick={() => setView('library')} className={`px-4 py-2.5 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${view === 'library' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}><BookOpen size={16}/> Library</button>
+                                    <button onClick={() => setView('create-race')} className={`px-4 py-2.5 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${view === 'create-race' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}><Dna size={16}/> New Race</button>
+                                    <button onClick={() => setView('create-class')} className={`px-4 py-2.5 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${view === 'create-class' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}><BookUser size={16}/> New Class</button>
+                                    <button onClick={() => setView('create-subclass')} className={`px-4 py-2.5 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${view === 'create-subclass' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}><Split size={16}/> New Subclass</button>
+                                    <button onClick={() => setView('create-background')} className={`px-4 py-2.5 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${view === 'create-background' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}><Compass size={16}/> New Background</button>
+                                </div>
                             </div>
                         </div>
 
@@ -767,111 +822,102 @@
                         {view === 'library' && (
                             <div className="animate-fade-in">
                                 {/* Search & Import/Export */}
-                                <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-between items-center">
-                                    <div className="relative w-full max-w-md">
+                                <div className="flex flex-col md:flex-row gap-4 mb-6 justify-between items-center max-w-7xl mx-auto">
+                                    <div className="relative w-full md:max-w-md lg:max-w-lg">
                                         <input 
                                             type="text" 
                                             placeholder="Search archives..." 
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="w-full bg-slate-900 border border-slate-700 rounded-full py-2 pl-10 pr-4 text-slate-200 focus:border-teal-500 focus:outline-none"
+                                            className="w-full bg-slate-900 border border-slate-700 rounded-full py-2.5 pl-11 pr-4 text-slate-200 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 transition-shadow"
                                         />
-                                        <Search className="absolute left-3 top-2.5 text-slate-500" size={16}/>
+                                        <Search className="absolute left-4 top-3 text-slate-500" size={18}/>
                                     </div>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => fileInputRef.current.click()} className="flex items-center gap-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded text-xs text-slate-300 hover:text-white hover:border-slate-500 transition-colors">
-                                            <Upload size={14}/> Import
+                                    <div className="flex gap-2 w-full md:w-auto">
+                                        <button onClick={() => fileInputRef.current.click()} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:border-slate-500 transition-colors">
+                                            <Upload size={16}/> Import
                                         </button>
                                         <input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".json"/>
-                                        <button onClick={() => setShowExportModal(true)} className="flex items-center gap-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded text-xs text-slate-300 hover:text-white hover:border-slate-500 transition-colors">
-                                            <Download size={14}/> Export
+                                        <button onClick={() => setShowExportModal(true)} className="flex-1 md:flex-none justify-center flex items-center gap-2 px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:border-slate-500 transition-colors">
+                                            <Download size={16}/> Export
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    {/* RACES COLUMN */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-teal-400 font-bold uppercase tracking-wider text-xs flex items-center gap-2 border-b border-teal-900/50 pb-2">
-                                            <Dna size={14}/> Saved Races ({filteredRaces.length})
-                                        </h3>
-                                        <div className="space-y-3">
-                                            {filteredRaces.length === 0 ? <div className="text-slate-600 text-sm italic text-center py-4">No biological data found.</div> : 
-                                            filteredRaces.map(r => (
-                                                <div key={r.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 hover:border-teal-500/50 transition-colors group relative">
-                                                    <div className="flex justify-between items-start">
-                                                        <div className="cursor-pointer flex-1" onClick={() => setDetailItem(r)}>
-                                                            <h4 className="font-bold text-white group-hover:text-teal-300 transition-colors">{r.name}</h4>
-                                                            <p className="text-xs text-slate-400 mt-1 line-clamp-2">{r.description || "No description provided."}</p>
-                                                            <div className="flex gap-2 mt-2">
-                                                                <span className="text-[10px] bg-slate-900 text-slate-400 px-2 py-0.5 rounded border border-slate-700">{r.size}</span>
-                                                                <span className="text-[10px] bg-slate-900 text-teal-400 px-2 py-0.5 rounded border border-slate-700">{r.asi}</span>
-                                                            </div>
-                                                        </div>
-                                                        <button onClick={() => setDeleteTarget({ ...r, type: 'race' })} className="text-slate-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16}/></button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                                <div className="space-y-4 max-w-7xl mx-auto pb-8">
+                                    <LibrarySection
+                                        title="Saved Races"
+                                        icon={<Dna size={18} className="text-teal-400"/>}
+                                        items={filteredRaces}
+                                        type="race"
+                                        expanded={expandedSections.races}
+                                        onToggle={() => toggleSection('races')}
+                                        onDetail={setDetailItem}
+                                        onDelete={setDeleteTarget}
+                                        emptyMessage="No biological data found."
+                                        renderTags={(r) => (
+                                            <>
+                                                <span className="text-[10px] bg-slate-900 text-slate-400 px-2 py-0.5 rounded border border-slate-700">{r.size}</span>
+                                                <span className="text-[10px] bg-slate-900 text-teal-400 px-2 py-0.5 rounded border border-slate-700">{r.asi}</span>
+                                            </>
+                                        )}
+                                    />
 
-                                    {/* CLASSES COLUMN */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-teal-400 font-bold uppercase tracking-wider text-xs flex items-center gap-2 border-b border-teal-900/50 pb-2">
-                                            <BookUser size={14}/> Saved Classes ({filteredClasses.length})
-                                        </h3>
-                                        <div className="space-y-3">
-                                            {filteredClasses.length === 0 ? <div className="text-slate-600 text-sm italic text-center py-4">No class data found.</div> :
-                                            filteredClasses.map(c => (
-                                                <div key={c.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 hover:border-teal-500/50 transition-colors group relative">
-                                                    <div className="flex justify-between items-start">
-                                                        <div className="cursor-pointer flex-1" onClick={() => setDetailItem(c)}>
-                                                            <h4 className="font-bold text-white group-hover:text-teal-300 transition-colors">{c.name}</h4>
-                                                            <p className="text-xs text-slate-400 mt-1 line-clamp-2">{c.description || "No description provided."}</p>
-                                                            <div className="flex gap-2 mt-2">
-                                                                <span className="text-[10px] bg-slate-900 text-slate-400 px-2 py-0.5 rounded border border-slate-700">HD: {c.hitDie}</span>
-                                                                <span className="text-[10px] bg-slate-900 text-teal-400 px-2 py-0.5 rounded border border-slate-700">{c.primaryAbility}</span>
-                                                            </div>
-                                                        </div>
-                                                        <button onClick={() => setDeleteTarget({ ...c, type: 'class' })} className="text-slate-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16}/></button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                                    <LibrarySection
+                                        title="Saved Classes"
+                                        icon={<BookUser size={18} className="text-teal-400"/>}
+                                        items={filteredClasses}
+                                        type="class"
+                                        expanded={expandedSections.classes}
+                                        onToggle={() => toggleSection('classes')}
+                                        onDetail={setDetailItem}
+                                        onDelete={setDeleteTarget}
+                                        emptyMessage="No class data found."
+                                        renderTags={(c) => (
+                                            <>
+                                                <span className="text-[10px] bg-slate-900 text-slate-400 px-2 py-0.5 rounded border border-slate-700">HD: {c.hitDie}</span>
+                                                <span className="text-[10px] bg-slate-900 text-teal-400 px-2 py-0.5 rounded border border-slate-700">{c.primaryAbility}</span>
+                                            </>
+                                        )}
+                                    />
 
-                                    {/* SUBCLASSES COLUMN */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-teal-400 font-bold uppercase tracking-wider text-xs flex items-center gap-2 border-b border-teal-900/50 pb-2">
-                                            <Split size={14}/> Saved Subclasses ({filteredSubclasses.length})
-                                        </h3>
-                                        <div className="space-y-3">
-                                            {filteredSubclasses.length === 0 ? <div className="text-slate-600 text-sm italic text-center py-4">No specialized paths found.</div> :
-                                            filteredSubclasses.map(s => (
-                                                <div key={s.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 hover:border-teal-500/50 transition-colors group relative">
-                                                    <div className="flex justify-between items-start">
-                                                        <div className="cursor-pointer flex-1" onClick={() => setDetailItem(s)}>
-                                                            <h4 className="font-bold text-white group-hover:text-teal-300 transition-colors">{s.name}</h4>
-                                                            <p className="text-xs text-teal-500 font-bold mb-1">{s.baseClass}</p>
-                                                            <p className="text-xs text-slate-400 line-clamp-2">{s.description || "No description provided."}</p>
-                                                        </div>
-                                                        <button onClick={() => setDeleteTarget({ ...s, type: 'subclass' })} className="text-slate-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16}/></button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                                    <LibrarySection
+                                        title="Saved Subclasses"
+                                        icon={<Split size={18} className="text-teal-400"/>}
+                                        items={filteredSubclasses}
+                                        type="subclass"
+                                        expanded={expandedSections.subclasses}
+                                        onToggle={() => toggleSection('subclasses')}
+                                        onDetail={setDetailItem}
+                                        onDelete={setDeleteTarget}
+                                        emptyMessage="No specialized paths found."
+                                    />
+
+                                    <LibrarySection
+                                        title="Saved Backgrounds"
+                                        icon={<Compass size={18} className="text-teal-400"/>}
+                                        items={filteredBackgrounds}
+                                        type="background"
+                                        expanded={expandedSections.backgrounds}
+                                        onToggle={() => toggleSection('backgrounds')}
+                                        onDetail={setDetailItem}
+                                        onDelete={setDeleteTarget}
+                                        emptyMessage="No historical data found."
+                                        renderTags={(b) => (
+                                            <span className="text-[10px] bg-slate-900 text-teal-400 px-2 py-0.5 rounded border border-slate-700 truncate max-w-full" title={b.skillProficiencies}>{b.skillProficiencies}</span>
+                                        )}
+                                    />
                                 </div>
                             </div>
                         )}
 
-                        {/* VIEW: CREATOR (RACE or CLASS) */}
-                        {(view === 'create-race' || view === 'create-class') && (
+                        {/* VIEW: CREATOR (RACE, CLASS, or BACKGROUND) */}
+                        {(view === 'create-race' || view === 'create-class' || view === 'create-background') && (
                             <div className="animate-fade-in max-w-2xl mx-auto">
                                 <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl">
                                     <h2 className="text-xl font-bold text-teal-400 mb-2 flex items-center gap-2">
-                                        {view === 'create-race' ? <Dna/> : <BookUser/>}
-                                        {view === 'create-race' ? "Biological Foundry" : "Class Academy"}
+                                        {view === 'create-race' ? <Dna/> : view === 'create-background' ? <Compass/> : <BookUser/>}
+                                        {view === 'create-race' ? "Biological Foundry" : view === 'create-background' ? "Backstory Forge" : "Class Academy"}
                                     </h2>
                                     <p className="text-slate-400 text-sm mb-6">Describe your idea, and the Genesis Engine will construct the mechanics for you.</p>
 
@@ -883,11 +929,13 @@
                                                 className="w-full h-32 bg-slate-900 border border-slate-600 rounded-lg p-3 text-slate-200 focus:border-teal-500 focus:outline-none resize-none"
                                                 placeholder={view === 'create-race' 
                                                     ? "E.g. A race of crystalline humanoids that vibrate with psionic energy. They are slow but durable..."
+                                                    : view === 'create-background'
+                                                    ? "E.g. A fallen noble who lost everything to a gambling debt. They know high society but are now destitute..."
                                                     : "E.g. A melee spellcaster who uses blood magic to fuel their attacks. Uses a d10 hit die..."}
                                             ></textarea>
                                             
                                             <button 
-                                                onClick={() => handleGenerate(view === 'create-race' ? 'race' : 'class')}
+                                                onClick={() => handleGenerate(view === 'create-race' ? 'race' : view === 'create-background' ? 'background' : 'class')}
                                                 disabled={isGenerating}
                                                 className="w-full py-3 bg-teal-700 hover:bg-teal-600 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold rounded-lg flex justify-center items-center gap-2 transition-colors"
                                             >
@@ -899,7 +947,6 @@
                                         <div className="animate-fade-in">
                                             <div className="bg-slate-900/50 border border-teal-500/30 rounded-lg p-4 mb-4">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    {/* Inline Rename for Generated Item */}
                                                     <div className="flex items-center gap-2 mb-2 group w-full mr-2">
                                                         <input 
                                                             value={generatedItem.name}
@@ -910,7 +957,7 @@
                                                     </div>
                                                     <span className="text-xs bg-teal-900 text-teal-300 px-2 py-1 rounded uppercase font-bold shrink-0">New</span>
                                                 </div>
-                                                <p className="text-sm text-slate-300 italic mb-4">{generatedItem.description}</p>
+                                                <p className="text-sm text-slate-300 italic mb-4 whitespace-pre-wrap">{generatedItem.description}</p>
                                                 
                                                 {/* Preview Stats */}
                                                 <div className="grid grid-cols-2 gap-2 text-xs text-slate-400 mb-4">
@@ -919,6 +966,12 @@
                                                             <div>Size: <span className="text-white">{generatedItem.size}</span></div>
                                                             <div>Speed: <span className="text-white">{generatedItem.speed}</span></div>
                                                             <div className="col-span-2">ASI: <span className="text-teal-400">{generatedItem.asi}</span></div>
+                                                        </>
+                                                    ) : generatedItem.type === 'background' ? (
+                                                        <>
+                                                            <div className="col-span-2">Skills: <span className="text-teal-400">{generatedItem.skillProficiencies}</span></div>
+                                                            <div className="col-span-2">Tools: <span className="text-white">{generatedItem.toolProficiencies}</span></div>
+                                                            <div className="col-span-2">Feature: <span className="text-teal-400">{generatedItem.featureName}</span></div>
                                                         </>
                                                     ) : (
                                                         <>
@@ -929,11 +982,11 @@
                                                     )}
                                                 </div>
 
-                                                <button onClick={() => setDetailItem(generatedItem)} className="text-xs text-teal-400 underline mb-4">View Full Stats & Features</button>
+                                                <button onClick={() => setDetailItem({...generatedItem, type: generatedItem.type})} className="text-xs text-teal-400 underline mb-4 hover:text-teal-300">View Full Stats & Features</button>
 
-                                                <div className="flex gap-3">
-                                                    <button onClick={() => setGeneratedItem(null)} className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded font-medium text-sm">Discard</button>
-                                                    <button onClick={saveGeneratedItem} className="flex-1 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded font-bold text-sm">Save to Library</button>
+                                                <div className="flex flex-col sm:flex-row gap-3 mt-2">
+                                                    <button onClick={() => setGeneratedItem(null)} className="w-full sm:flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium text-sm transition-colors">Discard</button>
+                                                    <button onClick={saveGeneratedItem} className="w-full sm:flex-1 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-lg font-bold text-sm shadow-lg shadow-teal-900/20 transition-colors">Save to Library</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -952,9 +1005,9 @@
                                     <p className="text-slate-400 text-sm mb-6">Create a new subclass. Choose your method below.</p>
 
                                     {/* METHOD TOGGLE */}
-                                    <div className="flex bg-slate-900 rounded p-1 mb-6 border border-slate-700">
-                                        <button onClick={() => setSubclassMode('context')} className={`flex-1 py-2 text-sm font-bold rounded ${subclassMode === 'context' ? 'bg-teal-700 text-white' : 'text-slate-400 hover:text-white'}`}>From Archive Class</button>
-                                        <button onClick={() => setSubclassMode('free')} className={`flex-1 py-2 text-sm font-bold rounded ${subclassMode === 'free' ? 'bg-teal-700 text-white' : 'text-slate-400 hover:text-white'}`}>From Standard 5e</button>
+                                    <div className="flex flex-col sm:flex-row bg-slate-900 rounded-lg p-1.5 mb-6 border border-slate-700 gap-1">
+                                        <button onClick={() => setSubclassMode('context')} className={`flex-1 py-2.5 text-sm font-bold rounded-md transition-all ${subclassMode === 'context' ? 'bg-teal-700 text-white shadow' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>From Archive Class</button>
+                                        <button onClick={() => setSubclassMode('free')} className={`flex-1 py-2.5 text-sm font-bold rounded-md transition-all ${subclassMode === 'free' ? 'bg-teal-700 text-white shadow' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>From Standard 5e</button>
                                     </div>
 
                                     {!generatedItem ? (
@@ -1012,7 +1065,6 @@
                                         <div className="animate-fade-in">
                                             <div className="bg-slate-900/50 border border-teal-500/30 rounded-lg p-4 mb-4">
                                                 <div className="flex justify-between items-center mb-2">
-                                                    {/* Inline Rename for Generated Subclass */}
                                                     <div className="flex items-center gap-2 mb-2 group w-full mr-2">
                                                         <input 
                                                             value={generatedItem.name}
@@ -1023,14 +1075,14 @@
                                                     </div>
                                                     <span className="text-xs bg-teal-900 text-teal-300 px-2 py-1 rounded uppercase font-bold shrink-0">New Subclass</span>
                                                 </div>
-                                                <p className="text-sm text-slate-300 italic mb-4">{generatedItem.description}</p>
+                                                <p className="text-sm text-slate-300 italic mb-4 whitespace-pre-wrap">{generatedItem.description}</p>
                                                 <p className="text-xs text-teal-500 font-bold mb-4">Base Class: {generatedItem.baseClass}</p>
                                                 
-                                                <button onClick={() => setDetailItem(generatedItem)} className="text-xs text-teal-400 underline mb-4">View Full Features</button>
+                                                <button onClick={() => setDetailItem({...generatedItem, type: 'subclass'})} className="text-xs text-teal-400 underline mb-4 hover:text-teal-300">View Full Features</button>
 
-                                                <div className="flex gap-3">
-                                                    <button onClick={() => setGeneratedItem(null)} className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded font-medium text-sm">Discard</button>
-                                                    <button onClick={saveGeneratedItem} className="flex-1 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded font-bold text-sm">Save to Library</button>
+                                                <div className="flex flex-col sm:flex-row gap-3 mt-2">
+                                                    <button onClick={() => setGeneratedItem(null)} className="w-full sm:flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium text-sm transition-colors">Discard</button>
+                                                    <button onClick={saveGeneratedItem} className="w-full sm:flex-1 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-lg font-bold text-sm shadow-lg shadow-teal-900/20 transition-colors">Save to Library</button>
                                                 </div>
                                             </div>
                                         </div>
