@@ -117,7 +117,7 @@
         summary::-webkit-details-marker { display: none; }
 
         /* Dropdown Colors */
-        .suite-item { transition: all 0.2s ease; border-left: 3px solid transparent; }
+        .suite-item { transition: all 0.2s ease; border-left: 3px solid transparent; cursor: pointer; }
         .tracker-hover:hover { border-left-color: #A855F7; background: linear-gradient(90deg, rgba(168, 85, 247, 0.1), transparent); color: #d8b4fe; } .tracker-hover:hover svg { stroke: #A855F7; }
         .map-hover:hover { border-left-color: #22D3EE; background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), transparent); color: #67e8f9; } .map-hover:hover svg { stroke: #22D3EE; }
         .sheet-hover:hover { border-left-color: #EF4444; background: linear-gradient(90deg, rgba(239, 68, 68, 0.1), transparent); color: #fca5a5; } .sheet-hover:hover svg { stroke: #EF4444; }
@@ -138,6 +138,7 @@
         // --- ICONS ---
         const Icon = ({ children, className, ...props }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>{children}</svg>;
         const User = (props) => <Icon {...props}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>;
+        const Users = (props) => <Icon {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Icon>;
         const Shield = (props) => <Icon {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></Icon>;
         const Heart = (props) => <Icon {...props}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></Icon>;
         const Sword = (props) => <Icon {...props}><path d="m14.5 5.5-4 4"/><path d="m3 21 6.5-6.5"/><path d="m3 21 6.5-6.5"/><path d="M14.5 5.5l4-4a2 2 0 0 1 2.8 2.8l-4 4"/><path d="M11 2 2 11"/><path d="M16 7l5 5"/></Icon>;
@@ -174,6 +175,7 @@
         const Coins = (props) => <Icon {...props}><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7 .71-2.82 2.82"/></Icon>;
         const FlaskConical = (props) => <Icon {...props}><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" /><path d="M8.5 2h7" /><path d="M7 16h10" /></Icon>;
         const Dna = (props) => <Icon {...props}><path d="M2 15c6.667-6 13.333 0 20-6"/><path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"/><path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"/><path d="m17 6-2.5-2.5"/><path d="m14 8-1-1"/><path d="m7 18 2.5 2.5"/><path d="m3.5 14.5.5.5"/><path d="m20 9 .5.5"/><path d="m6.5 12.5 1 1"/><path d="m16.5 10.5 1 1"/><path d="m10 16 1.5 1.5"/></Icon>;
+        const AlertTriangle = (props) => <Icon {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></Icon>;
 
         // --- CONSTANTS ---
         const DEFAULT_CHAR = {
@@ -427,7 +429,7 @@
         };
 
         // --- SUITE DROPDOWN COMPONENT ---
-        const SuiteDropdown = () => {
+        const SuiteDropdown = ({ setView }) => {
             const [isOpen, setIsOpen] = useState(false);
             const dropdownRef = useRef(null);
 
@@ -449,7 +451,7 @@
                         <div className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Apps</div>
                         <a href="./tome.html" className="suite-item tracker-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50"><Crosshair size={18} className="text-slate-400" /><div className="flex flex-col"><span className="text-sm font-bold">Tracker</span><span className="text-[10px] opacity-60">Initiative & Combat</span></div></a>
                         <a href="./map.html" className="suite-item map-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50"><MapIcon size={18} className="text-slate-400" /><div className="flex flex-col"><span className="text-sm font-bold">Atlas</span><span className="text-[10px] opacity-60">Tactical Maps</span></div></a>
-                        <div className="suite-item border-l-4 border-fuchsia-500 bg-slate-800/50 flex items-center gap-3 px-4 py-3 text-white"><User size={18} className="text-fuchsia-400" /><div className="flex flex-col"><span className="text-sm font-bold">Records</span><span className="text-[10px] opacity-60">Character Sheets</span></div></div>
+                        <button onClick={() => { setView('list'); setIsOpen(false); }} className="w-full text-left suite-item border-l-4 border-fuchsia-500 bg-slate-800/50 flex items-center gap-3 px-4 py-3 text-white hover:bg-slate-700/50"><Users size={18} className="text-fuchsia-400" /><div className="flex flex-col"><span className="text-sm font-bold">Records / Roster</span><span className="text-[10px] opacity-60">Manage Characters</span></div></button>
                         <a href="./homebrew.html" className="suite-item workshop-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50"><FlaskConical size={18} className="text-slate-400" /><div className="flex flex-col"><span className="text-sm font-bold">Workshop</span><span className="text-[10px] opacity-60">Monster Creator</span></div></a>
                         <a href="./origins.html" className="suite-item genesis-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50"><Dna size={18} className="text-slate-400" /><div className="flex flex-col"><span className="text-sm font-bold">Genesis</span><span className="text-[10px] opacity-60">Class & Race Creator</span></div></a>
                         <a href="./token.html" className="suite-item forge-hover flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800/50"><Hammer size={18} className="text-slate-400" /><div className="flex flex-col"><span className="text-sm font-bold">Astral Forge</span><span className="text-[10px] opacity-60">3D Token Maker</span></div></a>
@@ -641,7 +643,6 @@
             const [selectedWeapon, setSelectedWeapon] = useState(WEAPONS[0]);
             const [magicBonus, setMagicBonus] = useState(0);
             const [isProficient, setIsProficient] = useState(true);
-            const importRef = useRef(null);
 
             const handleAdd = () => {
                 const pb = getProficiency(char.level);
@@ -1034,6 +1035,8 @@
                 }
             };
 
+            const triggerImport = () => fileInputRef.current?.click();
+
             const exportData = (characterToExport = null) => {
                 const data = characterToExport || characters;
                 const fileName = characterToExport ? `${characterToExport.name.replace(/\s+/g, '_')}_sheet.json` : `akashic_roster_backup_${new Date().toISOString().slice(0,10)}.json`;
@@ -1069,13 +1072,69 @@
                         const json = JSON.parse(ev.target.result);
                         const rawItems = Array.isArray(json) ? json : [json];
                         const flattenedItems = rawItems.flatMap(entry => entry.items ? entry.items : [entry]);
-                        const newInventory = flattenedItems.map((item, index) => ({
-                            id: `import-${Date.now()}-${index}`, name: item.name, qty: parseInt(item.qty) || 1,
-                            notes: `${item.rarity ? `[${item.rarity.toUpperCase()}] ` : ''}${item.description || ''} ${item.val ? `(${item.val})` : ''}`
-                        }));
-                        updateChar('inventory', [...char.inventory, ...newInventory]);
-                        showToast(`Imported ${newInventory.length} items.`);
-                    } catch(err) { showToast("Failed to parse Loot JSON."); }
+                        
+                        const newInventory = [];
+                        const newAttacks = [...(char.attacks || [])];
+                        let attacksAdded = 0;
+
+                        flattenedItems.forEach((item, index) => {
+                            const uniqueId = `import-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`;
+                            
+                            newInventory.push({
+                                id: uniqueId, 
+                                name: item.name, 
+                                qty: parseInt(item.qty) || 1,
+                                notes: `${item.rarity ? `[${item.rarity.toUpperCase()}] ` : ''}${item.description || ''} ${item.val ? `(${item.val})` : ''}`
+                            });
+
+                            // Smart Auto-Populate Weapons
+                            if (item.type && item.type.toLowerCase() === 'weapon' && item.description) {
+                                // Extract damage e.g., "deals 1d10 piercing damage"
+                                const dmgRegex = /(\d+d\d+)(?:\s+(bludgeoning|piercing|slashing|fire|cold|lightning|thunder|acid|poison|psychic|necrotic|radiant|force))?\s+damage/i;
+                                const match = item.description.match(dmgRegex);
+                                
+                                if (match) {
+                                    const baseDmg = match[1];
+                                    const dmgType = match[2] ? match[2].charAt(0).toUpperCase() + match[2].slice(1) : "Unknown";
+                                    
+                                    const descLower = item.description.toLowerCase();
+                                    const isFinesse = descLower.includes('finesse');
+                                    const isRanged = descLower.includes('range');
+                                    
+                                    let stat = "str";
+                                    if (isRanged && !descLower.includes('thrown')) stat = "dex";
+                                    if (isFinesse && char.stats.dex > char.stats.str) stat = "dex";
+                                    
+                                    const mod = getMod(char.stats[stat] || 10);
+                                    const pb = getProficiency(char.level || 1);
+                                    const totalBonus = mod + pb; // Assume proficient for auto import
+                                    const dmgBonus = mod;
+                                    
+                                    newAttacks.push({
+                                        id: `atk-${uniqueId}`,
+                                        name: item.name,
+                                        bonus: `+${totalBonus}`,
+                                        damage: `${baseDmg}${dmgBonus >= 0 ? '+'+dmgBonus : dmgBonus}`,
+                                        type: dmgType,
+                                        level: char.level || 1
+                                    });
+                                    attacksAdded++;
+                                }
+                            }
+                        });
+                        
+                        // Apply all inventory and new attacks
+                        const updates = {
+                            inventory: [...(char.inventory || []), ...newInventory],
+                            attacks: newAttacks
+                        };
+                        
+                        setCharacters(prev => prev.map(c => c.id === activeId ? { ...c, ...updates } : c));
+                        showToast(`Imported ${newInventory.length} item(s)${attacksAdded > 0 ? ` and auto-equipped ${attacksAdded} weapon(s).` : '.'}`);
+                    } catch(err) { 
+                        console.error(err);
+                        showToast("Failed to parse Loot JSON."); 
+                    }
                 };
                 reader.readAsText(file); e.target.value = null;
             };
@@ -1213,7 +1272,7 @@
                         <DialogOverlay toast={toast} confirmDialog={confirmDialog} setConfirmDialog={setConfirmDialog} />
                         <header className="flex items-center justify-between mb-8 bg-slate-900/50 p-4 rounded-xl border border-slate-800 backdrop-blur-sm">
                             <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-indigo-400 flex items-center gap-3">
-                                <FileText className="text-fuchsia-500" size={28}/> Roster
+                                <Users className="text-fuchsia-500" size={28}/> Roster
                             </h1>
                             <a href="./index.html" className="p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white border border-slate-700 transition-colors"><Home size={20}/></a>
                         </header>
@@ -1271,7 +1330,10 @@
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                                 {/* Top Row: Suite & Name */}
                                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                                    <SuiteDropdown />
+                                    <SuiteDropdown setView={setView} />
+                                    <button onClick={() => setView('list')} className="p-1.5 sm:p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg border border-slate-700 transition-colors flex items-center justify-center shadow-sm" title="Go to Roster">
+                                        <Users size={18} />
+                                    </button>
                                     <input className="bg-transparent border-none text-xl md:text-2xl font-black text-white focus:ring-0 p-0 w-full truncate border-b border-transparent focus:border-fuchsia-500 transition-colors" value={char.name} onChange={(e) => updateChar('name', e.target.value)} />
                                 </div>
                                 {/* Bottom Row: Quick Stats */}
@@ -1457,7 +1519,7 @@
                                                     <div className="flex justify-between items-center pl-2">
                                                         <span className="font-bold text-white text-sm">{spell.name}</span>
                                                         <div className="flex items-center gap-2">
-                                                            <span className="text-[10px] text-slate-500 font-bold uppercase">Cast At:</span>
+                                                            <span className="text-[10px] text-slate-500 font-bold uppercase:">Cast At:</span>
                                                             <select className="input-base w-auto text-xs py-1" value={castLvl} onChange={e => setCastLevels(prev => ({...prev, [spell.id]: parseInt(e.target.value)}))}>
                                                                 {baseLvl === 0 ? <option value={0}>Cantrip</option> : Array.from({length: 10 - baseLvl}, (_, i) => baseLvl + i).map(l => <option key={l} value={l}>Lvl {l}</option>)}
                                                             </select>
