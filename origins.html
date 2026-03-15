@@ -507,6 +507,7 @@
         function App() {
             const [view, setView] = useState('library'); 
             const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('dm-tracker-api-key') || "");
+            const [apiModelVersion, setApiModelVersion] = useState(() => localStorage.getItem('dm-tracker-api-model') || "gemini-2.5-flash-preview-09-2025");
             const [showSettingsModal, setShowSettingsModal] = useState(false);
             const [showExportModal, setShowExportModal] = useState(false);
             const [searchQuery, setSearchQuery] = useState('');
@@ -547,14 +548,20 @@
                 if (userApiKey && userApiKey !== localStorage.getItem('dm-tracker-api-key')) {
                     localStorage.setItem('dm-tracker-api-key', userApiKey);
                 }
-            }, [userApiKey]);
+                if (apiModelVersion && apiModelVersion !== localStorage.getItem('dm-tracker-api-model')) {
+                    localStorage.setItem('dm-tracker-api-model', apiModelVersion);
+                }
+            }, [userApiKey, apiModelVersion]);
 
             // --- AI GENERATION ---
             const callGemini = async (prompt) => {
                 if (!userApiKey) { setShowSettingsModal(true); return null; }
                 setIsGenerating(true);
+                
+                const modelToUse = apiModelVersion.trim() || 'gemini-2.5-flash-preview-09-2025';
+                
                 try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`, { 
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${userApiKey}`, { 
                         method: 'POST', 
                         headers: { 'Content-Type': 'application/json' }, 
                         body: JSON.stringify({ 
@@ -778,8 +785,12 @@
                                 </div>
                                 <div className="p-6">
                                     <label className="block text-sm font-bold text-white mb-2 flex items-center gap-2"><Key size={16} className="text-yellow-500" /> Gemini API Key</label>
-                                    <input type="password" placeholder="Paste your key here..." className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-teal-500 focus:outline-none mb-2" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} />
-                                    <p className="text-xs text-slate-400 mb-4">Required for AI generation. Stored locally on your browser.</p>
+                                    <input type="password" placeholder="Paste your key here..." className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-teal-500 focus:outline-none mb-4" value={userApiKey} onChange={(e) => setUserApiKey(e.target.value)} />
+                                    
+                                    <label className="block text-sm font-bold text-white mb-2 flex items-center gap-2"><Sparkles size={16} className="text-teal-400" /> Gemini Model Version</label>
+                                    <input type="text" placeholder="e.g., gemini-2.5-flash" className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white focus:ring-2 focus:ring-teal-500 focus:outline-none mb-2 font-mono text-sm" value={apiModelVersion} onChange={(e) => setApiModelVersion(e.target.value)} />
+                                    
+                                    <p className="text-xs text-slate-400 mb-6">Required for AI generation. Stored locally on your browser.</p>
                                     <div className="flex justify-end"><button onClick={() => setShowSettingsModal(false)} className="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded font-bold">Save & Close</button></div>
                                 </div>
                             </div>
