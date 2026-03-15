@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Akashic Tome | DM Hub</title>
+    <title>The Akashic Tome</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #020617; color: #F8FAFC; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
@@ -19,15 +19,45 @@
         }
         
         /* --- Color-Coded Hovers --- */
+        
+        /* Tracker: Purple */
         .tracker-hover:hover { border-color: #A855F7; box-shadow: 0 0 25px rgba(168, 85, 247, 0.4); }
+        
+        /* Atlas: Cyan */
         .map-hover:hover { border-color: #22D3EE; box-shadow: 0 0 25px rgba(34, 211, 238, 0.4); }
+        
+        /* Records: Red */
         .sheet-hover:hover { border-color: #EF4444; box-shadow: 0 0 25px rgba(239, 68, 68, 0.4); }
+        
+        /* Workshop: Green */
         .workshop-hover:hover { border-color: #22C55E; box-shadow: 0 0 25px rgba(34, 197, 94, 0.4); }
+        
+        /* Genesis: Teal */
         .genesis-hover:hover { border-color: #2DD4BF; box-shadow: 0 0 25px rgba(45, 212, 191, 0.4); }
+
+        /* Forge: Orange/Amber */
         .forge-hover:hover { border-color: #F97316; box-shadow: 0 0 25px rgba(249, 115, 22, 0.4); }
+        
+        /* Loot: Gold */
         .loot-hover:hover { border-color: #F59E0B; box-shadow: 0 0 25px rgba(245, 158, 11, 0.4); }
+        
+        /* Campaign: Slate/Grey */
         .campaign-hover:hover { border-color: #94A3B8; box-shadow: 0 0 25px rgba(148, 163, 184, 0.4); }
+        
+        /* Compendium: Indigo */
         .compendium-hover:hover { border-color: #6366F1; box-shadow: 0 0 25px rgba(99, 102, 241, 0.4); }
+
+        /* Changelog Unread Glow */
+        .unread-glow {
+            animation: pulseGlow 2s infinite;
+            border-color: #f59e0b !important;
+            color: #fcd34d !important;
+        }
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
 
         .scanline {
             width: 100%; height: 2px;
@@ -172,18 +202,18 @@
                 <span class="text-amber-400">⚡</span> Changelog
             </h3>
             
-            <!-- Version 1.8.0 -->
             <div class="cl-section mb-6">
-                <div class="cl-header font-bold text-indigo-400 mb-2 uppercase tracking-wider text-xs border-l-2 border-indigo-500 pl-2">Version 1.8.0</div>
-                <div class="cl-item mb-1 flex items-start gap-2"><span class="text-indigo-500">•</span> <strong>Gemini API Stability Fix:</strong> Unified the API callback logic. You can now manually specify the Model String in Settings to bypass deprecations.</div>
-                <div class="cl-item mb-1 flex items-start gap-2"><span class="text-red-500 font-bold">!</span> <strong>IMAGE GEN NOTE:</strong> Astral Forge (Imagen 4.0) now requires a <strong>PAID API KEY</strong> with billing enabled in your Google Cloud project. Free-tier keys are limited to text models only.</div>
-                <div class="cl-item mb-1 flex items-start gap-2"><span class="text-indigo-500">•</span> <strong>Forge Cache:</strong> Tokens generated in Astral Forge are now saved to your local browser storage automatically.</div>
+                <div class="cl-header font-bold text-emerald-400 mb-2 uppercase tracking-wider text-xs">Version 1.8.0 (Current)</div>
+                <div class="cl-item mb-1 flex items-start gap-2"><span class="text-amber-500">•</span> <strong>Records App Overhaul:</strong> Complete UI/UX redesign with premium glassmorphism, responsive layouts, and unified aesthetic styling.</div>
+                <div class="cl-item mb-1 flex items-start gap-2"><span class="text-amber-500">•</span> <strong>Smart Genesis Import:</strong> Seamlessly import custom Races/Classes. It auto-generates attacks from text descriptions and actively hides higher-level features until you reach the required level.</div>
+                <div class="cl-item mb-1 flex items-start gap-2"><span class="text-amber-500">•</span> <strong>3D Dice Bag & Tray:</strong> Brand new neon-wireframe physics dice. Mix and match dice (e.g. 2d6 + 1d8), add flat modifiers, and throw them with buttery smooth 60fps physics.</div>
+                <div class="cl-item mb-1 flex items-start gap-2"><span class="text-amber-500">•</span> <strong>Combat & Magic Automations:</strong> Built-in Stat Assigner (Standard Array or 4d6 Drop 1), auto-scaling Hit Dice for resting, and active Spell Upcasting math directly in the combat view.</div>
             </div>
 
-            <!-- Version 1.7.0 -->
-            <div class="cl-section mb-6">
-                <div class="cl-header font-bold text-emerald-400 mb-2 uppercase tracking-wider text-xs border-l-2 border-emerald-500 pl-2">Version 1.7.0</div>
-                <div class="cl-item mb-1 flex items-start gap-2"><span class="text-amber-500">•</span> New App: <strong>Genesis Archives</strong> added. Create custom Classes and Races for your campaign using AI.</div>
+            <div class="cl-section mb-6 opacity-70">
+                <div class="cl-header font-bold text-slate-400 mb-2 uppercase tracking-wider text-xs">Version 1.7.0</div>
+                <div class="cl-item mb-1 flex items-start gap-2"><span class="text-slate-600">•</span> New App: <strong>Genesis Archives</strong> added.</div>
+                <div class="cl-item mb-1 flex items-start gap-2 ml-4 text-slate-500 text-xs">Create custom Classes and Races for your campaign using AI.</div>
             </div>
 
             <div class="mt-6 text-center">
@@ -191,8 +221,8 @@
             </div>
         </div>
 
-        <div class="fixed bottom-6 right-6">
-             <button onclick="toggleChangelog()" class="bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white p-3 rounded-full shadow-lg border border-slate-600 transition-all hover:scale-110" title="View Changelog">
+        <div class="fixed bottom-6 right-6 z-50">
+             <button id="changelog-btn" onclick="toggleChangelog()" class="bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white p-3 rounded-full shadow-lg border border-slate-600 transition-all hover:scale-110" title="View Changelog">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
              </button>
         </div>
@@ -203,9 +233,26 @@
     </div>
 
     <script>
+        const CURRENT_VERSION = "1.8.0";
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if user has seen this version
+            const lastSeen = localStorage.getItem('akashic_last_seen_version');
+            if (lastSeen !== CURRENT_VERSION) {
+                document.getElementById('changelog-btn').classList.add('unread-glow');
+            }
+        });
+
         function toggleChangelog() {
             const el = document.getElementById('changelog-container');
             el.classList.toggle('hidden');
+            
+            // Mark as seen when opened
+            const btn = document.getElementById('changelog-btn');
+            if (btn.classList.contains('unread-glow')) {
+                btn.classList.remove('unread-glow');
+                localStorage.setItem('akashic_last_seen_version', CURRENT_VERSION);
+            }
         }
     </script>
 </body>
