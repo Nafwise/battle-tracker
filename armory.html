@@ -149,6 +149,7 @@
             return {
                 id: generateId(),
                 category: category, 
+                manufacturerId: 'custom',
                 name: "",
                 type: "",
                 damage: "", 
@@ -347,23 +348,48 @@
                 }
                 setIsGenerating(true);
 
+                const AETHELGARD_LORE = `WORLD CONTEXT: Aethelgard (The Woven Realm) is a techno-magical world where magic is a physical, programmable code. Leylines act as fiber-optic networks, "Vitalis" is liquid magical energy, and monsters are often "Glitches" from the corrupted Hollow Demesne. The aesthetic blends high-fantasy with sci-fi elements (neon magic, clockwork circuits, living bio-tech, data encoded in amber).
+                FACTION/MANUFACTURER LORE:
+                - Oculon: Clockwork, brass, logical, data-driven arcane mechanics.
+                - Mycen: Fungal decay, spore-tech, repurposing dead matter.
+                - Bastion: Iron, granite, radiant holy energy, militaristic defenders.
+                - Lunaris: Void/gravity manipulation, starlight, cosmic anomalies.
+                - Lycarus: Beast-hunters, kinetic momentum, twin-synergy, apex predators.
+                - Corali: Amphibious bio-tech, living coral symbiosis, draconic plasmoid traits.
+                - Kirathi: Avian, wind/sonic manipulation, atmospheric pressure debuffs.
+                - Sylvid: Data-weavers, memory hacking, petrified fiber-optic amber.
+                - Vitala: Healers, triage, liquid bio-sanitorium tech.
+                - Custom: General Aethelgard techno-magic, scavenger tech, or unique anomalies.`;
+
                 let systemPrompt = "";
 
                 if (view === 'attachment-editor') {
+                    const attMData = MANUFACTURER_DATA.find(m => m.id === (currentAttachment.manufacturerId || 'custom')) || MANUFACTURER_DATA.find(m => m.id === 'custom');
+                    
                     systemPrompt = `You are a legendary weapon smith in Aethelgard. You build modular weapon attachments.
-                    The user wants to forge a single attachment for the category: ${currentAttachment.category.toUpperCase()}.
-                    Ensure the mechanics match the D&D 5e system and the lore of Aethelgard.
+                    ${AETHELGARD_LORE}
+                    
+                    CRITICAL INSTRUCTION: The user wants to forge a single attachment for the category: ${currentAttachment.category.toUpperCase()}.
+                    This attachment is being built for the following Chassis/Manufacturer:
+                    - Manufacturer: ${attMData.name}
+                    - Type: ${attMData.type}
+                    - Base Trait Context: ${attMData.trait}
+                    - Gem Integration Context: ${attMData.integration}
+                    
+                    Ensure the mechanics match the D&D 5e system and perfectly reflect the aesthetic, lore, and mechanics of the chosen manufacturer.
                     Always respond in valid JSON matching this schema exactly:
                     {
                         "name": "Creative Attachment Name",
                         "type": "e.g. Melee Grip, Utility Sight, Extended Mag, Element Type",
                         "damage": "e.g. 1d8 Slashing (ONLY provide if category is 'form', else empty string)",
                         "mechanic": "Specific integration rule (ONLY provide if category is 'gem', else empty string)",
-                        "description": "Combat mechanics and lore description."
+                        "description": "Combat mechanics and lore description heavily flavored by the Manufacturer."
                     }`;
                 } else if (view === 'weapon-editor') {
                     const mData = MANUFACTURER_DATA.find(m => m.id === currentWeapon.manufacturerId) || MANUFACTURER_DATA[0];
                     systemPrompt = `You are a legendary weapon smith in Aethelgard. You build modular weapons.
+                    ${AETHELGARD_LORE}
+                    
                     CRITICAL INSTRUCTION: The user is auto-assembling a full weapon for the following manufacturer:
                     - Manufacturer: ${mData.name}
                     - Type: ${mData.type}
@@ -700,7 +726,12 @@
                                     <div key={att.id} className="card-panel card-hover p-4 border-l-4 border-l-teal-500 flex flex-col justify-between">
                                         <div>
                                             <div className="flex justify-between items-start mb-2">
-                                                <span className="text-[10px] uppercase tracking-widest font-bold bg-slate-800 text-slate-400 px-2 py-0.5 rounded">{att.category}</span>
+                                                <div>
+                                                    <span className="text-[10px] uppercase tracking-widest font-bold bg-slate-800 text-slate-400 px-2 py-0.5 rounded">{att.category}</span>
+                                                    <span className="text-[10px] uppercase tracking-widest font-bold bg-slate-900 text-orange-400 border border-slate-700 px-2 py-0.5 rounded ml-2">
+                                                        {(MANUFACTURER_DATA.find(m => m.id === (att.manufacturerId || 'custom')) || {}).name || 'Universal'}
+                                                    </span>
+                                                </div>
                                                 {att.category === 'godspark' && <IconAlert size={14} className="text-red-500"/>}
                                             </div>
                                             <h4 className="font-bold text-white text-lg leading-tight mb-1">{att.name}</h4>
@@ -747,16 +778,27 @@
                             </h2>
 
                             <div className="space-y-5">
-                                <div>
-                                    <label className="block text-sm text-slate-400 mb-1 font-bold">Attachment Category</label>
-                                    <select className="input-base" value={currentAttachment.category} onChange={(e) => setCurrentAttachment({...currentAttachment, category: e.target.value})}>
-                                        <option value="form">Form (Blade/Barrel)</option>
-                                        <option value="grip">Grip (Handling/Stock)</option>
-                                        <option value="optic">Optic (Sights)</option>
-                                        <option value="mag">Mag (Ammunition/Core)</option>
-                                        <option value="gem">Gemstone</option>
-                                        <option value="godspark">God-Spark (Anomaly)</option>
-                                    </select>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm text-slate-400 mb-1 font-bold">Attachment Category</label>
+                                        <select className="input-base" value={currentAttachment.category} onChange={(e) => setCurrentAttachment({...currentAttachment, category: e.target.value})}>
+                                            <option value="form">Form (Blade/Barrel)</option>
+                                            <option value="grip">Grip (Handling/Stock)</option>
+                                            <option value="optic">Optic (Sights)</option>
+                                            <option value="mag">Mag (Ammunition/Core)</option>
+                                            <option value="gem">Gemstone</option>
+                                            <option value="godspark">God-Spark (Anomaly)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-slate-400 mb-1 font-bold">Compatible Chassis</label>
+                                        <select className="input-base" value={currentAttachment.manufacturerId || 'custom'} onChange={(e) => setCurrentAttachment({...currentAttachment, manufacturerId: e.target.value})} disabled={cat === 'godspark'}>
+                                            {MANUFACTURER_DATA.map(m => (
+                                                <option key={m.id} value={m.id}>{m.name} ({m.type})</option>
+                                            ))}
+                                        </select>
+                                        <p className="text-[10px] text-slate-500 mt-1">"Custom" is universal. God-Sparks ignore chassis restrictions.</p>
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -850,23 +892,41 @@
                                 </div>
                                 
                                 <div className="flex-1 overflow-y-auto pr-2">
-                                    {attachments.filter(a => a.category === showSelectorModal.slotKey).length === 0 ? (
-                                        <div className="text-center py-12">
-                                            <p className="text-slate-500 mb-4">No {showSelectorModal.slotKey} attachments found in your Library.</p>
-                                            <button onClick={() => { setShowSelectorModal({open: false, slotKey: null}); startForgeAttachment(); }} className="text-teal-400 underline font-bold">Go forge one first</button>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {attachments.filter(a => a.category === showSelectorModal.slotKey).map(att => (
-                                                <button key={att.id} onClick={() => equipToWeapon(att)} className="text-left p-4 bg-slate-800 border border-slate-700 hover:border-teal-400 hover:bg-slate-800/80 rounded-lg transition group">
-                                                    <h4 className="font-bold text-white text-lg mb-1 group-hover:text-teal-400">{att.name}</h4>
-                                                    <p className="text-xs text-slate-400 font-mono mb-2">{att.type}</p>
-                                                    {att.damage && <p className="text-xs text-red-400 font-mono mb-2">{att.damage}</p>}
-                                                    <p className="text-sm text-slate-300 line-clamp-2">{att.description}</p>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const filteredAtts = attachments.filter(a => {
+                                            if (a.category !== showSelectorModal.slotKey) return false;
+                                            if (showSelectorModal.slotKey === 'godspark') return true;
+                                            const aId = a.manufacturerId || 'custom';
+                                            return aId === 'custom' || aId === currentWeapon.manufacturerId;
+                                        });
+
+                                        if (filteredAtts.length === 0) {
+                                            return (
+                                                <div className="text-center py-12">
+                                                    <p className="text-slate-500 mb-4">No compatible {showSelectorModal.slotKey} attachments found in your Library for this chassis.</p>
+                                                    <button onClick={() => { setShowSelectorModal({open: false, slotKey: null}); startForgeAttachment(); }} className="text-teal-400 underline font-bold">Go forge one first</button>
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                {filteredAtts.map(att => (
+                                                    <button key={att.id} onClick={() => equipToWeapon(att)} className="text-left p-4 bg-slate-800 border border-slate-700 hover:border-teal-400 hover:bg-slate-800/80 rounded-lg transition group">
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <h4 className="font-bold text-white text-lg group-hover:text-teal-400">{att.name}</h4>
+                                                            <span className="text-[10px] uppercase tracking-widest font-bold bg-slate-900 text-orange-400 border border-slate-700 px-2 py-0.5 rounded shrink-0 ml-2">
+                                                                {(MANUFACTURER_DATA.find(m => m.id === (att.manufacturerId || 'custom')) || {}).name || 'Universal'}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs text-slate-400 font-mono mb-2">{att.type}</p>
+                                                        {att.damage && <p className="text-xs text-red-400 font-mono mb-2">{att.damage}</p>}
+                                                        <p className="text-sm text-slate-300 line-clamp-2">{att.description}</p>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </div>
@@ -893,7 +953,12 @@
                                 {view === 'attachment-editor' && currentAttachment && (
                                     <div className="mb-4 bg-indigo-950/30 p-3 rounded border border-indigo-900/50">
                                         <p className="text-xs text-indigo-300 font-bold mb-1">Targeting Component:</p>
-                                        <p className="text-sm text-slate-300 uppercase font-bold">{currentAttachment.category}</p>
+                                        <p className="text-sm text-slate-300 uppercase font-bold">
+                                            {currentAttachment.category} 
+                                            <span className="text-xs text-indigo-400 normal-case ml-2">
+                                                for {(MANUFACTURER_DATA.find(m => m.id === (currentAttachment.manufacturerId || 'custom')) || {}).name || 'Universal'}
+                                            </span>
+                                        </p>
                                     </div>
                                 )}
 
