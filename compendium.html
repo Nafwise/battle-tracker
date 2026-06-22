@@ -24,7 +24,11 @@
     </script>
 
     <!-- Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/core-js-bundle@3.37.1/minified.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.6/babel.min.js"></script>
 
     <style>
         :root {
@@ -87,7 +91,7 @@
         import { createRoot } from 'react-dom/client';
         import { 
             BookOpen, Search, Shield, Sword, Scroll, Ghost, 
-            Settings, Menu, X, Database, Hexagon, Sparkles, UserCircle, LayoutGrid, Home, RefreshCw
+            Settings, Menu, X, Database, Hexagon, Sparkles, UserCircle, LayoutGrid, Home
         } from 'lucide-react';
 
         // --- DEFAULT AKASHIC DATA (Legally distinct placeholders) ---
@@ -119,8 +123,6 @@
             const [selectedItem, setSelectedItem] = useState(null);
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
             const [isAppSwitcherOpen, setIsAppSwitcherOpen] = useState(false);
-            const [toast, setToast] = useState(null);
-            const [isSyncing, setIsSyncing] = useState(false);
 
             // Initialize Database from LocalStorage
             useEffect(() => {
@@ -150,82 +152,6 @@
 
                 return () => window.removeEventListener('storage', loadData);
             }, []);
-
-            // --- SYNC LEGACY DATA ENGINE ---
-            const syncLegacyData = () => {
-                setIsSyncing(true);
-                const currentDb = { ...db };
-                let importCount = 0;
-
-                // Helper to check for existing entries
-                const exists = (collection, name) => collection.some(item => item.name === name);
-
-                // 1. Scan for Monster Workshop Data
-                try {
-                    const legacyMonsters = JSON.parse(localStorage.getItem('homebrew_monsters') || '[]');
-                    if (!currentDb.bestiary) currentDb.bestiary = [];
-                    
-                    legacyMonsters.forEach(m => {
-                        if (m.name && !exists(currentDb.bestiary, m.name)) {
-                            let mdContent = m.content || m.description || '';
-                            if (!mdContent) {
-                                // Fallback formatter if it's raw JSON data
-                                mdContent = `**AC:** ${m.ac || '?'}\n**HP:** ${m.hp || '?'}\n\n`;
-                                if (m.stats) mdContent += `**Stats:** ${m.stats}\n\n`;
-                                if (m.abilities) mdContent += `### Abilities\n${m.abilities}\n\n`;
-                                if (m.actions) mdContent += `### Actions\n${m.actions}`;
-                            }
-
-                            currentDb.bestiary.push({
-                                id: m.id || 'hb_' + Date.now() + Math.random(),
-                                name: m.name,
-                                type: m.type || 'Unknown',
-                                CR: m.cr || m.CR || '?',
-                                tags: m.tags || ['Legacy Homebrew'],
-                                source: 'Monster Workshop',
-                                content: mdContent
-                            });
-                            importCount++;
-                        }
-                    });
-                } catch (e) { console.error("Error parsing monsters", e); }
-
-                // 2. Scan for Origins Creator Data
-                try {
-                    const legacyOrigins = JSON.parse(localStorage.getItem('origins_library') || '[]');
-                    if (!currentDb.origins) currentDb.origins = [];
-
-                    legacyOrigins.forEach(o => {
-                        if (o.name && !exists(currentDb.origins, o.name)) {
-                            currentDb.origins.push({
-                                id: o.id || 'org_' + Date.now() + Math.random(),
-                                name: o.name,
-                                type: o.type || o.baseClass || 'Class/Lineage',
-                                source: 'Origins Creator',
-                                content: o.content || o.description || o.features || JSON.stringify(o, null, 2)
-                            });
-                            importCount++;
-                        }
-                    });
-                } catch (e) { console.error("Error parsing origins", e); }
-
-                // Save changes
-                setTimeout(() => {
-                    if (importCount > 0) {
-                        setDb(currentDb);
-                        localStorage.setItem('akashic_database_v1', JSON.stringify(currentDb));
-                        showToast(`Successfully synced ${importCount} legacy items!`);
-                    } else {
-                        showToast(`Database is up to date. No new items found.`);
-                    }
-                    setIsSyncing(false);
-                }, 800); // slight delay for visual effect
-            };
-
-            const showToast = (msg) => {
-                setToast(msg);
-                setTimeout(() => setToast(null), 3000);
-            };
 
             // Navigation configuration
             const navItems = [
@@ -353,34 +279,14 @@
                         </nav>
 
                         {/* Footer Section */}
-                        <div className="p-4 border-t border-slate-800/60 bg-slate-900/30">
-                            <button 
-                                onClick={syncLegacyData}
-                                disabled={isSyncing}
-                                className="w-full flex items-center justify-center gap-2 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 rounded-lg transition-colors text-xs font-bold uppercase tracking-wider mb-3 disabled:opacity-50"
-                            >
-                                <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} />
-                                {isSyncing ? "Scanning..." : "Sync Legacy Data"}
-                            </button>
-                            <div className="text-[10px] text-slate-500 font-mono text-center">
-                                Local Storage System<br/>v2.0 Protected
-                            </div>
+                        <div className="p-4 border-t border-slate-800/60 text-xs text-slate-500 font-mono text-center">
+                            Local Storage System<br/>v2.0 Protected
                         </div>
                     </aside>
 
                     {/* MAIN CONTENT AREA */}
                     <main className="flex-1 flex flex-col min-w-0 relative">
                         
-                        {/* Toast Notification */}
-                        {toast && (
-                            <div className="absolute top-24 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4">
-                                <div className="bg-emerald-500/90 text-white px-6 py-3 rounded-full shadow-lg shadow-emerald-500/20 backdrop-blur font-medium text-sm border border-emerald-400/50 flex items-center gap-2">
-                                    <Sparkles size={16} />
-                                    {toast}
-                                </div>
-                            </div>
-                        )}
-
                         {/* Header Bar */}
                         <header className="h-20 border-b border-slate-800/60 flex items-center justify-between px-4 sm:px-8 bg-slate-950/50 backdrop-blur z-10">
                             <div className="flex items-center gap-4 flex-1">
