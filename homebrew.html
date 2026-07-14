@@ -148,7 +148,6 @@
         const Dna = (props) => <Icon {...props}><path d="M2 15c6.667-6 13.333 0 20-6"/><path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"/><path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"/><path d="m17 6-2.5-2.5"/><path d="m14 8-1-1"/><path d="m7 18 2.5 2.5"/><path d="m3.5 14.5.5.5"/><path d="m20 9 .5.5"/><path d="m6.5 12.5 1 1"/><path d="m16.5 10.5 1 1"/><path d="m10 16 1.5 1.5"/></Icon>;
 
 
-        // --- CONSTANTS & UTILITIES (SHARED) ---
         const MONSTER_TYPES = [
             "Aberration", "Beast", "Celestial", "Construct", "Dragon", "Elemental", 
             "Fey", "Fiend", "Giant", "Humanoid", "Monstrosity", "Ooze", "Plant", "Undead", "Unknown"
@@ -166,7 +165,6 @@
         const sanitizeHtml = (str) => { if (!str) return ''; return str.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gm, "").replace(/on\w+="[^"]*"/g, ""); };
         const handleInputBlur = () => { setTimeout(() => { if (document.activeElement === document.body) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 150); };
         
-        // --- SUITE DROPDOWN COMPONENT ---
         const SuiteDropdown = () => {
             const [isOpen, setIsOpen] = useState(false);
             const dropdownRef = useRef(null);
@@ -281,7 +279,6 @@
             );
         };
 
-        // --- DM TOOLS SPECIFIC MODALS/COMPONENTS ---
         const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel, confirmText, cancelText }) => {
             if (!isOpen) return null;
             return (
@@ -346,7 +343,8 @@
                     changes: [
                         "**Streamlined Workshop:** Removed the deprecated DM Screen. This app is now purely for brewing monsters.",
                         "**Astral Forge Integration:** Added direct navigation to the new 3D Token Generator.",
-                        "**Visual Prompts:** The AI now generates visual descriptions for your monsters automatically."
+                        "**Visual Prompts:** The AI now generates visual descriptions for your monsters automatically.",
+                        "**Single Monster Export:** You can now export single creatures natively."
                     ] 
                 }
             ];
@@ -676,6 +674,17 @@
                 showNotification(`Homebrew Bank saved as ${fileName}`, "success");
             };
 
+            const handleExportSingleMonster = (monster) => {
+                // Export as an array with 1 item so it can be restored directly via the standard importer
+                const blob = new Blob([JSON.stringify([monster], null, 2)], { type: "application/json" });
+                const href = URL.createObjectURL(blob);
+                const baseName = monster.name.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '') || `monster`;
+                const fileName = `${baseName}_Monster.json`;
+                const link = document.createElement('a');
+                link.href = href; link.download = fileName; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                showNotification(`Exported ${monster.name}`, "success");
+            };
+
             const handleHomebrewImportClick = () => { if (homebrewFileInputRef.current) { homebrewFileInputRef.current.click(); } };
             const handleHomebrewFileChange = (e) => {
                 const file = e.target.files[0];
@@ -837,7 +846,7 @@
                                             accept=".json" 
                                         />
                                         <button onClick={handleExportHomebrew} className="flex-1 flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-700 text-slate-400 hover:text-white font-bold py-2 px-3 rounded text-sm border border-slate-700">
-                                            <Download size={18}/> Backup
+                                            <Download size={18}/> Backup Bank
                                         </button>
                                     </div>
 
@@ -886,6 +895,7 @@
                                                         <div className="flex gap-2">
                                                             <button onClick={() => loadMonsterIntoForm(h)} className="text-slate-400 hover:text-indigo-400 p-1 flex items-center justify-center" title="Edit Monster"><Pencil size={16}/></button>
                                                             {h.statBlockSummary && <button onClick={() => openStatBlock(h)} className="text-slate-400 hover:text-white p-1 flex items-center justify-center" title="View Stat Block"><CircleHelp size={16}/></button>}
+                                                            <button onClick={() => handleExportSingleMonster(h)} className="text-slate-400 hover:text-emerald-400 p-1 flex items-center justify-center" title="Export Single Monster"><Download size={16}/></button>
                                                             <button onClick={()=>deleteHomebrew(h.id)} className="text-slate-500 hover:text-red-500 flex items-center justify-center"><Trash2 size={16}/></button>
                                                         </div>
                                                     </div>
@@ -907,6 +917,7 @@
                                                                     <div className="flex gap-2">
                                                                         <button onClick={() => loadMonsterIntoForm(h)} className="text-slate-400 hover:text-indigo-400 p-1 flex items-center justify-center" title="Edit Monster"><Pencil size={16}/></button>
                                                                         {h.statBlockSummary && <button onClick={() => openStatBlock(h)} className="text-slate-400 hover:text-white p-1 flex items-center justify-center" title="View Stat Block"><CircleHelp size={16}/></button>}
+                                                                        <button onClick={() => handleExportSingleMonster(h)} className="text-slate-400 hover:text-emerald-400 p-1 flex items-center justify-center" title="Export Single Monster"><Download size={16}/></button>
                                                                         <button onClick={()=>deleteHomebrew(h.id)} className="text-slate-500 hover:text-red-500 flex items-center justify-center"><Trash2 size={16}/></button>
                                                                     </div>
                                                                 </div>
